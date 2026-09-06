@@ -260,8 +260,23 @@ function calificar(pregunta, respuesta) {
     }
 
     if (q.type === 'ordering') {
-        const dada = (Array.isArray(respuesta) ? respuesta : String(respuesta).split(',')).map(String);
         const esperada = q.correctOrder || [];
+        let dada;
+
+        if (Array.isArray(respuesta)) {
+            // Ya viene como secuencia de valores en orden.
+            dada = respuesta.map(String);
+        } else if (respuesta && typeof respuesta === 'object') {
+            // Forma que envia el navegador: { valorOpcion: posicionEscrita }.
+            // Se ordena por la posicion para reconstruir la secuencia.
+            dada = Object.keys(respuesta)
+                .filter(k => respuesta[k] !== '' && respuesta[k] !== null && respuesta[k] !== undefined)
+                .sort((a, b) => Number(respuesta[a]) - Number(respuesta[b]))
+                .map(String);
+        } else {
+            dada = String(respuesta).split(',').map(v => v.trim());
+        }
+
         return {
             answered: true,
             correct: dada.length === esperada.length && dada.every((v, i) => v === esperada[i])

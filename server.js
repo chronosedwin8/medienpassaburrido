@@ -179,6 +179,47 @@ function slimActivities(resolvedByLevel) {
     return slim;
 }
 
+/**
+ * Cuenta cuantas respuestas con contenido tiene un estudiante en una actividad.
+ *
+ * Estaba duplicada literalmente en la ruta del panel y en /api/progress, de modo
+ * que arreglarla en una dejaba la otra mal: el panel decia una cosa y la barra
+ * de progreso otra.
+ *
+ * Cuenta contra las preguntas que el estudiante VE de verdad (las del docente si
+ * personalizo el reto), no contra las de data.js.
+ */
+function contarRespuestasCompletadas(actId, itemData, studentClass) {
+    if (!itemData) return 0;
+
+    let activity = null;
+    for (const acts of Object.values(allActivities)) {
+        const found = acts.find(a => a.id === actId);
+        if (found) { activity = found; break; }
+    }
+    if (!activity && actId === 'profile') activity = sharedProfile;
+
+    // Ademas de texto y booleano, los tipos nuevos llegan como numero (escala),
+    // arreglo (opcion multiple) u objeto (ordenar).
+    const tieneContenido = (val) => {
+        if (val === null || val === undefined) return false;
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'number') return true;
+        if (typeof val === 'string') return val.trim().length > 0;
+        if (Array.isArray(val)) return val.length > 0;
+        if (typeof val === 'object') return Object.keys(val).length > 0;
+        return false;
+    };
+
+    if (!activity) {
+        return Object.keys(itemData).filter(k => tieneContenido(itemData[k])).length;
+    }
+
+    const resolved = getActivityForClass(activity, studentClass);
+    const evidenceIds = questions.paraEstudiante(resolved, studentClass).questions.map(e => e.id);
+    return Object.keys(itemData).filter(k => evidenceIds.includes(k) && tieneContenido(itemData[k])).length;
+}
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 // Compresion: el panel del estudiante son ~114 KB de HTML que viajaban sin
@@ -497,37 +538,8 @@ app.get('/', requireLogin, async (req, res) => {
     const isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
     let rawProgress = {};
 
-    const getCompletedCount = (actId, itemData) => {
-        let activity = null;
-        for (const [lvl, acts] of Object.entries(allActivities)) {
-            const found = acts.find(a => a.id === actId);
-            if (found) { activity = found; break; }
-        }
-        if (!activity && actId === 'profile') {
-            activity = sharedProfile;
-        }
-
-        if (activity) {
-            const resolved = getActivityForClass(activity, studentClass);
-            const evidenceIds = (resolved.evidence || []).map(e => e.id);
-            const fields = itemData ? Object.keys(itemData).filter(k => {
-                if (!evidenceIds.includes(k)) return false;
-                const val = itemData[k];
-                if (typeof val === 'boolean') return val;
-                if (typeof val === 'string') return val.trim().length > 0;
-                return false;
-            }) : [];
-            return fields.length;
-        } else {
-            const fields = itemData ? Object.keys(itemData).filter(k => {
-                const val = itemData[k];
-                if (typeof val === 'boolean') return val;
-                if (typeof val === 'string') return val.trim().length > 0;
-                return false;
-            }) : [];
-            return fields.length;
-        }
-    };
+    const getCompletedCount = (actId, itemData) =>
+        contarRespuestasCompletadas(actId, itemData, studentClass);
 
     if (isLocal) {
         const cache = readLocalCache();
@@ -844,37 +856,8 @@ app.get('/api/progress', requireLogin, async (req, res) => {
     const studentClass = res.locals.student.class_name;
     const isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
 
-    const getCompletedCount = (actId, itemData) => {
-        let activity = null;
-        for (const [lvl, acts] of Object.entries(allActivities)) {
-            const found = acts.find(a => a.id === actId);
-            if (found) { activity = found; break; }
-        }
-        if (!activity && actId === 'profile') {
-            activity = sharedProfile;
-        }
-
-        if (activity) {
-            const resolved = getActivityForClass(activity, studentClass);
-            const evidenceIds = (resolved.evidence || []).map(e => e.id);
-            const fields = itemData ? Object.keys(itemData).filter(k => {
-                if (!evidenceIds.includes(k)) return false;
-                const val = itemData[k];
-                if (typeof val === 'boolean') return val;
-                if (typeof val === 'string') return val.trim().length > 0;
-                return false;
-            }) : [];
-            return fields.length;
-        } else {
-            const fields = itemData ? Object.keys(itemData).filter(k => {
-                const val = itemData[k];
-                if (typeof val === 'boolean') return val;
-                if (typeof val === 'string') return val.trim().length > 0;
-                return false;
-            }) : [];
-            return fields.length;
-        }
-    };
+    const getCompletedCount = (actId, itemData) =>
+        contarRespuestasCompletadas(actId, itemData, studentClass);
 
     if (isLocal) {
         const cache = readLocalCache();

@@ -2593,20 +2593,48 @@
 
             function collectData() {
                 const data = {};
+
                 inputs.forEach(input => {
-                    if (input.id) {
-                        if (input.type === 'checkbox') {
-                            data[input.id] = input.checked;
-                        } else if (input.type === 'radio') {
-                            data[input.id] = input.checked;
-                            if (input.checked) {
-                                data[input.name] = input.value;
-                            }
-                        } else {
-                            data[input.id] = input.value;
+                    const name = input.name || '';
+
+                    // Opcion multiple: los checkbox comparten name="pregunta[]".
+                    // Se agrupan en un arreglo bajo el id de la pregunta; antes
+                    // se guardaba un booleano por opcion con ids inventados
+                    // (q_multi_0...) que no existian en el instrumento, asi que
+                    // no contaban para el progreso ni se podian corregir.
+                    if (input.type === 'checkbox' && name.endsWith('[]')) {
+                        const qid = name.slice(0, -2);
+                        if (!Array.isArray(data[qid])) data[qid] = [];
+                        if (input.checked) data[qid].push(input.value);
+                        return;
+                    }
+
+                    // Ordenar: un input por elemento, name="pregunta__valor".
+                    // Se agrupa en { valor: posicion }.
+                    if (name.indexOf('__') > 0) {
+                        const partes = name.split('__');
+                        const qid = partes[0];
+                        const opcion = partes[1];
+                        if (input.value !== '') {
+                            if (typeof data[qid] !== 'object' || data[qid] === null || Array.isArray(data[qid])) data[qid] = {};
+                            data[qid][opcion] = input.value;
                         }
+                        return;
+                    }
+
+                    if (input.type === 'radio') {
+                        // El valor de la pregunta va bajo su name (el id de la
+                        // pregunta); el id del input se guarda por compatibilidad.
+                        if (input.id) data[input.id] = input.checked;
+                        if (input.checked && name) data[name] = input.value;
+                        return;
+                    }
+
+                    if (input.id) {
+                        data[input.id] = input.type === 'checkbox' ? input.checked : input.value;
                     }
                 });
+
                 return data;
             }
             // Expose collectData globally
