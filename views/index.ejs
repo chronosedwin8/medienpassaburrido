@@ -194,7 +194,9 @@
             const retoCombo = document.getElementById('retoCombo');
             const retoComboContainer = document.getElementById('retoComboContainer');
             const placeholder = document.getElementById('noSubjectSelectedPlaceholder');
-            const activitiesData = <%- JSON.stringify(allActivities) %>;
+            // Proyeccion ligera (ver slimActivities en server.js): antes aqui se
+            // incrustaban 9,8 MB con las preguntas de todos los grados.
+            const activitiesData = <%- JSON.stringify(slimActivities) %>;
             const techActivitiesData = <%- JSON.stringify(tecnologiaActivities) %>;
             const levelConfig = <%- JSON.stringify(levelConfig) %>;
             const currentYear = '<%= currentYear %>';

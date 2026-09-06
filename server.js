@@ -151,6 +151,31 @@ function getActivityForClass(activity, className) {
     return getActivitiesForClass([activity], className)[0];
 }
 
+/**
+ * Proyeccion ligera de las actividades para el navegador.
+ *
+ * El panel del estudiante incrustaba JSON.stringify(allActivities) completo:
+ * 9,8 MB en CADA carga, con las preguntas de todos los grados y asignaturas.
+ * El script del cliente solo necesita id, asignatura, titulo, icono y CUANTOS
+ * campos tiene cada actividad, asi que se envia eso.
+ */
+function slimActivities(resolvedByLevel) {
+    const slim = {};
+    for (const [lvl, acts] of Object.entries(resolvedByLevel || {})) {
+        slim[lvl] = (acts || []).map(a => ({
+            id: a.id,
+            subject: a.subject,
+            level: a.level,
+            title: a.title,
+            icon: a.icon,
+            // Solo el tamano: el contenido de las preguntas no se usa en el panel.
+            evidence: new Array((a.evidence || []).length).fill(0),
+            competencies: new Array((a.competencies || []).length).fill(0)
+        }));
+    }
+    return slim;
+}
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -515,6 +540,7 @@ app.get('/', requireLogin, async (req, res) => {
         activities: activeActivities,
         tecnologiaActivities: getActivitiesForClass(tecnologiaActivities, res.locals.student.class_name),
         allResolvedActivities,
+        slimActivities: slimActivities(allResolvedActivities),
         student: res.locals.student,
         sharedProfile,
         klassenConfig,
