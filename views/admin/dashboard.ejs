@@ -7,6 +7,14 @@
     <title>Admin Dashboard — MedienPass</title>
     <link rel="stylesheet" href="/css/medienpass.css">
     <link rel="stylesheet" href="/css/minimal.css">
+    <script src="/js/nombres.js"></script>
+    <script>
+    // Mismo criterio que el servidor: los nombres de `students` vienen de
+    // importaciones distintas y unos estan en MAYUSCULAS y otros no.
+    function mostrarNombre(n) {
+        return (window.medienpassNombres && n) ? window.medienpassNombres.formatear(n) : (n || '');
+    }
+    </script>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/sidebar.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -2427,7 +2435,7 @@
                     html += `
                         <tr>
                             <td>${i + 1}</td>
-                            <td><strong>${s.full_name || s.username}</strong></td>
+                            <td><strong>${mostrarNombre(s.full_name) || s.username}</strong></td>
                             <td>${completedCount} / ${totalActivities}</td>
                             <td><span class="count-badge">⭐ ${totalStars}</span></td>
                         </tr>
@@ -2471,7 +2479,7 @@
                                 ${avatarHtml}
                             </div>
                             <p>Se certifica que</p>
-                            <p class="student-name">${s.full_name || s.username}</p>
+                            <p class="student-name">${mostrarNombre(s.full_name) || s.username}</p>
                             <p>de la clase <strong>${s.class_name}</strong></p>
                             <p class="level-text">ha completado el Nivel 1 del MedienPass</p>
                             <p class="level-text">Suchen, Verarbeiten & Aufbewahren</p>

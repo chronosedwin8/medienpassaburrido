@@ -225,8 +225,9 @@
                    if (!sess && context === 'teacher' && typeof teacher !== 'undefined') {
                        fullName = ((teacher.first_name || '') + ' ' + (teacher.last_name || '')).trim() || 'Docente';
                    }
-                   const parts = fullName.trim().split(/\s+/);
-                   let initials = ((parts[0] || '').charAt(0) + (parts[1] || '').charAt(0)).toUpperCase() || 'U';
+                   // Mismo criterio que en la cabecera del estudiante.
+                   fullName = nombre(fullName);
+                   let initials = iniciales(fullName);
                    const roleText = (typeof roleLabel === 'function')
                        ? roleLabel(typeof lang !== 'undefined' ? lang : 'es')
                        : (context === 'admin' ? 'Administrador' : 'Docente');

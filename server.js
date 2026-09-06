@@ -13,6 +13,7 @@ const { generateInstrumentAI, getAIStatus } = require('./services/ai_service');
 const instrumentStore = require('./services/instrument_store');
 const questions = require('./services/questions');
 const stars = require('./services/stars');
+const names = require('./services/names');
 const cache = require('./services/cache');
 const compression = require('compression');
 const jsonstore = require('./services/jsonstore');
@@ -304,6 +305,17 @@ function recordarIdioma(res, lang) {
 
 // ─── Sesión firmada: carga req.user y res.locals (ver services/session.js) ───
 app.use(auth.loadSession);
+
+// ─── Nombres presentables en todas las vistas ───
+// En `students` conviven "Helena Marriott Rodriguez" y
+// "HERRERA PFEIFFER FELIX LEANDRO GABRIEL": los datos vienen de importaciones
+// distintas. Se arregla al mostrar, sin tocar lo guardado.
+app.use((req, res, next) => {
+    res.locals.nombre = n => names.formatear(n);
+    res.locals.nombreCorto = (n, max) => names.corto(n, max);
+    res.locals.iniciales = n => names.iniciales(n);
+    next();
+});
 
 // ─── Idioma resuelto en el servidor: expone lang, t() y pick() a las vistas ───
 app.use(i18n.middleware);
@@ -1366,6 +1378,34 @@ app.post('/api/admin/level-config', requirePerm('admin:config'), async (req, res
 });
 
 // API: Get i18n configuration (runs file in safe vm sandbox)
+// Formato de nombres para el navegador.
+//
+// El panel pinta sus listados desde JavaScript, asi que necesita el MISMO
+// criterio que el servidor: si no, la cabecera muestra 'Herrera Pfeiffer' y la
+// tabla de al lado 'HERRERA PFEIFFER FELIX LEANDRO GABRIEL'.
+// Se sirve services/names.js tal cual, sin su module.exports.
+app.get('/js/nombres.js', (req, res) => {
+    const fuente = jsonstoreLeerTexto(path.join(__dirname, 'services', 'names.js'));
+    const partes = [
+        '/* Generado desde services/names.js - no editar a mano. */',
+        '(function () {',
+        fuente.replace(/module\.exports[^;]*;/g, ''),
+        'window.medienpassNombres = { formatear: formatear, corto: corto, iniciales: iniciales };',
+        '})();'
+    ];
+    res.type('application/javascript');
+    res.set('Cache-Control', 'no-cache');
+    res.send(partes.join('\n'));
+});
+
+/** Lee un archivo de texto una sola vez y lo recuerda. */
+const _textoCache = new Map();
+function jsonstoreLeerTexto(ruta) {
+    if (!_textoCache.has(ruta)) {
+        _textoCache.set(ruta, fs.readFileSync(ruta, 'utf8'));
+    }
+    return _textoCache.get(ruta);
+}
 // El diccionario del cliente se genera desde config/i18n/*.json, de modo que
 // servidor y navegador comparten una única fuente de verdad. Antes public/js/i18n.js
 // era un archivo aparte que había que mantener sincronizado a mano.

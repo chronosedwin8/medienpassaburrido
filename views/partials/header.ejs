@@ -340,19 +340,22 @@
         <% } else if (student.profile_photo.startsWith('data:image')) { %>
             <!-- avatar image hidden -->
         <% } else { %>
-            <%= student.username.charAt(0).toUpperCase() %>
+            <%= iniciales(student.full_name || student.username) %>
         <% } %>
     <% } else { %>
-        <%= student.username.charAt(0).toUpperCase() %>
+        <%= iniciales(student.full_name || student.username) %>
     <% } %></span>
     <div class="user-details">
-        <% if (student.full_name) { %>
-                <span class="user-name"><%= student.full_name %></span>
-            <% } else if (student.first_name && student.last_name) { %>
-                <span class="user-name"><%= student.first_name %> <%= student.last_name %></span>
-            <% } else { %>
-                <span class="user-name"><%= student.username %></span>
-            <% } %>
+        <%
+        // Los nombres llegan de importaciones distintas: unos bien escritos y
+        // otros en MAYUSCULAS. Se normalizan al mostrarlos (services/names.js);
+        // el dato guardado no cambia. En la barra va la version corta, con el
+        // nombre completo en el title por si hace falta comprobarlo.
+        const _nombreCompleto = student.full_name
+            || [student.first_name, student.last_name].filter(Boolean).join(' ')
+            || student.username;
+        %>
+        <span class="user-name" title="<%= nombre(_nombreCompleto) %>"><%= nombreCorto(_nombreCompleto) %></span>
         <span class="user-class"><%= student.class_name %></span>
     </div>
 </div>

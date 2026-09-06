@@ -61,18 +61,24 @@
         <!-- Welcome Card -->
         <div class="welcome-card-premium">
             <div class="welcome-card-left">
-                <h1 class="welcome-greeting">👋 <span data-i18n="hello"><%= t('hello') %></span>, <span class="username-highlight"><%= student.username %></span>! <span class="full-name"><%= student.first_name %> <%= student.last_name %></span></h1>
+                <%
+                // `username` suele ser el numero de matricula ("3791"), y las
+                // columnas first_name/last_name NO existen en la tabla: el
+                // saludo mostraba un numero seguido de dos huecos vacios.
+                const _saludo = student.full_name || student.username;
+                %>
+                <h1 class="welcome-greeting">👋 <span data-i18n="hello"><%= t('hello') %></span>, <span class="username-highlight"><%= nombreCorto(_saludo, 2) %></span>!<% if (student.full_name) { %> <span class="full-name"><%= nombre(student.full_name) %></span><% } %></h1>
                 <p class="welcome-subtext" data-i18n="welcome">Willkommen zu deinem MedienPass</p>
             </div>
-            <% if (student.first_name && student.last_name) { %>
-                <div class="student-info-tag">
-                    <%= student.first_name.toUpperCase() %> <%= student.last_name.toUpperCase() %> — KLASSE <%= student.class_name %>
-                </div>
-            <% } else { %>
-                <div class="student-info-tag">
-                    <%= student.username.toUpperCase() %> — KLASSE <%= student.class_name %>
-                </div>
-            <% } %>
+            <%
+            // Tres problemas juntos: .toUpperCase() forzaba MAYUSCULAS, se leian
+            // columnas (first_name/last_name) que NO existen en la tabla, y
+            // "KLASSE" estaba en aleman fijo aunque la interfaz fuera en español.
+            const _etiqueta = student.full_name || student.username;
+            %>
+            <div class="student-info-tag">
+                <%= nombre(_etiqueta) %> — <%= t('loginClass') %> <%= student.class_name %>
+            </div>
         </div>
 
         <!-- Year Selector -->
