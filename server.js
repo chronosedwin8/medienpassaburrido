@@ -219,7 +219,12 @@ function contarRespuestasCompletadas(actId, itemData, studentClass) {
     }
 
     const resolved = getActivityForClass(activity, studentClass);
-    const evidenceIds = questions.paraEstudiante(resolved, studentClass).questions.map(e => e.id);
+    // Solo preguntas reales: los "_explain" son la argumentacion de la pregunta
+    // anterior. Contarlos hacia que el panel dijera 50% donde el reto decia
+    // 100%, porque la barra del reto ya los excluye.
+    const evidenceIds = questions.paraEstudiante(resolved, studentClass).questions
+        .map(e => e.id)
+        .filter(id => !String(id).endsWith('_explain'));
     return Object.keys(itemData).filter(k => evidenceIds.includes(k) && tieneContenido(itemData[k])).length;
 }
 
@@ -1571,6 +1576,22 @@ app.get('/api/admin/kpis', requireAdmin, cache.cachearLectura(45000), async (req
             supabase.from('devices').select('id')
         ]);
 
+        // Integracion digital: estudiantes con al menos una evidencia
+        // multimedia. La tarjeta del panel se quedaba girando para siempre
+        // porque nadie calculaba este dato ni lo enviaba.
+        let integrationRate = 0;
+        try {
+            const { data: productos } = await supabase
+                .from('multimedia_products').select('student_id');
+            const conEvidencia = new Set((productos || []).map(x => x.student_id)).size;
+            const totalAlumnos = (students || []).length;
+            integrationRate = totalAlumnos > 0
+                ? Math.round((conEvidencia / totalAlumnos) * 100)
+                : 0;
+        } catch (e) {
+            console.error('KPI de integracion digital:', e.message);
+        }
+
         const totalStudents = students?.length || 0;
         const totalTeachers = teachers?.length || 0;
         const certifiedTeachers = teachers?.filter(t => t.training_completed)?.length || 0;
@@ -1588,6 +1609,7 @@ app.get('/api/admin/kpis', requireAdmin, cache.cachearLectura(45000), async (req
                 totalStudents,
                 progressRate,
                 teachersCertified,
+                integrationRate,
                 totalDevices,
                 openIncidents
             }

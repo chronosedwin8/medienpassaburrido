@@ -3214,7 +3214,9 @@
     }
 
     function actualizar() {
-        const grupos = form.querySelectorAll('.form-group');
+        // Se excluyen los "_explain": acompanan a una pregunta, no son una mas.
+        const grupos = [...form.querySelectorAll('.form-group')]
+            .filter(g => !String(g.id || '').endsWith('_explain'));
         let hechas = 0;
         grupos.forEach(g => { if (preguntaRespondida(g)) hechas++; });
 

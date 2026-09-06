@@ -112,3 +112,46 @@ select {
    `revert` devuelve al valor por defecto del NAVEGADOR (`none`), así que
    borraba el degradado del menú y dejaba su texto claro sobre fondo blanco:
    ilegible. */
+
+/* ═══════════════════════════════════════════════════════════
+   14. Paginador
+   Las tarjetas con muchos registros cortaban en 10 con un
+   "...y 758 más" sin salida, o pintaban la lista entera.
+   ═══════════════════════════════════════════════════════════ */
+
+.paginador {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--mp-3);
+    padding-top: var(--mp-3);
+    margin-top: var(--mp-2);
+    border-top: 1px solid var(--mp-border);
+    font-size: var(--mp-text-xs);
+    color: var(--mp-text-faint);
+}
+.paginador__info { font-variant-numeric: tabular-nums; }
+.paginador__botones { display: inline-flex; align-items: center; gap: var(--mp-2); }
+.paginador__pag {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: var(--mp-text-soft);
+    min-width: 46px;
+    text-align: center;
+}
+.paginador__btn {
+    width: 28px; height: 28px;
+    display: grid; place-items: center;
+    border: 1px solid var(--mp-border-strong);
+    border-radius: var(--mp-radius-sm);
+    background: var(--mp-surface);
+    color: var(--mp-text-soft);
+    font-size: 15px; line-height: 1;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+.paginador__btn:hover:not([disabled]) { background: var(--mp-surface-alt); color: var(--mp-text); }
+.paginador__btn[disabled] { opacity: .35; cursor: not-allowed; }
+.paginador__btn:focus-visible { outline: 2px solid var(--mp-accent); outline-offset: 2px; }
+
+@media print { .paginador { display: none; } }

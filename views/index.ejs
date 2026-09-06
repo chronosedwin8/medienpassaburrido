@@ -234,7 +234,9 @@
 
                 lvlActs.forEach(act => {
                     const prog = progress[act.id];
-                    const fields = (act.evidence ? act.evidence.length : 0) + (act.competencies ? act.competencies.length : 0);
+                    // Sin los "_explain": acompanan a una pregunta, no son una mas.
+                    const evid = (act.evidence || []).filter(e => e && !String(e.id || '').endsWith('_explain'));
+                    const fields = evid.length + (act.competencies ? act.competencies.length : 0);
                     totalFields += fields;
                     if (prog) {
                         totalCompleted += prog.fieldsCompleted;

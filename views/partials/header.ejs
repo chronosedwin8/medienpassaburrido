@@ -381,16 +381,23 @@
             </div>
         </div>
 
-        <% if (typeof activity !== 'undefined' && activity && activity.evidence && activity.evidence.length && activity.id !== 'profile') { %>
+        <%
+        // Solo preguntas reales: los "_explain" son la argumentacion de la
+        // pregunta anterior, no preguntas aparte.
+        const _preguntasReales = (typeof activity !== 'undefined' && activity && activity.evidence)
+            ? activity.evidence.filter(q => q && !String(q.id || '').endsWith('_explain')).length
+            : 0;
+        %>
+        <% if (_preguntasReales > 0 && activity.id !== 'profile') { %>
         <!-- Avance del reto. Va dentro de la cabecera fija para que acompane
              al estudiante mientras responde; antes no habia forma de saber
              cuanto faltaba. -->
         <div class="reto-progreso no-print" id="retoProgreso"
-             data-total="<%= activity.evidence.length %>"
+             data-total="<%= _preguntasReales %>"
              role="progressbar" aria-valuemin="0"
-             aria-valuemax="<%= activity.evidence.length %>" aria-valuenow="0">
+             aria-valuemax="<%= _preguntasReales %>" aria-valuenow="0">
             <div class="reto-progreso__caja">
-                <span class="reto-progreso__texto" id="retoProgresoTexto">0 / <%= activity.evidence.length %></span>
+                <span class="reto-progreso__texto" id="retoProgresoTexto">0 / <%= _preguntasReales %></span>
                 <div class="reto-progreso__barra">
                     <div class="reto-progreso__relleno" id="retoProgresoRelleno"></div>
                 </div>

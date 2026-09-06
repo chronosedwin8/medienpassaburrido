@@ -1194,6 +1194,45 @@
                         <div class="kpi-label">Estudiantes que aprobaron Reto 0.</div>
                     </div>
                 </div>
+
+                <script>
+                /**
+                 * Rellena las tarjetas de AVANCE REAL.
+                 *
+                 * El marcado de "Evidencias digitales" y "Docentes capacitados"
+                 * existia con un spinner, pero NINGUN codigo los completaba
+                 * nunca: giraban indefinidamente. Aqui se piden los datos y, si
+                 * algo falla, se dice en vez de dejarlos girando.
+                 */
+                (function () {
+                    async function cargarAvanceReal() {
+                        const integracion = document.getElementById('kpi-integration-pct');
+                        const kmk = document.getElementById('kpi-kmk-pct');
+                        if (!integracion && !kmk) return;
+
+                        try {
+                            const r = await fetch('/api/admin/kpis');
+                            const j = await r.json();
+                            if (!j.success || !j.kpis) throw new Error('respuesta no valida');
+
+                            if (integracion) integracion.textContent = (j.kpis.integrationRate ?? 0) + '%';
+                            if (kmk) kmk.textContent = (j.kpis.teachersCertified ?? 0) + '%';
+                        } catch (e) {
+                            // Un spinner eterno no informa de nada; un guion si.
+                            if (integracion) { integracion.textContent = '—'; integracion.title = 'No se pudieron cargar los datos'; }
+                            if (kmk) { kmk.textContent = '—'; kmk.title = 'No se pudieron cargar los datos'; }
+                            console.warn('Avance real:', e.message);
+                        }
+                    }
+
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', cargarAvanceReal);
+                    } else {
+                        cargarAvanceReal();
+                    }
+                    window.cargarAvanceReal = cargarAvanceReal;
+                })();
+                </script>
             </div>
 
             <!-- ═══ BLOQUE A: CAPACITACIÓN KMK x DOCENTE ═══ -->
@@ -3570,41 +3609,105 @@
         });
     }
 
-    function renderNoProgressList(students) {
-        const el = document.getElementById('noProgressList');
+
+    /**
+     * Pinta una tabla paginada dentro de un contenedor.
+     *
+     * @param {Object} cfg
+     *   contenedor  id del elemento donde va la tabla
+     *   filas       array de datos
+     *   columnas    [{titulo, celda(fila)}]
+     *   porPagina   filas por pagina (10 por defecto)
+     *   vacio       HTML si no hay filas
+     */
+    function tablaPaginada(cfg) {
+        const el = document.getElementById(cfg.contenedor);
         if (!el) return;
-        if (!students || students.length === 0) {
-            el.innerHTML = '<p style="color:var(--mp-ok);"><i class="fas fa-check-circle"></i> ¡Todos los estudiantes tienen progreso!</p>';
+
+        const filas = cfg.filas || [];
+        const porPagina = cfg.porPagina || 10;
+
+        if (!filas.length) {
+            el.innerHTML = cfg.vacio || '<p style="color:var(--mp-text-faint);">Sin registros.</p>';
             return;
         }
-        let html = '<table><thead><tr><th>Estudiante</th><th>Clase</th></tr></thead><tbody>';
-        students.slice(0, 10).forEach(s => {
-            html += `<tr><td>${s.name}</td><td>${s.class}</td></tr>`;
+
+        const paginas = Math.max(1, Math.ceil(filas.length / porPagina));
+        let actual = 1;
+
+        function pintar() {
+            const desde = (actual - 1) * porPagina;
+            const trozo = filas.slice(desde, desde + porPagina);
+
+            let html = '<table><thead><tr>';
+            cfg.columnas.forEach(c => { html += '<th>' + c.titulo + '</th>'; });
+            html += '</tr></thead><tbody>';
+            trozo.forEach(f => {
+                html += '<tr>';
+                cfg.columnas.forEach(c => { html += '<td>' + c.celda(f) + '</td>'; });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+
+            if (paginas > 1) {
+                const primero = desde + 1;
+                const ultimo = Math.min(desde + porPagina, filas.length);
+                html += '<div class="paginador">' +
+                    '<span class="paginador__info">' + primero + '\u2013' + ultimo + ' de ' + filas.length + '</span>' +
+                    '<span class="paginador__botones">' +
+                        '<button type="button" class="paginador__btn" data-ir="anterior"' + (actual === 1 ? ' disabled' : '') + ' aria-label="Pagina anterior">\u2039</button>' +
+                        '<span class="paginador__pag">' + actual + ' / ' + paginas + '</span>' +
+                        '<button type="button" class="paginador__btn" data-ir="siguiente"' + (actual === paginas ? ' disabled' : '') + ' aria-label="Pagina siguiente">\u203a</button>' +
+                    '</span>' +
+                '</div>';
+            }
+
+            el.innerHTML = html;
+
+            const anterior = el.querySelector('[data-ir="anterior"]');
+            const siguiente = el.querySelector('[data-ir="siguiente"]');
+            if (anterior) anterior.addEventListener('click', () => { if (actual > 1) { actual--; pintar(); } });
+            if (siguiente) siguiente.addEventListener('click', () => { if (actual < paginas) { actual++; pintar(); } });
+        }
+
+        pintar();
+    }
+
+    function renderNoProgressList(students) {
+        tablaPaginada({
+            contenedor: 'noProgressList',
+            filas: students || [],
+            porPagina: 10,
+            vacio: '<p style="color:var(--mp-ok);"><i class="fas fa-check-circle"></i> ¡Todos los estudiantes tienen progreso!</p>',
+            columnas: [
+                { titulo: 'Estudiante', celda: s => mostrarNombre(s.name) || s.name },
+                { titulo: 'Clase', celda: s => s.class || '' }
+            ]
         });
-        html += '</tbody></table>';
-        if (students.length > 10) html += `<p style="color:var(--mp-text-faint);">...y ${students.length - 10} más</p>`;
-        el.innerHTML = html;
     }
 
     function renderPendingTeachers(teachers) {
-        const el = document.getElementById('pendingTeachersList');
-        if (!el) return;
-        if (!teachers || teachers.length === 0) {
-            el.innerHTML = '<p style="color:var(--mp-ok);"><i class="fas fa-check-circle"></i> ¡Todos los docentes están certificados!</p>';
-            return;
-        }
-        let html = '<table><thead><tr><th>Docente</th><th>Materia</th><th>Estado y Sugerencia</th></tr></thead><tbody>';
-        teachers.forEach(t => {
-            let statusHtml = '<span class="badge badge-warning">Sin iniciar</span>';
+        const estado = (t) => {
             if (t.score !== undefined && t.score !== null && t.score < 75) {
-                statusHtml = `<span class="badge badge-danger">Falló (${t.score}%) - Revisar contenidos KMK</span>`;
-            } else if (t.score !== undefined && t.score !== null) {
-                statusHtml = `<span class="badge badge-warning">Pendiente (${t.score}%)</span>`;
+                return '<span class="badge badge-danger">Falló (' + t.score + '%) — Revisar contenidos KMK</span>';
             }
-            html += `<tr><td>${t.name}</td><td>${t.subject || 'N/A'}</td><td>${statusHtml}</td></tr>`;
+            if (t.score !== undefined && t.score !== null) {
+                return '<span class="badge badge-warning">Pendiente (' + t.score + '%)</span>';
+            }
+            return '<span class="badge badge-warning">Sin iniciar</span>';
+        };
+
+        tablaPaginada({
+            contenedor: 'pendingTeachersList',
+            filas: teachers || [],
+            porPagina: 10,
+            vacio: '<p style="color:var(--mp-ok);"><i class="fas fa-check-circle"></i> ¡Todos los docentes están certificados!</p>',
+            columnas: [
+                { titulo: 'Docente', celda: t => mostrarNombre(t.name) || t.name },
+                { titulo: 'Materia', celda: t => t.subject || 'N/A' },
+                { titulo: 'Estado y sugerencia', celda: estado }
+            ]
         });
-        html += '</tbody></table>';
-        el.innerHTML = html;
     }
 
     // ════════════════════════════════════════
