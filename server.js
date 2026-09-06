@@ -1269,48 +1269,48 @@ app.post('/api/admin/level-config', requirePerm('admin:config'), async (req, res
 });
 
 // API: Get i18n configuration (runs file in safe vm sandbox)
+// El diccionario del cliente se genera desde config/i18n/*.json, de modo que
+// servidor y navegador comparten una única fuente de verdad. Antes public/js/i18n.js
+// era un archivo aparte que había que mantener sincronizado a mano.
+app.get('/js/i18n.js', (req, res) => {
+    const bundle = i18n.all();
+    res.type('application/javascript');
+    res.set('Cache-Control', 'no-cache');
+    const lines = [
+        '/* Generado desde config/i18n/*.json - no editar a mano. */',
+        'const i18n = ' + JSON.stringify(bundle) + ';',
+        'if (typeof window !== "undefined") { window.i18n = i18n; }',
+        'if (typeof module !== "undefined" && module.exports) { module.exports = i18n; }'
+    ];
+    res.send(lines.join('\n'));
+});
+
+// API: leer las traducciones (config/i18n/*.json)
 app.get('/api/admin/i18n', requirePerm('admin:i18n'), (req, res) => {
-    const configPath = path.join(__dirname, 'public/js/i18n.js');
     try {
-        if (!fs.existsSync(configPath)) {
-            return res.json({ success: false, message: 'Archivo i18n no encontrado' });
-        }
-        const content = fs.readFileSync(configPath, 'utf8');
-        
-        // Use VM to safely evaluate the file content and extract the i18n variable
-        const vm = require('vm');
-        const sandbox = { i18n: null, window: {}, module: { exports: {} } };
-        try {
-            // Evaluamos el archivo directamente. Al proveer 'window' y 'module' en el sandbox, 
-            // el código de i18n.js se ejecutará sin errores de referencia.
-            vm.runInNewContext(content + '\n; _result = i18n;', sandbox);
-            const i18nObj = sandbox._result || sandbox.i18n || sandbox.window.i18n;
-            if (i18nObj) {
-                return res.json({ success: true, i18n: i18nObj });
-            }
-        } catch (e) {
-            console.error('Error parsing i18n with VM:', e);
-        }
-        
-        return res.json({ success: false, message: 'No se pudo procesar el archivo de traducciones' });
+        return res.json({ success: true, i18n: i18n.all(), missing: i18n.missingKeys() });
     } catch (e) {
-        return res.json({ success: false, message: e.message });
+        return res.status(500).json({ success: false, message: e.message });
     }
 });
 
-// API: Save i18n configuration
+// API: guardar traducciones.
+// Antes se generaba un archivo .js con el texto del formulario y se leía con
+// vm.runInNewContext(): lo que un administrador escribiera acababa ejecutándose
+// en el navegador de todos. Ahora son datos JSON y nunca código.
 app.post('/api/admin/i18n', requirePerm('admin:i18n'), async (req, res) => {
-    const payload = req.body;
-    const configPath = path.join(__dirname, 'public/js/i18n.js');
     try {
-        const newScript = `/**\n * i18n.js - UI translations for MedienPass App\n * Contains all interface strings in German, English, and Spanish\n */\nconst i18n = ${JSON.stringify(payload, null, 4)};\n\n// Make available globally\nif (typeof window !== 'undefined') {\n    window.i18n = i18n;\n}\nif (typeof module !== 'undefined' && module.exports) {\n    module.exports = i18n;\n}\n`;
-        // i18n.js es texto (no JSON), usamos escritura atómica simple vía tmp→rename.
-        await _enqueue(configPath, async () => {
-            const tmp = `${configPath}.tmp`;
-            await fsp.writeFile(tmp, newScript, 'utf8');
-            await fsp.rename(tmp, configPath);
-        });
-        return res.json({ success: true, message: 'Traducciones guardadas' });
+        const payload = req.body || {};
+        const saved = {};
+        for (const lang of i18n.languages()) {
+            if (payload[lang]) {
+                saved[lang] = await i18n.save(lang, payload[lang]);
+            }
+        }
+        if (!Object.keys(saved).length) {
+            return res.status(400).json({ success: false, message: 'No se recibió ningún idioma válido.' });
+        }
+        return res.json({ success: true, message: 'Traducciones guardadas', saved });
     } catch (e) {
         console.error('Save i18n error:', e);
         return res.status(500).json({ success: false, message: e.message });
