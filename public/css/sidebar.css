@@ -4,10 +4,13 @@
     --sidebar-collapsed-width: 70px;
     --sidebar-bg: linear-gradient(180deg, #0f0c29, #302b63, #24243e);
     --sidebar-active-bg: rgba(99, 102, 241, 0.15);
-    --sidebar-active-border: #6366f1;
+    --sidebar-active-border: #818cf8;
     --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
-    --sidebar-text: #e2e8f0;
-    --sidebar-text-muted: #94a3b8;
+    /* El menu tiene fondo oscuro FIJO, asi que su texto debe ser claro en los
+       dos temas. Mapearlo a los tokens de texto (pensados para fondo claro) lo
+       dejaba practicamente invisible en modo oscuro. */
+    --sidebar-text: #e8e8f0;
+    --sidebar-text-muted: #b9b9cc;
     --sidebar-icon-active: #818cf8;
     --transition-speed: 0.3s;
 }
@@ -84,7 +87,7 @@ body {
     font-weight: 800;
     font-size: 1.1rem;
     letter-spacing: 0.05em;
-    background: linear-gradient(90deg, #fbbf24, #f9a8d4, #a78bfa, #67e8f9, #fbbf24);
+    background: linear-gradient(90deg, #fbbf24, #f9a8d4, var(--mp-accent), #67e8f9, #fbbf24);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -296,7 +299,7 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #6366f1, #a855f7);
+    background: linear-gradient(135deg, var(--mp-accent), #a855f7);
     color: white;
     display: flex;
     align-items: center;

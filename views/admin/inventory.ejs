@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario de Equipos — MedienPass</title>
+    <link rel="stylesheet" href="/css/medienpass.css">
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; margin: 0; padding: 0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--mp-bg); margin: 0; padding: 0; }
         .inv-header {
-            background: linear-gradient(135deg, #1e1b4b, #4338ca);
+            background: linear-gradient(135deg, var(--mp-text), var(--mp-accent-hover));
             color: white; padding: 20px 40px;
             display: flex; justify-content: space-between; align-items: center;
         }
@@ -34,7 +35,7 @@
             font-size: 2.2em; /* Grande */
             font-weight: 900;
             letter-spacing: 0.05em;
-            background: linear-gradient(90deg, #fbbf24, #f9a8d4, #a78bfa, #67e8f9, #fbbf24);
+            background: linear-gradient(90deg, var(--mp-warn), #f9a8d4, var(--mp-accent), #67e8f9, var(--mp-warn));
             background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -44,7 +45,7 @@
         .subtitle-custom {
             font-size: 1.1em; /* Más grande */
             font-weight: 900;
-            color: #fbbf24; /* highlight */
+            color: var(--mp-warn); /* highlight */
             margin: 0;
             letter-spacing: 0.1em;
             text-transform: uppercase;
@@ -58,51 +59,51 @@
         }
         .inv-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
         
-        .card { background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-        .card h2 { margin: 0 0 16px; color: #1e1b4b; display: flex; align-items: center; gap: 10px; }
+        .card { background: var(--mp-surface); border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .card h2 { margin: 0 0 16px; color: var(--mp-text); display: flex; align-items: center; gap: 10px; }
         
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 20px; }
-        .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .stat-card { background: var(--mp-surface); border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
         .stat-card .num { font-size: 2em; font-weight: 800; }
-        .stat-card .label { color: #64748b; font-size: 0.85em; }
-        .stat-card.total { border-left: 4px solid #4f46e5; }
-        .stat-card.available { border-left: 4px solid #10b981; }
-        .stat-card.assigned { border-left: 4px solid #f59e0b; }
-        .stat-card.maintenance { border-left: 4px solid #ef4444; }
+        .stat-card .label { color: var(--mp-text-faint); font-size: 0.85em; }
+        .stat-card.total { border-left: 4px solid var(--mp-accent); }
+        .stat-card.available { border-left: 4px solid var(--mp-ok); }
+        .stat-card.assigned { border-left: 4px solid var(--mp-warn); }
+        .stat-card.maintenance { border-left: 4px solid var(--mp-danger); }
         
         .filter-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-        .filter-bar select, .filter-bar input { padding: 8px 14px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9em; }
-        .filter-bar button { padding: 8px 16px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .filter-bar select, .filter-bar input { padding: 8px 14px; border: 2px solid var(--mp-border); border-radius: 8px; font-size: 0.9em; }
+        .filter-bar button { padding: 8px 16px; background: var(--mp-accent); color: white; border: none; border-radius: 8px; cursor: pointer; }
         
         .btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
-        .btn-primary { background: #4f46e5; color: white; }
-        .btn-success { background: #10b981; color: white; }
-        .btn-danger { background: #ef4444; color: white; }
+        .btn-primary { background: var(--mp-accent); color: white; }
+        .btn-success { background: var(--mp-ok); color: white; }
+        .btn-danger { background: var(--mp-danger); color: white; }
         .btn-sm { padding: 6px 12px; font-size: 0.85em; }
         
         table { width: 100%; border-collapse: collapse; }
-        th { background: #f8fafc; padding: 12px; text-align: left; font-size: 0.8em; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
-        tr:hover { background: #fafbfe; }
+        th { background: var(--mp-bg); padding: 12px; text-align: left; font-size: 0.8em; text-transform: uppercase; color: var(--mp-text-faint); border-bottom: 2px solid var(--mp-border); }
+        td { padding: 12px; border-bottom: 1px solid var(--mp-surface-alt); }
+        tr:hover { background: var(--mp-bg); }
         
         .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: 600; }
-        .badge-available { background: #d1fae5; color: #065f46; }
-        .badge-assigned { background: #fef3c7; color: #92400e; }
-        .badge-maintenance { background: #fee2e2; color: #991b1b; }
-        .badge-broken { background: #991b1b; color: white; }
+        .badge-available { background: var(--mp-ok-soft); color: var(--mp-ok); }
+        .badge-assigned { background: var(--mp-warn-soft); color: var(--mp-warn); }
+        .badge-maintenance { background: var(--mp-danger-soft); color: var(--mp-danger); }
+        .badge-broken { background: var(--mp-danger); color: white; }
         
         .back-link { color: rgba(255,255,255,0.8); text-decoration: none; }
         .back-link:hover { color: white; }
         
-        .toast { position: fixed; bottom: 24px; right: 24px; background: #059669; color: white; padding: 14px 24px; border-radius: 12px; display: none; z-index: 1000; }
+        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--mp-ok); color: white; padding: 14px 24px; border-radius: 12px; display: none; z-index: 1000; }
         
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; }
         .modal.active { display: flex; }
-        .modal-content { background: white; border-radius: 16px; padding: 24px; max-width: 500px; width: 90%; }
+        .modal-content { background: var(--mp-surface); border-radius: 16px; padding: 24px; max-width: 500px; width: 90%; }
         .modal h3 { margin: 0 0 16px; }
         .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-weight: 600; color: #475569; margin-bottom: 6px; font-size: 0.9em; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; }
+        .form-group label { display: block; font-weight: 600; color: var(--mp-text-soft); margin-bottom: 6px; font-size: 0.9em; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 2px solid var(--mp-border); border-radius: 8px; box-sizing: border-box; }
         .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
         
         @media print {
@@ -183,7 +184,7 @@
                     </tr>
                 </thead>
                 <tbody id="devicesTableBody">
-                    <tr><td colspan="7" style="text-align:center; color:#64748b;">Cargando...</td></tr>
+                    <tr><td colspan="7" style="text-align:center; color:var(--mp-text-faint);">Cargando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -245,7 +246,7 @@
                     <input type="text" id="notes" placeholder="Ej: Estudiante 1">
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn" style="background:#e2e8f0;" onclick="closeModal()">Cancelar</button>
+                    <button type="button" class="btn" style="background:var(--mp-border);" onclick="closeModal()">Cancelar</button>
                     <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar</button>
                 </div>
             </form>
@@ -260,7 +261,7 @@
         function showToast(msg, isError) {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
-            toast.style.background = isError ? '#ef4444' : '#10b981';
+            toast.style.background = isError ? 'var(--mp-danger)' : 'var(--mp-ok)';
             toast.style.display = 'block';
             setTimeout(() => toast.style.display = 'none', 3000);
         }
@@ -281,7 +282,7 @@
                 
                 if (!result.success || !result.devices.length) {
                     document.getElementById('devicesTableBody').innerHTML = 
-                        '<tr><td colspan="7" style="text-align:center; color:#64748b;">No hay equipos registrados</td></tr>';
+                        '<tr><td colspan="7" style="text-align:center; color:var(--mp-text-faint);">No hay equipos registrados</td></tr>';
                     updateStats([]);
                     return;
                 }
