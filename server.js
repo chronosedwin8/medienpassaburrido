@@ -11,6 +11,9 @@ const { part2Competencies } = require('./training_competencies');
 const defaultAgentTools = require('./default_agent_tools');
 const { generateInstrumentAI, getAIStatus } = require('./services/ai_service');
 const instrumentStore = require('./services/instrument_store');
+const questions = require('./services/questions');
+const compression = require('compression');
+const jsonstore = require('./services/jsonstore');
 const appConfig = require('./services/config');
 const session = require('./services/session');
 const auth = require('./services/auth');
@@ -67,7 +70,7 @@ if (!fs.existsSync(localCacheFile)) {
 function readLocalCache() {
     try {
         if (fs.existsSync(localCacheFile)) {
-            return JSON.parse(fs.readFileSync(localCacheFile, 'utf8'));
+            return jsonstore.read(localCacheFile, {});
         }
     } catch (e) {
         // JSON corrupto: NO devolver {} para que luego se sobrescriba a ciegas.
@@ -109,7 +112,7 @@ if (!fs.existsSync(challengeToolsFile)) {
 function readChallengeToolsConfig() {
     try {
         if (fs.existsSync(challengeToolsFile)) {
-            return JSON.parse(fs.readFileSync(challengeToolsFile, 'utf8'));
+            return jsonstore.read(challengeToolsFile, {});
         }
     } catch (e) {
         console.error('Error reading challenge tools config:', e);
@@ -178,7 +181,23 @@ function slimActivities(resolvedByLevel) {
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-app.use(express.static(path.join(__dirname, 'public')));
+// Compresion: el panel del estudiante son ~114 KB de HTML que viajaban sin
+// comprimir. En la wifi de un colegio eso se nota en cada carga.
+app.use(compression({ threshold: 1024 }));
+
+// Estaticos con cache real. Antes se servian con max-age=0, asi que cada CSS,
+// cada JS y cada PDF (hay 22 MB) se revalidaba en todas las visitas.
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
+    etag: true,
+    lastModified: true,
+    setHeaders(res, filePath) {
+        // Los PDF del material cambian muy poco y pesan mucho.
+        if (filePath.endsWith('.pdf')) {
+            res.setHeader('Cache-Control', 'public, max-age=2592000');
+        }
+    }
+}));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
@@ -449,8 +468,8 @@ app.get('/', requireLogin, async (req, res) => {
     let subjectConfig = {};
     const configPath = path.join(__dirname, 'subject_config.json');
     try {
-        if (fs.existsSync(configPath)) {
-            subjectConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        {
+            subjectConfig = jsonstore.read(configPath, {});
         }
     } catch (e) { /* no config yet */ }
     const studentClass = res.locals.student.class_name; // e.g. "4A"
@@ -461,7 +480,7 @@ app.get('/', requireLogin, async (req, res) => {
     const levelConfigPath = path.join(__dirname, 'level_config.json');
     try {
         if (fs.existsSync(levelConfigPath)) {
-            const allLevelConfig = JSON.parse(fs.readFileSync(levelConfigPath, 'utf8'));
+            const allLevelConfig = jsonstore.read(levelConfigPath, {});
             levelConfig = allLevelConfig[studentClass] || {};
         }
     } catch (e) { /* no config yet */ }
@@ -575,7 +594,7 @@ app.get('/profile', requireLogin, (req, res) => {
     try {
         const configPath = require('path').join(__dirname, 'class_teacher_config.json');
         if (require('fs').existsSync(configPath)) {
-            const allConfig = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+            const allConfig = jsonstore.read(configPath, {});
             const rawConfig = allConfig[res.locals.student.class_name] || {};
             // Format each teacher name to "Primer Nombre Primer Apellido"
             for (let subj in rawConfig) {
@@ -618,15 +637,24 @@ app.get('/activity/:year/:id', requireLogin, (req, res) => {
     }
     if (!activity) return res.status(404).send('Activity not found');
     const resolvedActivity = getActivityForClass(activity, res.locals.student.class_name);
-    
+
+    // Las preguntas que guarda el docente (a mano o generadas con IA) tienen
+    // prioridad sobre las de data.js. Hasta ahora se escribian en
+    // data/custom_instruments.json y ninguna ruta de estudiante las leia: el
+    // editor del docente no llegaba nunca al aula.
+    const resueltas = questions.paraEstudiante(resolvedActivity, res.locals.student.class_name);
+    resolvedActivity.evidence = resueltas.questions;
+
     const challengeToolsConfig = readChallengeToolsConfig();
-    res.render('activity', { 
-        activity: resolvedActivity, 
-        student: res.locals.student, 
-        currentYear: year, 
+    res.render('activity', {
+        activity: resolvedActivity,
+        student: res.locals.student,
+        currentYear: year,
         section: resolvedActivity.subject || 'medienpass',
         challengeToolsConfig,
-        defaultAgentTools
+        defaultAgentTools,
+        questionSource: resueltas.source,
+        questionsUpdatedAt: resueltas.updatedAt || null
     });
 });
 
@@ -1245,7 +1273,7 @@ app.get('/api/admin/subject-config', requireAdmin, (req, res) => {
     const configPath = path.join(__dirname, 'subject_config.json');
     try {
         if (fs.existsSync(configPath)) {
-            const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            const data = jsonstore.read(configPath, {});
             return res.json({ success: true, config: data });
         }
         return res.json({ success: true, config: {} });
@@ -1272,7 +1300,7 @@ app.get('/api/admin/level-config', requireAdmin, (req, res) => {
     const configPath = path.join(__dirname, 'level_config.json');
     try {
         if (fs.existsSync(configPath)) {
-            const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            const data = jsonstore.read(configPath, {});
             return res.json({ success: true, config: data });
         }
         return res.json({ success: true, config: {} });
@@ -1348,7 +1376,7 @@ app.get('/api/admin/teacher-roles', requirePerm('admin:users'), (req, res) => {
     const rolesPath = path.join(__dirname, 'data', 'teacher_roles.json');
     try {
         if (fs.existsSync(rolesPath)) {
-            const data = JSON.parse(fs.readFileSync(rolesPath, 'utf8'));
+            const data = jsonstore.read(rolesPath, {});
             return res.json({ success: true, roles: data });
         }
         return res.json({ success: true, roles: {} });
@@ -1364,7 +1392,7 @@ app.post('/api/admin/teacher-roles', requirePerm('admin:users'), async (req, res
     try {
         let currentRoles = {};
         if (fs.existsSync(rolesPath)) {
-            currentRoles = JSON.parse(fs.readFileSync(rolesPath, 'utf8'));
+            currentRoles = jsonstore.read(rolesPath, {});
         }
         const lowerEmail = (email || '').trim().toLowerCase();
         if (lowerEmail) {
@@ -1387,7 +1415,7 @@ app.get('/api/admin/teacher-mapping', requireAdmin, (req, res) => {
     const configPath = path.join(__dirname, 'class_teacher_config.json');
     try {
         if (fs.existsSync(configPath)) {
-            const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            const data = jsonstore.read(configPath, {});
             return res.json({ success: true, config: data });
         }
         return res.json({ success: true, config: {} });
@@ -1423,11 +1451,20 @@ app.get('/admin/executive', requireAdmin, (req, res) => {
 app.get('/api/admin/kpis', requireAdmin, async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
-        const { data: students } = await supabase.from('students').select('id, class_name');
-        const { data: teachers } = await supabase.from('teachers').select('*');
-        const { data: responses } = await supabase.from('activity_responses').select('*');
-        const { data: incidents } = await supabase.from('incidents').select('*');
-        const { data: devices } = await supabase.from('devices').select('*');
+        // Cinco consultas en paralelo, cada una pidiendo solo las columnas que
+        // se usan mas abajo. Antes iban en serie y `activity_responses` traia
+        // select('*'): 0,67 MB (incluidas las fotos en base64 del campo data)
+        // para acabar contando identificadores unicos.
+        const [
+            { data: students }, { data: teachers }, { data: responses },
+            { data: incidents }, { data: devices }
+        ] = await Promise.all([
+            supabase.from('students').select('id, class_name'),
+            supabase.from('teachers').select('id, training_completed'),
+            supabase.from('activity_responses').select('student_id'),
+            supabase.from('incidents').select('status'),
+            supabase.from('devices').select('id')
+        ]);
 
         const totalStudents = students?.length || 0;
         const totalTeachers = teachers?.length || 0;
@@ -1462,21 +1499,30 @@ app.get('/api/admin/progress-by-klasse', requireAdmin, async (req, res) => {
     try {
         const year = req.query.year || '2627';
         const { data: students } = await supabase.from('students').select('id, class_name');
-        const { data: responses } = await supabase.from('activity_responses').select('*').eq('school_year', year);
+        // Solo se usa student_id: pedir select('*') traia ademas el JSONB con
+        // las respuestas completas (fotos incluidas) para acabar contando.
+        const { data: responses } = await supabase
+            .from('activity_responses').select('student_id').eq('school_year', year);
+
+        // Un unico recorrido en lugar de re-filtrar todas las respuestas para
+        // cada uno de los 44 cursos con Array.includes().
+        const activos = new Set((responses || []).map(r => r.student_id));
+        const porCurso = new Map();
+        (students || []).forEach(st => {
+            if (!porCurso.has(st.class_name)) porCurso.set(st.class_name, { total: 0, activos: 0 });
+            const c = porCurso.get(st.class_name);
+            c.total++;
+            if (activos.has(st.id)) c.activos++;
+        });
 
         const klasseStats = {};
         klassenConfig.klassen.forEach(k => {
             klassenConfig.kurse.forEach(kurs => {
                 const className = k + kurs;
-                const classStudents = students?.filter(s => s.class_name === className) || [];
-                const studentIds = classStudents.map(s => s.id);
-                const activeStudents = new Set(
-                    responses?.filter(r => studentIds.includes(r.student_id)).map(r => r.student_id) || []
-                ).size;
-                const progress = classStudents.length > 0 
-                    ? Math.round((activeStudents / classStudents.length) * 100) 
+                const c = porCurso.get(className);
+                klasseStats[className] = (c && c.total > 0)
+                    ? Math.round((c.activos / c.total) * 100)
                     : 0;
-                klasseStats[className] = progress;
             });
         });
 
@@ -1492,7 +1538,9 @@ app.get('/api/admin/progress-by-subject', requireAdmin, async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const year = req.query.year || '2627';
-        const { data: responses } = await supabase.from('activity_responses').select('*').eq('school_year', year);
+        // Solo se usa activity_id para contar por asignatura.
+        const { data: responses } = await supabase
+            .from('activity_responses').select('activity_id').eq('school_year', year);
 
         const subjectCounts = {};
         subjects.forEach(s => subjectCounts[s.id] = 0);
@@ -1575,7 +1623,7 @@ app.get('/api/admin/pending-teachers', requireAdmin, (req, res) => {
     try {
         let pending = [];
         if (fs.existsSync(pendingTeachersFile)) {
-            pending = JSON.parse(fs.readFileSync(pendingTeachersFile, 'utf8'));
+            pending = jsonstore.read(pendingTeachersFile, {});
         }
         return res.json({ success: true, pending });
     } catch(e) {
@@ -1587,7 +1635,7 @@ app.post('/api/admin/approve-teacher/:id', requirePerm('admin:teachers'), async 
     try {
         let pending = [];
         if (fs.existsSync(pendingTeachersFile)) {
-            pending = JSON.parse(fs.readFileSync(pendingTeachersFile, 'utf8'));
+            pending = jsonstore.read(pendingTeachersFile, {});
         }
         const idx = pending.findIndex(p => p.id === req.params.id);
         if (idx === -1) return res.json({ success: false, message: 'Solicitud no encontrada' });
@@ -1626,7 +1674,7 @@ app.post('/api/admin/reject-teacher/:id', requirePerm('admin:teachers'), async (
     try {
         let pending = [];
         if (fs.existsSync(pendingTeachersFile)) {
-            pending = JSON.parse(fs.readFileSync(pendingTeachersFile, 'utf8'));
+            pending = jsonstore.read(pendingTeachersFile, {});
         }
         pending = pending.filter(p => p.id !== req.params.id);
         await _enqueue(pendingTeachersFile, () => _writeJsonAtomic(pendingTeachersFile, pending));
@@ -1804,7 +1852,7 @@ app.post('/api/teacher/register', async (req, res) => {
         }
         
         let pending = [];
-        try { pending = JSON.parse(fs.readFileSync(pendingTeachersFile, 'utf8')); } catch(e) {}
+        try { pending = jsonstore.read(pendingTeachersFile, {}); } catch(e) {}
         
         if (pending.find(p => p.doc_number === doc_number || p.email === email)) {
             return res.json({ success: false, message: 'Ya existe una solicitud pendiente para este documento o correo.' });
@@ -2011,13 +2059,34 @@ app.get('/api/instruments/:grade/:subject/:reto', requireTeacher, (req, res) => 
     return res.json({ success: true, custom: false, data: null });
 });
 
+// Catalogo de tipos de pregunta, para que el editor del docente los ofrezca
+// en vez de tenerlos escritos a mano en la plantilla.
+app.get('/api/instruments/question-types', requireTeacher, (req, res) => {
+    return res.json({ success: true, types: questions.catalogo() });
+});
+
 app.post('/api/instruments/save', requireTeacher, (req, res) => {
-    const { grade, subject, reto, mode, questions } = req.body;
-    if (!grade || !subject || !reto || !questions) {
+    const { grade, subject, reto, mode, questions: preguntas } = req.body;
+    if (!grade || !subject || !reto || !preguntas) {
         return res.status(400).json({ success: false, error: 'Datos incompletos.' });
     }
-    const saved = instrumentStore.saveCustomInstrument(grade, subject, reto, mode, questions);
-    return res.json({ success: true, saved });
+
+    // Se valida ANTES de guardar: hasta ahora se aceptaba cualquier cosa y el
+    // error aparecia al abrir la actividad, ya en clase y del lado del alumno.
+    const revision = questions.validarInstrumento(preguntas);
+    if (!revision.valido) {
+        return res.status(400).json({
+            success: false,
+            error: 'El instrumento tiene errores y no se guardo.',
+            errores: revision.errores
+        });
+    }
+
+    // Se guarda normalizado, de modo que el estudiante siempre recibe preguntas
+    // con la misma forma vengan del editor, de la IA o de una importacion.
+    const normalizadas = questions.normalizarLista(preguntas);
+    const saved = instrumentStore.saveCustomInstrument(grade, subject, reto, mode, normalizadas);
+    return res.json({ success: true, saved, total: normalizadas.length });
 });
 
 app.post('/api/instruments/reset', requireTeacher, (req, res) => {
@@ -2481,7 +2550,8 @@ app.get('/api/admin/reto0-stats', requireAdmin, async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const { data: students } = await supabase.from('students').select('id, class_name');
-        const { data: responses } = await supabase.from('activity_responses').select('*').eq('activity_id', 'profile');
+        const { data: responses } = await supabase
+            .from('activity_responses').select('student_id, data').eq('activity_id', 'profile');
         
         if (!responses || !students) return res.json({ success: true, stats: {} });
 
@@ -2503,41 +2573,41 @@ app.get('/api/admin/reto0-stats', requireAdmin, async (req, res) => {
             };
         });
 
-        // Question analysis (eval_q1 to eval_q20)
-        const questions = [];
-        const correctOptions = {
-            eval_q1: "1", eval_q2: "0", eval_q3: "1", eval_q4: "2", eval_q5: "1",
-            eval_q6: "1", eval_q7: "0", eval_q8: "1", eval_q9: "0", eval_q10: "0",
-            eval_q11: "1", eval_q12: "1", eval_q13: "0", eval_q14: "1", eval_q15: "1",
-            eval_q16: "0", eval_q17: "1", eval_q18: "0", eval_q19: "1", eval_q20: "1"
-        };
+        // La clave de respuestas y el umbral estaban incrustados aqui, donde
+        // ningun docente podia revisarlos. Ahora viven en config/reto0_evaluacion.json.
+        const evalConfig = jsonstore.read(
+            path.join(__dirname, 'config', 'reto0_evaluacion.json'),
+            { umbralAprobacion: 16, respuestasCorrectas: {} }
+        );
+        const correctOptions = evalConfig.respuestasCorrectas || {};
+        const umbral = evalConfig.umbralAprobacion || 16;
+        const questionIds = Object.keys(correctOptions);
 
+        // Un solo recorrido en lugar de 21 (uno para aprobados + uno por pregunta).
+        const answered = new Map(questionIds.map(q => [q, 0]));
         let totalPassing = 0;
+
         responses.forEach(r => {
+            const data = r.data;
+            if (!data) return;
             let correctCount = 0;
-            for (let i = 1; i <= 20; i++) {
-                const qId = 'eval_q' + i;
-                if (r.data && String(r.data[qId]) === correctOptions[qId]) {
-                    correctCount++;
+            for (const qId of questionIds) {
+                const value = data[qId];
+                if (value != null) {
+                    answered.set(qId, answered.get(qId) + 1);
+                    if (String(value) === correctOptions[qId]) correctCount++;
                 }
             }
-            if (correctCount >= 16) totalPassing++;
+            if (correctCount >= umbral) totalPassing++;
         });
 
         const passingPct = totalStudents > 0 ? Math.round((totalPassing / totalStudents) * 100) : 0;
 
-        for (let i = 1; i <= 20; i++) {
-            const qId = 'eval_q' + i;
-            let answeredCount = 0;
-            responses.forEach(r => {
-                if (r.data && r.data[qId] != null) answeredCount++;
-            });
-            questions.push({
-                id: qId,
-                answered: answeredCount,
-                pct: completedCount > 0 ? Math.round((answeredCount / completedCount) * 100) : 0
-            });
-        }
+        const questions = questionIds.map(qId => ({
+            id: qId,
+            answered: answered.get(qId),
+            pct: completedCount > 0 ? Math.round((answered.get(qId) / completedCount) * 100) : 0
+        }));
 
         return res.json({
             success: true,

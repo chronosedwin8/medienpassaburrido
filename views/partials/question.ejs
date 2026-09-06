@@ -1,0 +1,120 @@
+<%
+/**
+ * question.ejs — Renderiza UNA pregunta para el estudiante.
+ *
+ * Antes cada tipo estaba escrito a mano dentro de activity.ejs y solo existían
+ * tres (`text`, `textarea`, `radio_group`). Añadir uno obligaba a tocar la
+ * plantilla del estudiante y la del docente por separado, y era fácil que
+ * quedaran distintas.
+ *
+ * Variables: q (pregunta normalizada), idx (posición), lang, value (respuesta previa)
+ */
+const idx0    = typeof idx !== 'undefined' ? idx : 0;
+const L       = typeof lang !== 'undefined' ? lang : 'es';
+const previa  = typeof value !== 'undefined' && value !== null ? value : '';
+const texto   = (obj) => (obj && (obj[L] || obj.es || obj.de || obj.en)) || '';
+const enunciado = texto(q.label);
+const ayuda     = texto(q.hint);
+// En alemán e inglés se muestra el español debajo como apoyo, que es la regla
+// pedagógica del colegio.
+const apoyo = (L !== 'es' && q.label && q.label.es && q.label.es !== enunciado) ? q.label.es : '';
+const marcadas = Array.isArray(previa) ? previa.map(String) : [String(previa)];
+%>
+
+<fieldset class="mp-question" id="wrap-<%= q.id %>" data-qid="<%= q.id %>" data-qtype="<%= q.type %>">
+    <legend class="mp-question__head">
+        <span class="mp-question__num"><%= idx0 + 1 %></span>
+        <span class="mp-question__label">
+            <%= enunciado %><% if (q.required) { %><span class="mp-question__req" aria-hidden="true"> *</span><% } %>
+            <% if (apoyo) { %><span class="mp-question__support"><%= apoyo %></span><% } %>
+        </span>
+    </legend>
+
+    <div class="mp-question__body">
+    <% if (q.type === 'text') { %>
+        <input class="mp-input" type="text" id="<%= q.id %>" name="<%= q.id %>"
+               value="<%= previa %>" <%= q.required ? 'required' : '' %>
+               autocomplete="off">
+
+    <% } else if (q.type === 'textarea') { %>
+        <textarea class="mp-textarea" id="<%= q.id %>" name="<%= q.id %>"
+                  rows="<%= q.rows || 3 %>" <%= q.required ? 'required' : '' %>><%= previa %></textarea>
+
+    <% } else if (q.type === 'number') { %>
+        <input class="mp-input" type="number" id="<%= q.id %>" name="<%= q.id %>"
+               value="<%= previa %>" inputmode="numeric"
+               <%= q.min !== undefined ? 'min=' + q.min : '' %>
+               <%= q.max !== undefined ? 'max=' + q.max : '' %>
+               <%= q.required ? 'required' : '' %>>
+
+    <% } else if (q.type === 'date') { %>
+        <input class="mp-input" type="date" id="<%= q.id %>" name="<%= q.id %>"
+               value="<%= previa %>" <%= q.required ? 'required' : '' %>>
+
+    <% } else if (q.type === 'select') { %>
+        <select class="mp-select" id="<%= q.id %>" name="<%= q.id %>" <%= q.required ? 'required' : '' %>>
+            <option value="">—</option>
+            <% q.options.forEach(function (o) { %>
+                <option value="<%= o.value %>" <%= marcadas.includes(String(o.value)) ? 'selected' : '' %>><%= texto(o) %></option>
+            <% }); %>
+        </select>
+
+    <% } else if (q.type === 'scale') { %>
+        <%
+        const min = q.min !== undefined ? q.min : 1;
+        const max = q.max !== undefined ? q.max : 5;
+        %>
+        <div class="mp-scale" role="radiogroup" aria-label="<%= enunciado %>">
+            <% for (let n = min; n <= max; n++) { %>
+                <label class="mp-scale__item">
+                    <input type="radio" name="<%= q.id %>" value="<%= n %>"
+                           <%= marcadas.includes(String(n)) ? 'checked' : '' %>>
+                    <span class="mp-scale__dot"><%= n %></span>
+                </label>
+            <% } %>
+        </div>
+
+    <% } else if (q.type === 'ordering') { %>
+        <p class="mp-help">Numera del 1 al <%= q.options.length %> en el orden correcto.</p>
+        <ol class="mp-order" id="order-<%= q.id %>">
+            <% q.options.forEach(function (o, i) { %>
+                <li class="mp-order__item">
+                    <input class="mp-input mp-order__pos" type="number" min="1" max="<%= q.options.length %>"
+                           name="<%= q.id %>__<%= o.value %>" aria-label="Posición de <%= texto(o) %>"
+                           value="<%= (previa && previa[o.value]) || '' %>">
+                    <span><%= texto(o) %></span>
+                </li>
+            <% }); %>
+        </ol>
+
+    <% } else if (q.options && q.options.length) { %>
+        <%
+        // radio_group, checkbox_group y true_false comparten la misma lista.
+        const multiple = q.type === 'checkbox_group';
+        const inputType = multiple ? 'checkbox' : 'radio';
+        %>
+        <div class="mp-choices" role="<%= multiple ? 'group' : 'radiogroup' %>" aria-label="<%= enunciado %>">
+            <% q.options.forEach(function (o, i) { %>
+                <label class="mp-choice">
+                    <input type="<%= inputType %>"
+                           name="<%= multiple ? q.id + '[]' : q.id %>"
+                           id="<%= q.id %>_<%= i %>"
+                           value="<%= o.value %>"
+                           <%= marcadas.includes(String(o.value)) ? 'checked' : '' %>>
+                    <span><%= texto(o) %></span>
+                </label>
+            <% }); %>
+        </div>
+        <% if (multiple) { %>
+            <p class="mp-help">Puedes marcar varias respuestas.</p>
+        <% } %>
+
+    <% } else { %>
+        <textarea class="mp-textarea" id="<%= q.id %>" name="<%= q.id %>" rows="3"><%= previa %></textarea>
+    <% } %>
+    </div>
+
+    <% if (ayuda) { %>
+        <p class="mp-question__hint"><%= ayuda %></p>
+    <% } %>
+</fieldset>

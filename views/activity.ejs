@@ -687,7 +687,7 @@
         <% if (item.id.startsWith('eval_q')) { %>
             <div class="form-group">
                 <% item.options.forEach((opt, optIdx) => { %>
-                    <input type="radio" id="<%= item.id %>_<%= optIdx %>" name="<%= item.id %>" value="<%= opt.val !== undefined ? opt.val : optIdx %>" data-correct="<%= opt.correct ? 'true' : 'false' %>">
+                    <input type="radio" id="<%= item.id %>_<%= optIdx %>" name="<%= item.id %>" value="<%= opt.value !== undefined ? opt.value : (opt.val !== undefined ? opt.val : optIdx) %>" data-correct="<%= opt.correct ? 'true' : 'false' %>">
                 <% }) %>
             </div>
         <% } %>
@@ -846,14 +846,76 @@
                                                     <input type="text" id="<%= item.id %>" name="<%= item.id %>" data-i18n-placeholder="answerPlaceholder" placeholder="Deine Antwort hier...">
                                                 <% } else if (item.type === 'textarea') { %>
                                                     <textarea id="<%= item.id %>" name="<%= item.id %>" rows="<%= item.rows || 3 %>" data-i18n-placeholder="answerPlaceholder" placeholder="Deine Antwort hier..."></textarea>
-                                                <% } else if (item.type === 'radio_group') { %>
+                                                <% } else if (item.type === 'number') { %>
+                                                    <input type="number" id="<%= item.id %>" name="<%= item.id %>" inputmode="numeric"
+                                                           <%= item.min !== undefined ? 'min=' + item.min : '' %>
+                                                           <%= item.max !== undefined ? 'max=' + item.max : '' %>
+                                                           onchange="if(typeof updateStarSummary === 'function') updateStarSummary()">
+                                                <% } else if (item.type === 'date') { %>
+                                                    <input type="date" id="<%= item.id %>" name="<%= item.id %>"
+                                                           onchange="if(typeof updateStarSummary === 'function') updateStarSummary()">
+                                                <% } else if (item.type === 'scale') { %>
+                                                    <%
+                                                       const escMin = item.min !== undefined ? item.min : 1;
+                                                       const escMax = item.max !== undefined ? item.max : 5;
+                                                    %>
+                                                    <div class="mp-scale" role="radiogroup" id="group_<%= item.id %>">
+                                                        <% for (let n = escMin; n <= escMax; n++) { %>
+                                                            <label class="mp-scale__item">
+                                                                <input type="radio" name="<%= item.id %>" value="<%= n %>"
+                                                                       onchange="if(typeof updateStarSummary === 'function') updateStarSummary()">
+                                                                <span class="mp-scale__dot"><%= n %></span>
+                                                            </label>
+                                                        <% } %>
+                                                    </div>
+                                                <% } else if (item.type === 'select') { %>
+                                                    <select id="<%= item.id %>" name="<%= item.id %>" class="mp-select"
+                                                            onchange="if(typeof updateStarSummary === 'function') updateStarSummary()">
+                                                        <option value="">-</option>
+                                                        <% (item.options || []).forEach((opt, optIdx) => { %>
+                                                            <option value="<%= opt.value !== undefined ? opt.value : optIdx %>"
+                                                                    data-correct="<%= opt.correct ? 'true' : 'false' %>"><%= opt.de || opt.es || opt %></option>
+                                                        <% }) %>
+                                                    </select>
+                                                <% } else if (item.type === 'ordering') { %>
+                                                    <ol class="mp-order" id="group_<%= item.id %>">
+                                                        <% (item.options || []).forEach((opt, optIdx) => { %>
+                                                            <li class="mp-order__item">
+                                                                <input class="mp-order__pos" type="number" min="1" max="<%= (item.options||[]).length %>"
+                                                                       name="<%= item.id %>__<%= opt.value !== undefined ? opt.value : optIdx %>"
+                                                                       aria-label="Posicion"
+                                                                       onchange="if(typeof updateStarSummary === 'function') updateStarSummary()">
+                                                                <span class="lang-line lang-primary"><%= opt.de || opt.es || opt %></span>
+                                                            </li>
+                                                        <% }) %>
+                                                    </ol>
+                                                <% } else if (item.type === 'checkbox_group') { %>
+                                                    <div class="radio-group" id="group_<%= item.id %>">
+                                                        <% (item.options || []).forEach((opt, optIdx) => {
+                                                            const safeId = item.id + '_' + optIdx;
+                                                            const optLabel = (typeof opt === 'object') ? (opt.label || opt) : opt;
+                                                        %>
+                                                            <div class="radio-item" style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                                                                <input type="checkbox" id="<%= safeId %>" name="<%= item.id %>[]"
+                                                                       value="<%= opt.value !== undefined ? opt.value : optIdx %>"
+                                                                       data-correct="<%= opt.correct ? 'true' : 'false' %>"
+                                                                       onchange="if(typeof updateStarSummary === 'function') updateStarSummary()"
+                                                                       style="cursor:pointer; width:18px; height:18px;">
+                                                                <label for="<%= safeId %>" style="display:inline; font-weight:normal; cursor:pointer; margin:0;">
+                                                                    <span class="lang-line lang-primary"><%= (typeof opt === 'object') ? (optLabel.de || optLabel.es || '') : opt %></span>
+                                                                </label>
+                                                            </div>
+                                                        <% }) %>
+                                                    </div>
+                                                    <p style="font-size:.85em; color:#64748b; margin-top:6px;">Puedes marcar varias respuestas.</p>
+                                                <% } else if (item.type === 'radio_group' || item.type === 'true_false') { %>
                                                     <div class="radio-group" id="group_<%= item.id %>">
                                                         <% item.options.forEach((opt, optIdx) => {
                                                             const safeId = item.id + '_' + optIdx;
                                                             const optLabel = (typeof opt === 'object') ? (opt.label || opt) : opt;
                                                             %>
                                                             <div class="radio-item" style="margin-bottom:8px; display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="document.getElementById('<%= safeId %>').checked = true; if(typeof updateStarSummary === 'function') updateStarSummary();">
-                                                                <input type="radio" id="<%= safeId %>" name="<%= item.id %>" value="<%= opt.val !== undefined ? opt.val : optIdx %>" data-correct="<%= opt.correct ? 'true' : 'false' %>" onchange="if(typeof updateStarSummary === 'function') updateStarSummary()" style="cursor:pointer; width:18px; height:18px;">
+                                                                <input type="radio" id="<%= safeId %>" name="<%= item.id %>" value="<%= opt.value !== undefined ? opt.value : (opt.val !== undefined ? opt.val : optIdx) %>" data-correct="<%= opt.correct ? 'true' : 'false' %>" onchange="if(typeof updateStarSummary === 'function') updateStarSummary()" style="cursor:pointer; width:18px; height:18px;">
                                                                 <label for="<%= safeId %>" style="display:inline; font-weight:normal; cursor:pointer; margin:0;" <% if (typeof opt === 'object') { %> data-lang-content="<%- JSON.stringify(optLabel).replace(/"/g, '&quot;') %>" <% } %>>
                                                                     <% if (typeof opt === 'object') { %>
                                                                         <span class="lang-line lang-primary">
@@ -868,7 +930,8 @@
                                                     </div>
                                                 <% } %>
 
-                                                <% if (item.hint) { %>
+                                                <% const _hintTxt = item.hint && (item.hint.de || item.hint.es || item.hint.en || (typeof item.hint === 'string' ? item.hint : '')); %>
+                                                <% if (_hintTxt) { %>
                                                     <div class="question-hint-box" style="margin-top: 8px; font-size: 0.85em; color: #475569; display: flex; align-items: start; gap: 6px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #f59e0b;">
                                                         <span style="font-size: 1.15em; line-height: 1.2;">💡</span>
                                                         <span class="lang-line lang-primary" data-lang-content="<%- JSON.stringify(item.hint).replace(/"/g, '&quot;') %>"><%= item.hint.de || item.hint.es || '' %></span>

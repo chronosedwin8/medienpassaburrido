@@ -511,3 +511,95 @@ a:hover { text-decoration: underline; }
     body { background: #fff; }
     .mp-card { border: 1px solid #ddd; break-inside: avoid; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   13. Preguntas del estudiante
+   Estilos de los 10 tipos que renderiza partials/question.ejs
+   ═══════════════════════════════════════════════════════════ */
+
+.mp-question {
+    border: 1px solid var(--mp-border);
+    border-radius: var(--mp-radius);
+    background: var(--mp-surface);
+    padding: var(--mp-4);
+    margin: 0 0 var(--mp-4);
+}
+
+.mp-question__head {
+    display: flex; align-items: flex-start; gap: var(--mp-3);
+    padding: 0; margin-bottom: var(--mp-3);
+    width: 100%;
+}
+.mp-question__num {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: var(--mp-radius-sm);
+    background: var(--mp-surface-alt);
+    color: var(--mp-text-soft);
+    display: grid; place-items: center;
+    font-size: var(--mp-text-xs); font-weight: 600;
+}
+.mp-question__label {
+    font-weight: 500; line-height: 1.45;
+    color: var(--mp-text);
+}
+.mp-question__req { color: var(--mp-danger); }
+
+/* Apoyo en español bajo el enunciado en alemán o inglés */
+.mp-question__support {
+    display: block;
+    font-size: var(--mp-text-sm); font-weight: 400;
+    color: var(--mp-text-faint);
+    margin-top: 2px;
+}
+
+.mp-question__body { padding-left: calc(24px + var(--mp-3)); }
+
+.mp-question__hint {
+    margin: var(--mp-3) 0 0;
+    padding-left: calc(24px + var(--mp-3));
+    font-size: var(--mp-text-sm);
+    color: var(--mp-text-faint);
+}
+
+.mp-choices { display: flex; flex-direction: column; gap: var(--mp-2); }
+
+/* Escala 1–5: objetivos grandes, pensados para dedos y no para ratón */
+.mp-scale { display: flex; gap: var(--mp-2); flex-wrap: wrap; }
+.mp-scale__item { cursor: pointer; }
+.mp-scale__item input {
+    position: absolute; opacity: 0; width: 0; height: 0;
+}
+.mp-scale__dot {
+    display: grid; place-items: center;
+    width: var(--mp-tap); height: var(--mp-tap);
+    border: 1px solid var(--mp-border-strong);
+    border-radius: var(--mp-radius-sm);
+    background: var(--mp-surface);
+    font-weight: 600; color: var(--mp-text-soft);
+    transition: background var(--mp-transition), border-color var(--mp-transition), color var(--mp-transition);
+}
+.mp-scale__item:hover .mp-scale__dot { border-color: var(--mp-accent); }
+.mp-scale__item input:checked + .mp-scale__dot {
+    background: var(--mp-accent); border-color: var(--mp-accent);
+    color: var(--mp-accent-text);
+}
+.mp-scale__item input:focus-visible + .mp-scale__dot {
+    outline: 2px solid var(--mp-accent); outline-offset: 2px;
+}
+
+/* Ordenar */
+.mp-order { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mp-2); }
+.mp-order__item {
+    display: flex; align-items: center; gap: var(--mp-3);
+    padding: var(--mp-2) var(--mp-3);
+    border: 1px solid var(--mp-border);
+    border-radius: var(--mp-radius-sm);
+    background: var(--mp-surface);
+}
+.mp-order__pos { width: 72px; flex-shrink: 0; text-align: center; }
+
+@media (max-width: 640px) {
+    .mp-question__body,
+    .mp-question__hint { padding-left: 0; }
+}

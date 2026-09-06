@@ -1,0 +1,10 @@
+{
+  "_comentario": "Clave de respuestas del diagnostico del Reto 0. Estaba incrustada en el endpoint /api/admin/reto0-stats dentro de server.js, donde nadie podia revisarla ni corregirla sin tocar codigo.",
+  "umbralAprobacion": 16,
+  "respuestasCorrectas": {
+    "eval_q1": "1",  "eval_q2": "0",  "eval_q3": "1",  "eval_q4": "2",  "eval_q5": "1",
+    "eval_q6": "1",  "eval_q7": "0",  "eval_q8": "1",  "eval_q9": "0",  "eval_q10": "0",
+    "eval_q11": "1", "eval_q12": "1", "eval_q13": "0", "eval_q14": "1", "eval_q15": "1",
+    "eval_q16": "0", "eval_q17": "1", "eval_q18": "0", "eval_q19": "1", "eval_q20": "1"
+  }
+}

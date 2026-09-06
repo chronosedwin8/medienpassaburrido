@@ -127,9 +127,20 @@ ${instructionsBlock}
 TAREA
 Reescribe/reestructura las ${batch.length} preguntas que se listan a continuación aplicando las instrucciones del docente.
 Reglas obligatorias:
-1. Devuelve EXACTAMENTE ${batch.length} preguntas, en el mismo orden, conservando el mismo "id" y el mismo "type" de cada una.
+1. Devuelve EXACTAMENTE ${batch.length} preguntas, en el mismo orden, conservando el mismo "id" de cada una.
+1b. Puedes CAMBIAR el "type" de una pregunta si las instrucciones del docente lo piden o si otro formato evalua mejor. Tipos permitidos:
+   - "radio_group"    opcion unica (exactamente una opcion con "correct": true)
+   - "checkbox_group" opcion multiple (dos o mas opciones con "correct": true)
+   - "true_false"     verdadero/falso (dos opciones)
+   - "select"         lista desplegable
+   - "scale"          escala numerica; incluye "min" y "max" en vez de "options"
+   - "ordering"       ordenar; las "options" van EN EL ORDEN CORRECTO
+   - "number"         respuesta numerica; incluye "answer" con el valor correcto
+   - "date"           fecha
+   - "text"           respuesta corta, sin "options"
+   - "textarea"       respuesta larga, sin "options"
 2. Cada "label" y "hint" debe venir en los tres idiomas: es (español), de (alemán), en (inglés). Traducciones reales y coherentes entre sí.
-3. Si la pregunta original tiene opciones, devuelve la misma cantidad de opciones, cada una en los tres idiomas, con el prefijo "a) ", "b) ", "c) "... y EXACTAMENTE UNA con "correct": true.
+3. Las opciones van en los tres idiomas. En "radio_group", "true_false" y "select" marca EXACTAMENTE UNA con "correct": true; en "checkbox_group" marca DOS O MAS. Los tipos sin opciones no llevan "options".
 4. Si la pregunta original no tiene opciones (respuesta abierta), devuelve "options": [].
 5. Adapta el vocabulario y la complejidad al nivel de Klasse ${grade}.
 6. Las preguntas deben seguir evaluando la competencia digital del Reto ${retoNum}; no cambies el objetivo pedagógico, cambia el enfoque/redacción según las instrucciones.
@@ -143,7 +154,7 @@ Devuelve ÚNICAMENTE un arreglo JSON válido (sin markdown, sin explicaciones) c
 [
   {
     "id": "<mismo id original>",
-    "type": "<mismo type original>",
+    "type": "<uno de los tipos permitidos>",
     "label": { "es": "...", "de": "...", "en": "..." },
     "hint": { "es": "...", "de": "...", "en": "..." },
     "options": [
@@ -260,37 +271,65 @@ function normalizeQuestion(aiQ, baseQ, idx) {
     const normalized = {
         ...base,
         id: base.id || ai.id || `ai_q${idx + 1}_${Date.now()}`,
-        type: base.type || ai.type || 'radio_group',
+        // La IA puede proponer otro tipo (regla 1b del prompt); solo se cae al
+        // original si no manda ninguno.
+        type: ai.type || base.type || 'radio_group',
         label: toMultiLang(ai.label, base.label),
         hint: toMultiLang(ai.hint, base.hint)
     };
 
     const baseOptions = Array.isArray(base.options) ? base.options : [];
     const aiOptions = Array.isArray(ai.options) ? ai.options : [];
+    const tipo = normalized.type;
+
+    // Tipos que no llevan opciones: si la IA cambio a escala, numero o texto
+    // libre, arrastrar las opciones del original dejaria basura en la pregunta.
+    const SIN_OPCIONES = ['text', 'textarea', 'scale', 'number', 'date'];
+    if (SIN_OPCIONES.includes(tipo)) {
+        delete normalized.options;
+        if (tipo === 'scale') {
+            normalized.min = Number.isFinite(Number(ai.min)) ? Number(ai.min) : 1;
+            normalized.max = Number.isFinite(Number(ai.max)) ? Number(ai.max) : 5;
+        }
+        if (tipo === 'number' && ai.answer !== undefined) {
+            normalized.answer = Number(ai.answer);
+        }
+        return normalized;
+    }
 
     if (baseOptions.length === 0 && aiOptions.length === 0) {
         delete normalized.options;
         return normalized;
     }
 
-    // Se conserva la cantidad de opciones original cuando existe
-    const count = baseOptions.length || aiOptions.length;
+    // Si la IA cambio el tipo, manda SU numero de opciones: verdadero/falso son
+    // dos, y forzarlas a las tres del original produciria una pregunta absurda.
+    const cambioDeTipo = ai.type && base.type && ai.type !== base.type;
+    const count = (cambioDeTipo && aiOptions.length)
+        ? aiOptions.length
+        : (baseOptions.length || aiOptions.length);
+
     const options = [];
     for (let i = 0; i < count; i++) {
-        const baseOpt = baseOptions[i];
+        const baseOpt = cambioDeTipo ? null : baseOptions[i];
         const aiOpt = aiOptions[i];
         const merged = { ...(baseOpt || {}), ...toMultiLang(aiOpt, baseOpt) };
         merged.correct = aiOpt ? aiOpt.correct === true : (baseOpt && baseOpt.correct === true);
         options.push(merged);
     }
 
-    // Debe existir exactamente una opción correcta
+    // Cuantas respuestas correctas admite este tipo
+    const admiteVarias = tipo === 'checkbox_group';
     const correctIdxs = options.map((o, i) => o.correct ? i : -1).filter(i => i !== -1);
-    if (correctIdxs.length !== 1) {
+
+    if (admiteVarias) {
+        // Opcion multiple sin ninguna marcada no se puede corregir: se marca la primera.
+        if (correctIdxs.length === 0 && options.length) options[0].correct = true;
+    } else if (correctIdxs.length !== 1) {
         const baseCorrect = baseOptions.findIndex(o => o && o.correct === true);
         const keep = correctIdxs.length > 1
             ? correctIdxs[0]
-            : (baseCorrect !== -1 ? baseCorrect : 0);
+            : (baseCorrect !== -1 && !cambioDeTipo ? baseCorrect : 0);
         options.forEach((o, i) => { o.correct = (i === keep); });
     }
 
