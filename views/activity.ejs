@@ -828,7 +828,7 @@
                                     <div class="section">
                                         <h2><i class="fas fa-file-alt"></i> <span data-i18n="evidenceTitle"><%= t('evidenceTitle') %></span></h2>
                                         <% activity.evidence.forEach(item=> { %>
-                                            <div class="form-group">
+                                            <div class="form-group" id="wrap_<%= item.id %>" data-qtype="<%= item.type %>">
                                                 <% const _lbl = display(item.label); %>
                                                 <label for="<%= item.id %>" data-lang-content="<%- JSON.stringify(item.label).replace(/"/g, '&quot;') %>">
                                                     <span class="lang-line lang-primary"><%= _lbl.primary %></span>
@@ -936,16 +936,17 @@
                                                     </div>
                                                 <% } %>
 
-                                                <% if (activity.id !== 'profile' && activity.id !== 'notes' && item.type !== 'checkbox_group') { %>
+                                                <% if (activity.id !== 'profile' && activity.id !== 'notes') { %>
                                                     <% if (!item.id.endsWith('_explain')) { %>
-                                                        <div class="field-star-rating" data-field-id="<%= item.id %>">
-                                                            <span class="field-star-label">⭐</span>
+                                                        <div class="field-star-rating" data-field-id="<%= item.id %>"
+                                                             role="img" aria-label="0 de 5 estrellas">
+                                                            <span class="field-star-label"><%= t('starsLabel') %></span>
                                                             <span class="mini-star" data-val="1">☆</span>
                                                             <span class="mini-star" data-val="2">☆</span>
                                                             <span class="mini-star" data-val="3">☆</span>
                                                             <span class="mini-star" data-val="4">☆</span>
                                                             <span class="mini-star" data-val="5">☆</span>
-                                                            <span class="sad-face-indicator" id="sad_<%= item.id %>" style="display: none; margin-left: 10px; font-size: 1.2em; cursor: default;" title="Respuesta incorrecta sin argumentación">😢</span>
+                                                            <span class="sad-face-indicator" id="sad_<%= item.id %>" style="display: none;" title="<%= t('starsSadHint') %>">😢</span>
                                                             <input type="hidden" id="star_<%= item.id %>" name="star_<%= item.id %>" value="0">
                                                         </div>
                                                     <% } %>
@@ -2330,88 +2331,17 @@
         }
 
         // ─── Mini Star Rating per Field (Automatic Scoring Rules) ───
-        function checkCoherence(text) {
-            const trimmed = text.trim();
-            if (trimmed.length < 40) return false;
-            const words = trimmed.split(/\s+/).filter(w => w.length > 0);
-            if (words.length < 8) return false;
-            
-            // Character variety check
-            const uniqueChars = new Set(trimmed.toLowerCase().replace(/\s/g, ''));
-            if (uniqueChars.size < 5) return false;
-            
-            // Word variety check
-            const uniqueWords = new Set(words.map(w => w.toLowerCase()));
-            if (uniqueWords.size < words.length / 2) return false;
-            
-            return true;
-        }
+        // checkCoherence vive en /js/estrellas.js (esCoherente), con los
+        // minimos configurables en config/estrellas.json.
+        const checkCoherence = (t) => window.medienpassEstrellas
+            ? window.medienpassEstrellas.esCoherente(t) : false;
 
-        function recalculateInteractiveStars() {
-            // Find all radio group questions (like r1_aleman_k5_q1)
-            document.querySelectorAll('.radio-group').forEach(group => {
-                const fieldId = group.id.replace('group_', '');
-                
-                // Get corresponding explain field (textarea)
-                const explainInput = document.getElementById(fieldId + '_explain');
-                const selectedRadio = group.querySelector('input[type="radio"]:checked');
-                const starInput = document.getElementById('star_' + fieldId);
-                const sadFace = document.getElementById('sad_' + fieldId);
-                const starContainer = document.querySelector(`.field-star-rating[data-field-id="${fieldId}"]`);
-                
-                if (!starInput) return; // Skip if no rating container exists
-                
-                let stars = 0;
-                let showSad = false;
-                
-                if (selectedRadio) {
-                    const isCorrect = selectedRadio.getAttribute('data-correct') === 'true';
-                    const explanationText = explainInput ? explainInput.value : '';
-                    const hasCoherentExplain = checkCoherence(explanationText);
-                    
-                    if (isCorrect) {
-                        stars = 3;
-                        if (hasCoherentExplain) {
-                            stars += 2; // total 5
-                        }
-                    } else {
-                        // Incorrect answer
-                        if (hasCoherentExplain) {
-                            stars = 3; // 1 + 2 = 3
-                        } else {
-                            stars = 0;
-                            showSad = true; // Incorrect AND no coherent argument -> 0 stars + sad face
-                        }
-                    }
-                } else {
-                    // Not answered yet
-                    stars = 0;
-                    showSad = false;
-                }
-                
-                // Update hidden input
-                starInput.value = stars;
-                
-                // Update sad face visual
-                if (sadFace) {
-                    sadFace.style.display = showSad ? 'inline' : 'none';
-                }
-                
-                // Update stars visual
-                if (starContainer) {
-                    starContainer.querySelectorAll('.mini-star').forEach(star => {
-                        const val = parseInt(star.getAttribute('data-val'));
-                        star.textContent = val <= stars ? '★' : '☆';
-                        star.classList.toggle('mini-star-filled', val <= stars);
-                    });
-                }
-            });
-            
-            // Trigger the general star summary calculation
-            if (typeof updateStarSummary === 'function') {
-                updateStarSummary();
-            }
-        }
+
+        // El calculo de estrellas vive ahora en /js/estrellas.js, que aplica las
+        // reglas de config/estrellas.json — las mismas que usa el servidor en
+        // services/stars.js. Antes estaba escrito aqui y solo recorria los
+        // `.radio-group`, de modo que los tipos nuevos no puntuaban nunca.
+        // window.recalculateInteractiveStars la define ese archivo.
 
         function setFieldStar(fieldId, rating) {
             const container = document.querySelector(`.field-star-rating[data-field-id="${fieldId}"]`);

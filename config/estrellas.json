@@ -1,0 +1,32 @@
+{
+  "_comentario": "Reglas de puntuacion por estrellas. Estaban escritas dentro del JavaScript de views/activity.ejs, donde ningun docente podia revisarlas ni ajustarlas sin tocar codigo.",
+  "maximoPorPregunta": 5,
+
+  "preguntasCalificables": {
+    "correcta": 3,
+    "correctaConArgumento": 5,
+    "incorrectaConArgumento": 3,
+    "incorrectaSinArgumento": 0,
+    "sinResponder": 0
+  },
+
+  "preguntasAbiertas": {
+    "_comentario": "Texto libre, escala, fecha: no tienen respuesta correcta, se valoran por elaboracion.",
+    "respondida": 3,
+    "respondidaConArgumento": 5,
+    "sinResponder": 0
+  },
+
+  "caraTriste": {
+    "_comentario": "Se muestra solo cuando la respuesta es incorrecta Y no hay argumentacion.",
+    "activa": true
+  },
+
+  "coherencia": {
+    "_comentario": "Minimos para considerar que una explicacion esta argumentada.",
+    "minimoCaracteres": 40,
+    "minimoPalabras": 8,
+    "minimoCaracteresDistintos": 5,
+    "proporcionPalabrasUnicas": 0.5
+  }
+}

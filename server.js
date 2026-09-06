@@ -12,6 +12,7 @@ const defaultAgentTools = require('./default_agent_tools');
 const { generateInstrumentAI, getAIStatus } = require('./services/ai_service');
 const instrumentStore = require('./services/instrument_store');
 const questions = require('./services/questions');
+const stars = require('./services/stars');
 const compression = require('compression');
 const jsonstore = require('./services/jsonstore');
 const appConfig = require('./services/config');
@@ -682,7 +683,8 @@ app.get('/activity/:year/:id', requireLogin, (req, res) => {
         challengeToolsConfig,
         defaultAgentTools,
         questionSource: resueltas.source,
-        questionsUpdatedAt: resueltas.updatedAt || null
+        questionsUpdatedAt: resueltas.updatedAt || null,
+        reglasEstrellas: stars.reglasParaCliente()
     });
 });
 
@@ -710,6 +712,7 @@ app.get('/tecnologia/:id', requireLogin, (req, res) => {
         currentYear: '2526',
         section: 'tecnologia',
         questionSource: resueltasTec.source,
+        reglasEstrellas: stars.reglasParaCliente(),
         challengeToolsConfig,
         defaultAgentTools
     });

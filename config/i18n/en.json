@@ -88,6 +88,8 @@
   "staffStudentLink": "I am a student",
   "staffSubmit": "Sign in",
   "starSummaryLabel": "Result:",
+  "starsLabel": "Score:",
+  "starsSadHint": "Incorrect answer with no explanation",
   "startLabel": "Start",
   "studentPortalBtn": "Student Portal",
   "teacherEmail": "School Email Address",
