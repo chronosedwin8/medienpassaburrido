@@ -48,3 +48,42 @@ Auditoría del 2026-09-06. Snapshot de seguridad en git: commit `17551f8`.
 ### F5 — Limpieza
 - Los 28 scripts muertos y `server.js.broken` salen del proyecto (quedan en git).
 - `server.js` se divide en routers por dominio.
+
+---
+
+# Resultado de la ejecución
+
+## Hecho y verificado
+
+| Fase | Estado | Verificación |
+|---|---|---|
+| F1 Seguridad y usuarios | ✅ | 17 pruebas en verde; las 3 vías de falsificación de cookies quedan bloqueadas |
+| F2 Cero hardcode | ✅ | Sin contraseña por defecto, sin curso `'4D'`, sin dominio incrustado |
+| F3 Idiomas | ✅ | JSON, traducción en servidor, 101 claves con paridad es/de/en |
+| F4 UI/UX | ⚠️ Parcial | Sistema de diseño + layout + 3 pantallas de acceso. Faltan ~24 vistas |
+| F5 Limpieza | ✅ | 36 → 8 archivos `.js` en la raíz |
+| Rendimiento | ✅ | Panel del estudiante: 10 MB → 114 KB (−98,9 %) |
+
+## Lo que falta
+
+Las vistas grandes siguen con el CSS antiguo y funcionan con normalidad, pero
+todavía no usan el sistema de diseño nuevo:
+
+- `views/admin/dashboard.ejs` (3 856 líneas, 769 de `<style>` incrustado)
+- `views/activity.ejs` (3 119 líneas) — la pantalla donde el estudiante responde
+- `views/teacher/*.ejs` (7 vistas)
+- `public/css/style.css` (3 905 líneas) convive con `medienpass.css`
+
+Orden recomendado para continuar: `activity.ejs` (la que más usan los
+estudiantes) → `partials/header.ejs` (lo incluyen 8 vistas) →
+`admin/dashboard.ejs`.
+
+## Pendientes de infraestructura
+
+1. **`data.js` tiene 5 510 preguntas duplicadas** de 7 668. Conviene moverlas a
+   la base de datos o deduplicarlas por referencia.
+2. **RLS de Supabase abierta**: todas las políticas son `USING (true)`.
+3. **La contraseña del docente sigue siendo su número de documento** en el login
+   histórico. Ya se puede migrar cuenta por cuenta con
+   `node scripts/usuarios.js pass <correo>`.
+4. **`server.js` sigue siendo monolítico** (~2 600 líneas, 90 rutas).
