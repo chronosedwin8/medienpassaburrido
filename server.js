@@ -11,6 +11,10 @@ const { part2Competencies } = require('./training_competencies');
 const defaultAgentTools = require('./default_agent_tools');
 const { generateInstrumentAI, getAIStatus } = require('./services/ai_service');
 const instrumentStore = require('./services/instrument_store');
+const appConfig = require('./services/config');
+const session = require('./services/session');
+const auth = require('./services/auth');
+const i18n = require('./services/i18n');
 const fsp = fs.promises;
 
 // ─── Helper: timeout guard for async ops (evita que Supabase cuelgue la petición) ───
@@ -154,10 +158,34 @@ app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
 
+/**
+ * Perfil mínimo del estudiante reconstruido desde la sesión firmada.
+ * Sustituye a la antigua cookie `student_data`, que el navegador podía editar.
+ */
+function studentFromSession(user) {
+    if (!user || user.kind !== 'student') return null;
+    return {
+        id: user.sub,
+        username: user.name,
+        class_name: user.className,
+        student_code: user.code || null
+    };
+}
+
+// ─── Sesión firmada: carga req.user y res.locals (ver services/session.js) ───
+app.use(auth.loadSession);
+
+// ─── Idioma resuelto en el servidor: expone lang, t() y pick() a las vistas ───
+app.use(i18n.middleware);
+
 // ─── Middleware: attach student info to every request ───
 app.use(async (req, res, next) => {
     res.locals.student = null;
-    const studentId = req.cookies.student_id;
+
+    // El identificador sale de la sesión FIRMADA, nunca de una cookie editable.
+    const studentId = (req.user && req.user.kind === 'student') ? req.user.sub : null;
+    if (!studentId) return next();
+
     if (studentId && supabase) {
         try {
             // Parallel fetch of student and profile response (avatar).
@@ -175,21 +203,14 @@ app.use(async (req, res, next) => {
                 res.locals.student = student;
             }
         } catch (e) {
-            // Timeout o error de Supabase: NO colgar la petición. Continuar con el
-            // fallback de cookie para que el alumno pueda seguir guardando localmente.
-            console.error('Middleware student fetch falló, usando fallback de cookie:', e.message);
-            try {
-                const cookieData = JSON.parse(req.cookies.student_data || '{}');
-                if (cookieData.id) res.locals.student = cookieData;
-            } catch (_) { /* ignore */ }
+            // Timeout o error de Supabase: NO colgar la petición. Se sigue con el
+            // perfil que viaja firmado en la sesión, para que el alumno pueda
+            // continuar trabajando y guardando localmente.
+            console.error('Middleware student fetch falló, usando el perfil de la sesión:', e.message);
+            res.locals.student = studentFromSession(req.user);
         }
-    } else if (studentId) {
-        try {
-            const cookieData = JSON.parse(req.cookies.student_data || '{}');
-            if (cookieData.id) {
-                res.locals.student = cookieData;
-            }
-        } catch (e) { /* ignore */ }
+    } else {
+        res.locals.student = studentFromSession(req.user);
     }
 
     // Try loading avatar from local cache if student is active but profile_photo is not set
@@ -204,56 +225,71 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// ─── Auth guard middleware ───
-function requireLogin(req, res, next) {
-    if (!res.locals.student) return res.redirect('/login');
-    next();
+/* ════════════════════════════════════════════════════════════
+   GUARDIAS DE ACCESO
+
+   Antes, `requireAdmin` solo miraba si la cookie `admin_auth` valía "true":
+   cualquiera podía escribirla desde la consola del navegador y entrar como
+   administrador. Ahora todo se resuelve contra la sesión firmada y contra el
+   mapa de permisos de services/auth.js.
+
+   Se conservan los nombres originales para no reescribir las ~90 rutas.
+   ════════════════════════════════════════════════════════════ */
+
+/** Expone el perfil del personal a las vistas (que esperan `res.locals.teacher`). */
+function exposeStaff(req, res) {
+    if (req.user && req.user.kind === 'staff') {
+        res.locals.teacher = {
+            id: req.user.sub,
+            email: req.user.email,
+            role: req.user.role,
+            first_name: req.user.firstName,
+            last_name: req.user.lastName,
+            username: [req.user.firstName, req.user.lastName].filter(Boolean).join(' ') || req.user.email,
+            subject: req.user.subject || null
+        };
+    }
 }
 
-// ─── Admin guard middleware ───
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'medienpass2526';
+// Estudiantes
+const requireLogin = auth.requireStudent;
+
+// Área docente
+function requireTeacher(req, res, next) {
+    return auth.requirePermission('teacher:area', { loginPath: '/teacher/login' })(req, res, () => {
+        exposeStaff(req, res);
+        next();
+    });
+}
+
+// Área de administración
 function requireAdmin(req, res, next) {
-    if (req.cookies.admin_auth === 'true') return next();
-    return res.redirect('/admin/login');
+    return auth.requirePermission('admin:area', { loginPath: '/admin/login' })(req, res, () => {
+        exposeStaff(req, res);
+        next();
+    });
 }
 
-// ─── Any Login guard middleware (for Docs/Manuals) ───
-function requireAnyLogin(req, res, next) {
-    if (req.cookies.teacher_auth === 'true') {
-        try {
-            if (req.cookies.teacher_data) {
-                const t = JSON.parse(req.cookies.teacher_data);
-                const rolesPath = path.join(__dirname, 'data', 'teacher_roles.json');
-                if (fs.existsSync(rolesPath)) {
-                    const roles = JSON.parse(fs.readFileSync(rolesPath, 'utf8'));
-                    t.role = roles[(t.email || '').toLowerCase()] || t.role || 'profesor';
-                } else {
-                    t.role = t.role || 'profesor';
-                }
-                res.locals.teacher = t;
-            } else {
-                res.locals.teacher = { username: 'Docente', role: 'profesor' };
-            }
-        } catch (e) { res.locals.teacher = { username: 'Docente', role: 'profesor' }; }
-    }
+/** Factoría para exigir un permiso concreto (p. ej. 'admin:database'). */
+function requirePerm(permission) {
+    return (req, res, next) => auth.requirePermission(permission, { loginPath: '/admin/login' })(req, res, () => {
+        exposeStaff(req, res);
+        next();
+    });
+}
 
-    if (req.cookies.admin_auth === 'true') {
-        res.locals.userRole = 'admin';
-        if (req.cookies.admin_user && !res.locals.teacher) {
-            try { res.locals.teacher = JSON.parse(req.cookies.admin_user); } catch(e){}
-        }
-        return next();
+// Cualquier sesión válida (manuales y documentación)
+function requireAnyLogin(req, res, next) {
+    if (!req.user) {
+        return req.path.startsWith('/api/')
+            ? res.status(401).json({ success: false, error: 'Debes iniciar sesión.' })
+            : res.redirect('/login?error=' + encodeURIComponent('Debes iniciar sesión para acceder a los manuales y la documentación oficial'));
     }
-    if (req.cookies.teacher_auth === 'true') {
-        res.locals.userRole = 'teacher';
-        return next();
-    }
-    if (res.locals.student) {
-        res.locals.userRole = 'student';
-        return next();
-    }
-    return res.redirect('/login?error=Debes+iniciar+sesión+para+acceder+a+los+manuales+y+documentación+oficial');
-} 
+    exposeStaff(req, res);
+    res.locals.userRole = req.user.kind === 'student' ? 'student'
+        : auth.atLeast(req.user.role, 'desarrollador') ? 'admin' : 'teacher';
+    return next();
+}
 
 // ─── Teacher menu route ───
 app.get('/teacher/menu', requireAnyLogin, (req, res) => {
@@ -310,8 +346,12 @@ app.post('/login', async (req, res) => {
         return res.render('login', { error: 'Por favor ingresa tu código / Bitte gib deinen Code ein.', klassenConfig, uniqueClasses });
     }
 
+    if (!class_name || !String(class_name).trim()) {
+        return res.render('login', { error: 'Selecciona tu curso / Bitte wähle deine Klasse.', klassenConfig, uniqueClasses });
+    }
+
     const cleanUsername = username.trim().toLowerCase();
-    const cleanClass = (class_name || '4D').trim();
+    const cleanClass = String(class_name || '').trim();
     const cleanCode = student_code.trim();
 
     if (supabase) {
@@ -328,26 +368,36 @@ app.post('/login', async (req, res) => {
                 return res.render('login', { error: 'Datos incorrectos o código no válido.', klassenConfig, uniqueClasses });
             }
 
-            res.cookie('student_id', student.id, {
-                maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax'
-            });
+            session.attach(res, {
+                sub: student.id,
+                kind: 'student',
+                role: 'estudiante',
+                name: student.username,
+                className: student.class_name,
+                code: student.student_code
+            }, appConfig.sessionConfig().studentTtlHours);
             return res.redirect('/');
         } catch (e) {
             console.error('Login error:', e);
             return res.render('login', { error: 'Error de conexión. Intenta de nuevo.', klassenConfig, uniqueClasses });
         }
     } else {
+        // Modo local (sin base de datos): la sesión firmada lleva el perfil.
         const localId = 'local_' + Date.now();
-        const student = { id: localId, username: cleanUsername, class_name: cleanClass, student_code: cleanCode };
-        res.cookie('student_id', localId, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-        res.cookie('student_data', JSON.stringify(student), { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+        session.attach(res, {
+            sub: localId,
+            kind: 'student',
+            role: 'estudiante',
+            name: cleanUsername,
+            className: cleanClass,
+            code: cleanCode
+        }, appConfig.sessionConfig().studentTtlHours);
         return res.redirect('/');
     }
 });
 
 app.get('/logout', (req, res) => {
-    res.clearCookie('student_id');
-    res.clearCookie('student_data');
+    session.destroy(res);
     res.redirect('/login');
 });
 
@@ -818,88 +868,39 @@ app.get('/admin/login', (req, res) => {
 
 app.post('/admin/login', async (req, res) => {
     const { email, password } = req.body;
-    if (!password) {
-        return res.render('admin/login', { error: 'Por favor ingresa la contraseña.' });
+    if (!email || !password) {
+        return res.render('admin/login', { error: 'Ingresa tu correo y tu contraseña.' });
     }
 
-    // 1. Master fallback / Superadmin bypass
-    if ((email === 'admin' || email === 'admin@colegioaleman.edu.co' || !email) && password === ADMIN_PASSWORD) {
-        res.cookie('admin_auth', 'true', { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-        res.cookie('admin_user', JSON.stringify({ email: 'admin@colegioaleman.edu.co', role: 'admin', first_name: 'Administrador', last_name: 'Global' }), { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-        return res.redirect('/admin');
+    const profile = await auth.authenticateStaff(email, password, supabase);
+
+    if (!profile) {
+        return res.render('admin/login', { error: 'Correo o contraseña incorrectos.' });
     }
 
-    if (!email) {
-        return res.render('admin/login', { error: 'Por favor ingresa tu correo institucional.' });
+    if (!auth.can(profile.role, 'admin:area')) {
+        const label = appConfig.roles().labels[profile.role];
+        return res.render('admin/login', {
+            error: `Acceso denegado: tu perfil (${(label && label.es) || profile.role}) no tiene permisos de administración.`
+        });
     }
 
-    // 2. Validate against Supabase teachers table & teacher_roles.json
-    if (supabase) {
-        try {
-            let cleanEmail = email.trim().toLowerCase();
-            if (!cleanEmail.includes('@')) {
-                cleanEmail += '@colegioaleman.edu.co';
-            }
-            const cleanPassword = password.trim();
+    session.attach(res, {
+        sub: profile.id,
+        kind: 'staff',
+        role: profile.role,
+        name: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
+        email: profile.email,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        subject: profile.subject || null
+    }, appConfig.sessionConfig().staffTtlHours);
 
-            const { data: teacher, error } = await supabase
-                .from('teachers')
-                .select('*')
-                .eq('email', cleanEmail)
-                .eq('doc_number', cleanPassword)
-                .single();
-
-            if (teacher) {
-                // Check extra role
-                const rolesPath = path.join(__dirname, 'data', 'teacher_roles.json');
-                let extraRole = 'profesor';
-                if (fs.existsSync(rolesPath)) {
-                    const roles = JSON.parse(fs.readFileSync(rolesPath, 'utf8'));
-                    extraRole = roles[(teacher.email || '').toLowerCase()] || 'profesor';
-                }
-
-                if (extraRole === 'desarrollador' || extraRole === 'coordinador' || extraRole === 'directivo' || extraRole === 'admin') {
-                    res.cookie('admin_auth', 'true', { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-                    res.cookie('admin_user', JSON.stringify({ 
-                        email: teacher.email, 
-                        role: extraRole, 
-                        first_name: teacher.first_name, 
-                        last_name: teacher.last_name,
-                        id: teacher.id
-                    }), { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-                    
-                    // Also set teacher cookies so that if they go to /docs/technical or /teacher/training, they are fully recognized as teacher/desarrollador
-                    const teacherData = {
-                        last_name: teacher.last_name,
-                        subject: teacher.subject,
-                        email: teacher.email,
-                        doc_number: teacher.doc_number,
-                        id: teacher.id,
-                        role: extraRole
-                    };
-                    res.cookie('teacher_auth', 'true', { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-                    res.cookie('teacher_data', JSON.stringify(teacherData), { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-
-                    return res.redirect('/admin');
-                } else {
-                    return res.render('admin/login', { error: 'Acceso denegado: Tu perfil actual (' + extraRole.toUpperCase() + ') no tiene permisos de Administración. Solo Desarrolladores, Coordinadores y Directivos pueden acceder.' });
-                }
-            } else {
-                return res.render('admin/login', { error: 'Correo institucional o contraseña incorrectos.' });
-            }
-        } catch (e) {
-            console.error('Admin login error:', e);
-            return res.render('admin/login', { error: 'Error al iniciar sesión en administración.' });
-        }
-    } else {
-        return res.render('admin/login', { error: 'Conexión a base de datos no disponible.' });
-    }
+    return res.redirect('/admin');
 });
+
 app.get('/admin/logout', (req, res) => {
-    res.clearCookie('admin_auth');
-    res.clearCookie('admin_user');
-    res.clearCookie('teacher_auth');
-    res.clearCookie('teacher_data');
+    session.destroy(res);
     res.redirect('/admin/login');
 });
 
@@ -1228,7 +1229,7 @@ app.get('/api/admin/subject-config', requireAdmin, (req, res) => {
 });
 
 // API: Save subject configuration
-app.post('/api/admin/subject-config', requireAdmin, async (req, res) => {
+app.post('/api/admin/subject-config', requirePerm('admin:config'), async (req, res) => {
     const configData = req.body;
     const configPath = path.join(__dirname, 'subject_config.json');
     try {
@@ -1255,7 +1256,7 @@ app.get('/api/admin/level-config', requireAdmin, (req, res) => {
 });
 
 // API: Save level configuration
-app.post('/api/admin/level-config', requireAdmin, async (req, res) => {
+app.post('/api/admin/level-config', requirePerm('admin:config'), async (req, res) => {
     const configData = req.body;
     const configPath = path.join(__dirname, 'level_config.json');
     try {
@@ -1268,7 +1269,7 @@ app.post('/api/admin/level-config', requireAdmin, async (req, res) => {
 });
 
 // API: Get i18n configuration (runs file in safe vm sandbox)
-app.get('/api/admin/i18n', requireAdmin, (req, res) => {
+app.get('/api/admin/i18n', requirePerm('admin:i18n'), (req, res) => {
     const configPath = path.join(__dirname, 'public/js/i18n.js');
     try {
         if (!fs.existsSync(configPath)) {
@@ -1298,7 +1299,7 @@ app.get('/api/admin/i18n', requireAdmin, (req, res) => {
 });
 
 // API: Save i18n configuration
-app.post('/api/admin/i18n', requireAdmin, async (req, res) => {
+app.post('/api/admin/i18n', requirePerm('admin:i18n'), async (req, res) => {
     const payload = req.body;
     const configPath = path.join(__dirname, 'public/js/i18n.js');
     try {
@@ -1317,7 +1318,7 @@ app.post('/api/admin/i18n', requireAdmin, async (req, res) => {
 });
 
 // API: Get teacher extra roles mapping
-app.get('/api/admin/teacher-roles', requireAdmin, (req, res) => {
+app.get('/api/admin/teacher-roles', requirePerm('admin:users'), (req, res) => {
     const rolesPath = path.join(__dirname, 'data', 'teacher_roles.json');
     try {
         if (fs.existsSync(rolesPath)) {
@@ -1331,7 +1332,7 @@ app.get('/api/admin/teacher-roles', requireAdmin, (req, res) => {
 });
 
 // API: Save teacher extra role
-app.post('/api/admin/teacher-roles', requireAdmin, async (req, res) => {
+app.post('/api/admin/teacher-roles', requirePerm('admin:users'), async (req, res) => {
     const { email, role } = req.body;
     const rolesPath = path.join(__dirname, 'data', 'teacher_roles.json');
     try {
@@ -1556,7 +1557,7 @@ app.get('/api/admin/pending-teachers', requireAdmin, (req, res) => {
     }
 });
 
-app.post('/api/admin/approve-teacher/:id', requireAdmin, async (req, res) => {
+app.post('/api/admin/approve-teacher/:id', requirePerm('admin:teachers'), async (req, res) => {
     try {
         let pending = [];
         if (fs.existsSync(pendingTeachersFile)) {
@@ -1595,7 +1596,7 @@ app.post('/api/admin/approve-teacher/:id', requireAdmin, async (req, res) => {
     }
 });
 
-app.post('/api/admin/reject-teacher/:id', requireAdmin, async (req, res) => {
+app.post('/api/admin/reject-teacher/:id', requirePerm('admin:teachers'), async (req, res) => {
     try {
         let pending = [];
         if (fs.existsSync(pendingTeachersFile)) {
@@ -1690,7 +1691,7 @@ app.put('/api/devices/:id', requireAdmin, async (req, res) => {
 });
 
 // API: Get all records from a DB table
-app.get('/api/admin/db-records/:table', requireAdmin, async (req, res) => {
+app.get('/api/admin/db-records/:table', requirePerm('admin:database'), async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No Supabase' });
     const allowedTables = ['students', 'teachers', 'devices', 'incidents', 'multimedia_products', 'activity_responses'];
     const { table } = req.params;
@@ -1707,7 +1708,7 @@ app.get('/api/admin/db-records/:table', requireAdmin, async (req, res) => {
 });
 
 // API: Update a single record by id in a DB table
-app.post('/api/admin/db-records/:table/:id', requireAdmin, async (req, res) => {
+app.post('/api/admin/db-records/:table/:id', requirePerm('admin:database'), async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No Supabase' });
     const allowedTables = ['students', 'teachers', 'devices', 'incidents', 'multimedia_products'];
     const { table, id } = req.params;
@@ -1728,7 +1729,7 @@ app.post('/api/admin/db-records/:table/:id', requireAdmin, async (req, res) => {
 });
 
 // API: Create a new record in a DB table
-app.post('/api/admin/db-records/:table', requireAdmin, async (req, res) => {
+app.post('/api/admin/db-records/:table', requirePerm('admin:database'), async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No Supabase' });
     const allowedTables = ['students', 'teachers', 'devices', 'incidents', 'multimedia_products'];
     const { table } = req.params;
@@ -1745,7 +1746,7 @@ app.post('/api/admin/db-records/:table', requireAdmin, async (req, res) => {
 });
 
 // API: Delete a record from a DB table
-app.delete('/api/admin/db-records/:table/:id', requireAdmin, async (req, res) => {
+app.delete('/api/admin/db-records/:table/:id', requirePerm('admin:database'), async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No Supabase' });
     const allowedTables = ['students', 'teachers', 'devices', 'incidents', 'multimedia_products'];
     const { table, id } = req.params;
@@ -1765,7 +1766,7 @@ app.delete('/api/admin/db-records/:table/:id', requireAdmin, async (req, res) =>
 // TEACHER ROUTES (PORTAL DOCENTE - CAPACITACIÓN)
 // ════════════════════════════════════════
 app.get('/teacher/login', (req, res) => {
-    if (req.cookies.teacher_auth === 'true') return res.redirect('/teacher/training');
+    if (req.user && req.user.kind === 'staff') return res.redirect('/teacher/training');
     res.render('teacher/login', { error: null, subjects });
 });
 
@@ -1797,85 +1798,41 @@ app.post('/api/teacher/register', async (req, res) => {
 });
 
 app.post('/teacher/login', async (req, res) => {
-    console.log('--- TEACHER LOGIN ATTEMPT ---');
-    console.log('req.body:', req.body);
     const { email, password } = req.body;
 
     if (!email || !password) {
-        return res.render('teacher/login', { error: 'Por favor ingresa tu correo y contraseña.', subjects });
+        return res.render('teacher/login', { error: 'Ingresa tu correo y tu contraseña.', subjects });
     }
 
-    if (supabase) {
-        try {
-            let cleanEmail = email.trim().toLowerCase();
-            if (!cleanEmail.includes('@')) {
-                cleanEmail += '@colegioaleman.edu.co';
-            }
-            const cleanPassword = password.trim();
-            const { data: teacher, error } = await supabase
-                .from('teachers')
-                .select('*')
-                .eq('email', cleanEmail)
-                .eq('doc_number', cleanPassword)
-                .single();
+    const profile = await auth.authenticateStaff(email, password, supabase);
 
-            if (teacher) {
-                const rolesPath = path.join(__dirname, 'data', 'teacher_roles.json');
-                let extraRole = 'profesor';
-                if (fs.existsSync(rolesPath)) {
-                    const roles = JSON.parse(fs.readFileSync(rolesPath, 'utf8'));
-                    extraRole = roles[(teacher.email || '').toLowerCase()] || 'profesor';
-                }
-
-                const teacherData = {
-                    last_name: teacher.last_name,
-                    subject: teacher.subject,
-                    email: teacher.email,
-                    doc_number: teacher.doc_number,
-                    id: teacher.id,
-                    role: extraRole
-                };
-                res.cookie('teacher_auth', 'true', { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-                res.cookie('teacher_data', JSON.stringify(teacherData), { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-                return res.redirect('/teacher/training');
-            } else {
-                return res.render('teacher/login', { error: 'Correo institucional o contraseña incorrectos.', subjects });
-            }
-        } catch (e) {
-            console.error('Teacher login error:', e);
-            return res.render('teacher/login', { error: 'Error al iniciar sesión.', subjects });
-        }
-    } else {
-        return res.render('teacher/login', { error: 'Supabase no configurado.', subjects });
+    if (!profile) {
+        return res.render('teacher/login', { error: 'Correo o contraseña incorrectos.', subjects });
     }
+
+    if (!auth.can(profile.role, 'teacher:area')) {
+        return res.render('teacher/login', { error: 'Tu perfil no tiene acceso al área docente.', subjects });
+    }
+
+    session.attach(res, {
+        sub: profile.id,
+        kind: 'staff',
+        role: profile.role,
+        name: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
+        email: profile.email,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        subject: profile.subject || null
+    }, appConfig.sessionConfig().staffTtlHours);
+
+    // El personal con permisos de administración entra directo a su panel.
+    return res.redirect(auth.can(profile.role, 'admin:area') ? '/admin' : '/teacher/training');
 });
 
-// Middleware for teacher auth
-function requireTeacher(req, res, next) {
-    if (req.cookies.teacher_auth === 'true' && req.cookies.teacher_data) {
-        try {
-            const t = JSON.parse(req.cookies.teacher_data);
-            const rolesPath = path.join(__dirname, 'data', 'teacher_roles.json');
-            if (fs.existsSync(rolesPath)) {
-                const roles = JSON.parse(fs.readFileSync(rolesPath, 'utf8'));
-                t.role = roles[(t.email || '').toLowerCase()] || t.role || 'profesor';
-            } else {
-                t.role = t.role || 'profesor';
-            }
-            res.locals.teacher = t;
-            return next();
-        } catch (e) { }
-    }
-    // En rutas de API se responde JSON: un redirect 302 devuelve HTML y rompe
-    // el res.json() del cliente con un error genérico poco descriptivo.
-    if (req.path.startsWith('/api/')) {
-        return res.status(401).json({ success: false, error: 'Sesión de docente expirada. Vuelve a iniciar sesión.' });
-    }
-    return res.redirect('/teacher/login');
-}
-app.get('/teacher/logout', (req, res) => {
-    res.clearCookie('teacher_auth');
-    res.clearCookie('teacher_data');
+// requireTeacher se define arriba, junto al resto de guardias de acceso.
+
+app.get('/teacher/logout', (req, res) => {
+    session.destroy(res);
     res.redirect('/teacher/login');
 });
 

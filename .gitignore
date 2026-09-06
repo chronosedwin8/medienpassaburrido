@@ -4,3 +4,5 @@ node_modules/
 *.tmp
 despliegue/*.tar
 data/*.json.bak
+data/users.json
+config/i18n/*.tmp
