@@ -231,20 +231,26 @@
     header .header-left { flex: 0 0 auto; }
     header .header-lang-switch { margin-left: auto; }
 
-    /* El nombre completo en mayusculas ocupaba media barra. */
-    header .student-name-pill,
-    header .user-name-display {
-        max-width: 190px;
+    /* El nombre completo en MAYUSCULAS ocupaba media barra
+       ("HERRERA PFEIFFER FELIX LEANDRO GABRIEL"). Se recorta y se deja en
+       capitalizacion normal, que ademas se lee mejor. */
+    header .user-name {
+        display: inline-block;
+        max-width: 220px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        vertical-align: bottom;
         text-transform: none !important;
+        letter-spacing: 0 !important;
+    }
+
+    @media (max-width: 720px) {
+        header .user-name { max-width: 120px; }
     }
 
     @media (max-width: 720px) {
         header .hero-title-text { font-size: 1.1rem !important; }
-        header .student-name-pill,
-        header .user-name-display { max-width: 110px; }
     }
 
     /* ── Barra de avance del reto ─────────────────────────────

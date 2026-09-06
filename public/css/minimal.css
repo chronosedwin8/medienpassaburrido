@@ -104,9 +104,11 @@ select {
     }
 }
 
-/* La cabecera y el menú conservan su degradado: es la identidad de marca. */
-header,
-.sidebar,
-.glass-header {
-    background-image: revert !important;
-}
+/* La cabecera y el menú NO se tocan: conservan su degradado, que es la
+   identidad de marca. No hace falta ninguna regla aquí — ninguno de los
+   selectores de arriba los alcanza.
+
+   Antes había un `background-image: revert !important` con esa intención, pero
+   `revert` devuelve al valor por defecto del NAVEGADOR (`none`), así que
+   borraba el degradado del menú y dejaba su texto claro sobre fondo blanco:
+   ilegible. */
