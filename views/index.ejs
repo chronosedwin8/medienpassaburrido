@@ -1,14 +1,7 @@
 <%- include('partials/header') %>
 
-<!-- Welcome Modal Overlay -->
-<div id="welcomeModal" class="welcome-modal-overlay" style="display: none;">
-    <div class="welcome-modal-card">
-        <div class="welcome-modal-icon">✨</div>
-        <h2 class="welcome-modal-title" data-i18n="welcomeTitle">BIENVENIDO A TU MEDIEN PASS</h2>
-        <p class="welcome-modal-text" data-i18n="welcomeModalText">"POR FAVOR SELECCIONA TU IDIOMA SEGÚN LA ASIGNATURA A DESARROLLAR"</p>
-        <button id="closeWelcomeModal" class="welcome-modal-btn" data-i18n="accept">Aceptar</button>
-    </div>
-</div>
+<!-- El modal de bienvenida pedia elegir idioma por asignatura; ahora el
+     idioma es uno solo y se elige al entrar, asi que sobraba. -->
 
     <!-- ═══ Early Script: define functions before buttons use them ═══ -->
         <script>
@@ -68,7 +61,7 @@
                 const _saludo = student.full_name || student.username;
                 %>
                 <h1 class="welcome-greeting">👋 <span data-i18n="hello"><%= t('hello') %></span>, <span class="username-highlight"><%= nombreCorto(_saludo, 2) %></span>!<% if (student.full_name) { %> <span class="full-name"><%= nombre(student.full_name) %></span><% } %></h1>
-                <p class="welcome-subtext" data-i18n="welcome">Willkommen zu deinem MedienPass</p>
+                <p class="welcome-subtext" data-i18n="welcome"><%= t('welcome') %></p>
             </div>
             <%
             // Tres problemas juntos: .toUpperCase() forzaba MAYUSCULAS, se leian
@@ -85,7 +78,7 @@
         <div class="year-card-premium">
             <div class="year-header">
                 <span class="year-icon">📅</span>
-                <span class="year-title" data-i18n="schoolYear">Schuljahr</span>
+                <span class="year-title" data-i18n="schoolYear"><%= t('schoolYear') %></span>
             </div>
             <select id="yearSelect" class="premium-year-combo" onchange="window.location.href='/?year='+this.value">
                 <% schoolYears.forEach(year=> { %>
@@ -148,7 +141,7 @@
                         <div class="sub-btn-content">
                             <span class="sub-btn-icon">👤</span>
                             <div class="sub-btn-info">
-                                <span class="sub-btn-title" data-i18n="reto0Title">Este soy yo / Das bin ich</span>
+                                <span class="sub-btn-title" data-i18n="reto0Title"><%= t('reto0Title') %></span>
                                 <span class="sub-btn-progress-text" id="status-reto-0">Pendiente</span>
                             </div>
                         </div>
@@ -476,18 +469,6 @@
                 }
             });
 
-            // Welcome Modal Logic
-            const welcomeModal = document.getElementById('welcomeModal');
-            const closeWelcomeModal = document.getElementById('closeWelcomeModal');
-            if (welcomeModal && !sessionStorage.getItem('welcomeModalShown')) {
-                welcomeModal.style.display = 'flex';
-            }
-            if (closeWelcomeModal) {
-                closeWelcomeModal.addEventListener('click', () => {
-                    welcomeModal.style.display = 'none';
-                    sessionStorage.setItem('welcomeModalShown', 'true');
-                });
-            }
         });
     </script>
 

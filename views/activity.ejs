@@ -59,8 +59,8 @@
                 <div class="agent-avatar-area">
                     <span class="agent-avatar">🤖</span>
                     <div class="agent-title-area">
-                        <h4 data-i18n="teacherAgentTitle">Agente del Profesor</h4>
-                        <p data-i18n="teacherAgentSub">Herramientas sugeridas para esta actividad</p>
+                        <h4 data-i18n="teacherAgentTitle"><%= t('teacherAgentTitle') %></h4>
+                        <p data-i18n="teacherAgentSub"><%= t('teacherAgentSub') %></p>
                     </div>
                 </div>
                 <div class="agent-content" <%- isDefault ? `data-lang-content='${JSON.stringify(toolDescription).replace(/'/g, "&#39;")}'` : '' %>>
@@ -75,7 +75,7 @@
 <!-- Star Self-Evaluation -->
 <% if (activity.id !== 'profile') { %>
     <div class="star-self-eval" id="starSelfEval" style="margin-top: 20px; padding: 15px; background: var(--mp-bg); border-radius: 8px; border-left: 4px solid var(--mp-accent);">
-        <span class="star-eval-label" data-i18n="selfEvaluation">Autoevaluación</span>
+        <span class="star-eval-label" data-i18n="selfEvaluation"><%= t('selfEvaluation') %></span>
         <p style="font-size: 0.9em; color: var(--mp-text-soft); margin: 5px 0 10px 0;">
             Estimado estudiante, tu autoevaluación será analizada por Inteligencia Artificial, la cual te dará un puntaje teniendo en cuenta tu respuesta y la ampliación de la misma en la sección de ¿Puedes explicar por qué seleccionaste esa respuesta?
         </p>
@@ -96,7 +96,7 @@
 
             <!-- ── Barra de progreso Reto 0 (5 paneles) ── -->
             <div class="reto0-progress-bar" id="reto0ProgressBar" style="background:var(--mp-surface-alt);border-radius:12px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
-                <span style="font-size:0.82em;color:var(--mp-text-faint);white-space:nowrap;" data-i18n="progressLabel">Progreso:</span>
+                <span style="font-size:0.82em;color:var(--mp-text-faint);white-space:nowrap;" data-i18n="progressLabel"><%= t('progressLabel') %></span>
                 <div style="flex:1;background:var(--mp-border);border-radius:8px;height:8px;overflow:hidden;">
                     <div id="reto0ProgressFill" style="height:100%;background:linear-gradient(90deg,var(--mp-accent),var(--mp-accent));border-radius:8px;transition:width .4s ease;width:0%;"></div>
                 </div>
@@ -129,7 +129,7 @@
                                 </h2>
 
                                 <div class="avatar-selector-container" id="avatarSelectorContainer">
-                                    <p style="margin-bottom: 15px; color: var(--mp-text-faint); font-weight: 600;" data-i18n="avatarInstruction">Selecciona tu avatar / Wähle deinen Avatar:</p>
+                                    <p style="margin-bottom: 15px; color: var(--mp-text-faint); font-weight: 600;" data-i18n="avatarInstruction"><%= t('avatarInstruction') %></p>
                                     <div class="avatar-grid" id="avatarGrid">
                                         <% const avatars = [
                                             '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🦄','🐝','🐛','🦋','🐢','🐙','🐠','🐳','🐊','🐅','🐆','🦓','🦍','🐘','🦛','🦏','🐪','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔',
@@ -667,9 +667,7 @@
                         </div>
 
                         <div id="reto0-practice-footer" style="text-align: center; margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px;">
-                            <button type="button" id="start-reto0-eval-btn" class="btn btn-primary btn-lg" style="padding: 15px 30px; font-weight: bold; font-size: 1.2em; animation: pulse 2s infinite;" data-i18n="readyForEvalBtn">
-                                ¡ESTÁS LISTO PARA LA EVALUACIÓN DEL RETO CERO!
-                            </button>
+                            <button type="button" id="start-reto0-eval-btn" class="btn btn-primary btn-lg" style="padding: 15px 30px; font-weight: bold; font-size: 1.2em; animation: pulse 2s infinite;" data-i18n="readyForEvalBtn"><%= t('readyForEvalBtn') %></button>
                         </div>
                         <div id="reto0-eval-save-footer" class="save-actions" style="display: none; text-align: center; margin-top: 20px; margin-bottom: 20px;">
                             <button type="button" class="save-btn" id="saveBtnQuiz" style="background: linear-gradient(135deg, var(--mp-ok), var(--mp-ok)); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; display: inline-block;">
@@ -709,8 +707,7 @@
         <% if (activity.competencies && activity.competencies.length> 0) { %>
             <div class="section">
                 <h2><i class="fas fa-star"></i> <span data-i18n="competenciesTitle"><%= t('competenciesTitle') %></span></h2>
-                <p class="instruction" data-i18n="competenciesInstruction">Markiere die Fähigkeiten, die du beherrscht:
-                </p>
+                <p class="instruction" data-i18n="competenciesInstruction"><%= t('competenciesInstruction') %></p>
                 <div class="competency-list">
                     <% activity.competencies.forEach((comp, index)=> { %>
                         <div class="competency-item">
@@ -738,9 +735,9 @@
                     <div class="section competency-groups-section">
                         <div class="comp-group-table">
                             <div class="comp-group-header">
-                                <div class="cg-col-comp" data-i18n="competenciaCol">Competencia</div>
-                                <div class="cg-col-evidence" data-i18n="evidenciaCol">Evidencia</div>
-                                <div class="cg-col-logro" data-i18n="logroCol">Logro</div>
+                                <div class="cg-col-comp" data-i18n="competenciaCol"><%= t('competenciaCol') %></div>
+                                <div class="cg-col-evidence" data-i18n="evidenciaCol"><%= t('evidenciaCol') %></div>
+                                <div class="cg-col-logro" data-i18n="logroCol"><%= t('logroCol') %></div>
                             </div>
                             <% activity.competencyGroups.forEach((group, gIdx)=> { %>
                                 <div class="comp-group-row">
@@ -1005,8 +1002,7 @@
                                                             <label for="achievement_count"
                                                                 style="margin: 0; font-size: 1.2em;">
                                                                 <i class="fas fa-trophy"></i> <span
-                                                                    data-i18n="totalCollected">Ich habe
-                                                                    insgesamt gesammelt:</span>
+                                                                    data-i18n="totalCollected"><%= t('totalCollected') %></span>
                                                             </label>
                                                             <div class="achievement-input">
                                                                 <input type="number" id="achievement_count"
@@ -1029,7 +1025,7 @@
                                                                         style="color: var(--mp-warn); font-size: 1.8em;"></i>
                                                                     <div class="star-summary-text">
                                                                         <span class="star-summary-label"
-                                                                            data-i18n="starSummaryLabel">Resultado:</span>
+                                                                            data-i18n="starSummaryLabel"><%= t('starSummaryLabel') %></span>
                                                                         <span class="star-summary-value"
                                                                             id="starSummaryValue">0
                                                                             / 0
@@ -1118,7 +1114,7 @@
 <div class="save-actions">
 <button type="button" class="save-btn" id="saveBtn">
                                                                         <i class="fas fa-cloud-upload-alt"></i> <span
-                                                                            data-i18n="save">Speichern</span>
+                                                                            data-i18n="save"><%= t('save') %></span>
                                                                     </button>
                                                                     <div class="save-status" id="saveStatus"></div>
                                                                 </div>

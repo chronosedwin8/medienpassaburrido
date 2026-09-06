@@ -257,6 +257,27 @@ function actividadesDeUnGrado(porNivel, grado) {
     return salida;
 }
 
+/**
+ * Version de los archivos estaticos, para romper la cache del navegador.
+ *
+ * Los CSS se enlazaban sin version: al cambiarlos, el navegador seguia usando
+ * la copia vieja y parecia que los arreglos no surtian efecto. Con la fecha de
+ * modificacion en la URL, un cambio se ve al instante y lo que no cambia se
+ * sigue cacheando.
+ */
+const _versionCache = new Map();
+function v(rutaPublica) {
+    if (!_versionCache.has(rutaPublica)) {
+        try {
+            const abs = path.join(__dirname, 'public', rutaPublica.replace(/^\//, ''));
+            _versionCache.set(rutaPublica, String(Math.floor(fs.statSync(abs).mtimeMs)));
+        } catch (e) {
+            _versionCache.set(rutaPublica, String(Date.now()));
+        }
+    }
+    return rutaPublica + '?v=' + _versionCache.get(rutaPublica);
+}
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 // Compresion: el panel del estudiante son ~114 KB de HTML que viajaban sin
@@ -311,6 +332,7 @@ app.use(auth.loadSession);
 // "HERRERA PFEIFFER FELIX LEANDRO GABRIEL": los datos vienen de importaciones
 // distintas. Se arregla al mostrar, sin tocar lo guardado.
 app.use((req, res, next) => {
+    res.locals.v = v;
     res.locals.nombre = n => names.formatear(n);
     res.locals.nombreCorto = (n, max) => names.corto(n, max);
     res.locals.iniciales = n => names.iniciales(n);

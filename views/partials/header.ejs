@@ -10,16 +10,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/css/medienpass.css">
-    <link rel="stylesheet" href="/css/minimal.css">
-    <link rel="stylesheet" href="/css/style.css">
-<link rel="stylesheet" href="/css/custom.css">
+    <link rel="stylesheet" href="<%= v('/css/medienpass.css') %>">
+    <link rel="stylesheet" href="<%= v('/css/minimal.css') %>">
+    <link rel="stylesheet" href="<%= v('/css/style.css') %>">
+<link rel="stylesheet" href="<%= v('/css/custom.css') %>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script>window.__lang = <%- JSON.stringify(typeof lang !== "undefined" ? lang : "es") %>;</script>
     <script src="/js/i18n.js"></script>
     <% if (typeof reglasEstrellas !== 'undefined' && reglasEstrellas) { %>
     <script>window.__reglasEstrellas = <%- JSON.stringify(reglasEstrellas) %>;</script>
-    <script src="/js/estrellas.js"></script>
+    <script src="<%= v('/js/estrellas.js') %>"></script>
     <% } %>
 </head>
 
@@ -94,28 +94,42 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
+        /* Selector de idioma discreto: el idioma se elige al entrar y casi
+           nunca se cambia, asi que no debe competir con el contenido. */
+        .header-lang-switch {
+            display: inline-flex;
+            gap: 1px;
+            padding: 2px;
+            background: rgba(255, 255, 255, .07);
+            border: 1px solid rgba(255, 255, 255, .10);
+            border-radius: 7px;
+        }
         .h-lang-btn {
             background: transparent;
             border: none;
-            color: rgba(255, 255, 255, 0.7);
-            padding: 6px 14px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.62);
+            padding: 4px 9px;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 0.72rem;
+            letter-spacing: .04em;
             cursor: pointer;
-            transition: all 0.3s ease;
+            text-decoration: none;
+            transition: background .15s ease, color .15s ease;
             font-family: var(--font);
         }
 
         .h-lang-btn:hover {
-            color: white;
-            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            background: rgba(255, 255, 255, 0.10);
+            text-decoration: none;
         }
 
         .h-lang-btn.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            /* Sin sombra de color: basta el fondo para marcar cual esta activo. */
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+            box-shadow: none;
         }
 
         @media (max-width: 1150px) {
@@ -314,7 +328,7 @@
                     <span class="hero-title-text notranslate" translate="no">MEDIENPASS</span>
                 </h1>
                 <p class="subtitle-custom">PSP - EDUCACIÓN EN MEDIOS - DEUTSCHE SCHULE</p>
-                <p class="header-subtitle" data-i18n="schoolFooter">Deutsche Schule Barranquilla — Colegio Alemán</p>
+                <p class="header-subtitle" data-i18n="schoolFooter"><%= t('schoolFooter') %></p>
             </div>
             
             <div class="header-lang-switch">
@@ -330,7 +344,7 @@
                     </a>
                 <% } %>
                 <a href="/teacher/login" class="teacher-portal-btn" title="Portal Docente & Capacitación">
-                    <i class="fas fa-chalkboard-teacher"></i> <span class="tp-text" data-i18n="teacherPortalLabel">Docentes</span>
+                    <i class="fas fa-chalkboard-teacher"></i> <span class="tp-text" data-i18n="teacherPortalLabel"><%= t('teacherPortalLabel') %></span>
                 </a>
 
                 <% if (typeof student !=='undefined' && student) { %>

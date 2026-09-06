@@ -4,25 +4,25 @@
         <div class="admin-sidebar" style="background: #1e1b4b;">
             <div class="admin-brand">
                 <i class="fas fa-chalkboard-teacher"></i>
-                <h2 data-i18n="evalTitle">Evaluación KMK</h2>
+                <h2 data-i18n="evalTitle"><%= t('evalTitle') %></h2>
             </div>
             <nav class="admin-nav">
-                <a href="/teacher/training"><i class="fas fa-book-open"></i> <span data-i18n="navStudyModule">Módulo de Estudio</span></a>
-                <a href="/teacher/worksheets"><i class="fas fa-print"></i> <span data-i18n="navWorksheets">Banco de Fichas</span></a>
-                <a href="#" class="active"><i class="fas fa-tasks"></i> <span data-i18n="navEval">Evaluación</span></a>
+                <a href="/teacher/training"><i class="fas fa-book-open"></i> <span data-i18n="navStudyModule"><%= t('navStudyModule') %></span></a>
+                <a href="/teacher/worksheets"><i class="fas fa-print"></i> <span data-i18n="navWorksheets"><%= t('navWorksheets') %></span></a>
+                <a href="#" class="active"><i class="fas fa-tasks"></i> <span data-i18n="navEval"><%= t('navEval') %></span></a>
                 <a href="/teacher/troubleshooting"><i class="fas fa-wrench"></i> Guía Troubleshooting</a>
                 <a href="/teacher/bitacora"><i class="fas fa-clipboard-list"></i> Bitácora de Novedades</a>
                 <a href="/teacher/progress"><i class="fas fa-chart-line"></i> Monitoreo Retos (0-6)</a>
                 <a href="/teacher/logout" style="margin-top: auto; color: var(--mp-danger);"><i class="fas fa-sign-out-alt"></i>
-                    <span data-i18n="logoutTitle">Cerrar Sesión</span></a>
+                    <span data-i18n="logoutTitle"><%= t('logoutTitle') %></span></a>
             </nav>
         </div>
 
         <div class="admin-main" style="background: var(--mp-bg); overflow-y: auto;">
             <header class="admin-header">
                 <div class="header-left">
-                    <h1 data-i18n="certTitle">Certificación de Competencias Docentes</h1>
-                    <p data-i18n="certSubtitle">Nivel Básico — Kultusministerkonferenz (KMK)</p>
+                    <h1 data-i18n="certTitle"><%= t('certTitle') %></h1>
+                    <p data-i18n="certSubtitle"><%= t('certSubtitle') %></p>
                 </div>
             </header>
 
