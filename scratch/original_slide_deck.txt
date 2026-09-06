@@ -1,0 +1,331 @@
+            <div class="section" id="reto-zero-section" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                <div class="slideshow-container">
+                    <!-- Gamified Quest Tracker -->
+                    <div class="quest-tracker-container" id="questTracker">
+                        <div class="quest-tracker-header">
+                            <span class="quest-tracker-title">
+                                🧭 <span data-lang-content='{"es": "Misión: ¡Descubre el Medienpass!", "de": "Mission: Entdecke den Medienpass!", "en": "Mission: Discover the Medienpass!"}'>Misión: ¡Descubre el Medienpass!</span>
+                            </span>
+                            <span class="quest-tracker-stats" id="quest-tracker-count">⭐ 0 XP</span>
+                        </div>
+                        <div class="quest-tracker-progress">
+                            <div class="quest-tracker-fill" id="quest-tracker-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 1 -->
+                    <div class="mySlides fade">
+                        <div class="slide-card" style="border-top-color: #6366f1;">
+                            <div class="slide-icon">🚀</div>
+                            <h2 data-lang-content='{"es": "El Pasaporte al Mundo Digital", "de": "Der Reisepass zur digitalen Welt", "en": "The Passport to the Digital World"}'>El Pasaporte al Mundo Digital</h2>
+                            <p data-lang-content='{"es": "Guía de Implementación del Medienpass y las Competencias KMK. ¡Tu aventura digital comienza hoy!", "de": "Implementierungsleitfaden für den Medienpass und die KMK-Kompetenzen. Dein digitales Abenteuer beginnt heute!", "en": "Implementation Guide for the Medienpass and KMK Competencies. Your digital adventure starts today!"}'>Guía de Implementación del Medienpass</p>
+                        </div>
+                    </div>
+                    <!-- Slide 2 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #3b82f6; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">📖</div>
+                            <h2 data-lang-content='{"es": "¿Qué es el Medienpass?", "de": "Was ist der Medienpass?", "en": "What is the Medienpass?"}'>¿Qué es el Medienpass?</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "Es un cuaderno de trabajo que empodera a todos los estudiantes para desarrollar sus competencias digitales de manera lúdica. Se fundamenta en tres pilares (haz clic para descubrir cada uno):", "de": "Es ist ein Arbeitsheft, das alle Schüler befähigt, ihre digitalen Kompetenzen spielerisch zu entwickeln. Er basiert auf drei Säulen (Klicke zum Entdecken):", "en": "It is a workbook that empowers all students to develop their digital skills in a playful way. It is based on three pillars (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'pillar1', 'pop', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">👤</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "Centrado en el Estudiante", "de": "Schülerzentriert", "en": "Student-Centered"}'>Centrado en el Estudiante</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Los alumnos son los dueños y responsables de su propio proceso de aprendizaje.", "de": "Die Schüler sind die Eigentümer und Verantwortlichen ihres eigenen Lernprozesses.", "en": "Students are the owners and responsible for their own learning process."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'pillar2', 'pop', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">📚</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "Transversal", "de": "Fächerübergreifend", "en": "Transversal"}'>Transversal</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Se puede aplicar en todas las materias escolares, con un énfasis en la clase de alemán.", "de": "Es kann in allen Schulfächern angewendet werden, mit Schwerpunkt auf dem Deutschunterricht.", "en": "It can be applied in all school subjects, with an emphasis on German class."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'pillar3', 'pop', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">💻</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "Formato Híbrido", "de": "Hybrides Format", "en": "Hybrid Format"}'>Formato Híbrido</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Está diseñado para trabajarse de forma impresa en el salón regular o de forma digital en las aulas de tecnología.", "de": "Entwickelt, um gedruckt im Klassenzimmer oder digital im Technologieunterricht bearbeitet zu werden.", "en": "Designed to be worked in print in the classroom or digitally in technology classes."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 3 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #10b981; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">🔄</div>
+                            <h2 data-lang-content='{"es": "Metodología del Medienpass", "de": "Medienpass-Methodik", "en": "Medienpass Methodology"}'>Metodología del Medienpass</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "El proceso del alumno sigue un ciclo de tres pasos (haz clic para descubrir cada uno):", "de": "Der Schülerprozess folgt einem Zyklus von drei Schritten (Klicke zum Entdecken):", "en": "The student\'s process follows a three-step cycle (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'method1', 'coin', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🎯</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "1. Realizar Actividades (Retos)", "de": "1. Aktivitäten (Herausforderungen) durchführen", "en": "1. Perform Activities (Challenges)"}'>Realizar actividades (retos)</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Completar las tareas de aprendizaje digital asignadas por tus profesores.", "de": "Absolviere die von deinen Lehrern zugewiesenen digitalen Aufgaben.", "en": "Complete the digital learning tasks assigned by your teachers."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'method2', 'coin', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">⭐</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "2. Recibir Recompensas", "de": "2. Belohnungen erhalten", "en": "2. Receive Rewards"}'>Recibir recompensas</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Obtener estrellas que reflejan tu progreso, dedicación y esfuerzos en cada materia.", "de": "Erhalte Sterne, die deinen Fortschritt, deinen Einsatz und deine Bemühungen in jedem Fach widerspiegeln.", "en": "Get stars reflecting your progress, dedication, and efforts in each subject."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'method3', 'coin', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">✅</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "3. Validación Docente", "de": "3. Validierung durch Lehrer", "en": "3. Teacher Validation"}'>Validación</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Culmina cuando tu profesor revisa y aprueba o valida formalmente la tarea completada.", "de": "Es endet, wenn dein Lehrer deine abgeschlossene Aufgabe überprüft und genehmigt oder validiert.", "en": "Ends when your teacher reviews and approves or validates the completed task."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 4 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #f59e0b; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">🔍</div>
+                            <h2 data-lang-content='{"es": "Marco KMK: Competencias 1 y 2", "de": "KMK-Rahmen: Kompetenzen 1 & 2", "en": "KMK Framework: Competencies 1 & 2"}'>Marco KMK: Competencias 1 y 2</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "La Conferencia de Ministros de Educación de Alemania (KMK) establece los estándares mediante competencias clave (haz clic para descubrir):", "de": "Die Kultusministerkonferenz (KMK) legt Standards durch Schlüsselkompetenzen fest (Klicke zum Entdecken):", "en": "The German Conference of Ministers of Education (KMK) establishes standards through key competencies (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk1', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🔍</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "1. Buscar, Procesar y Archivar", "de": "1. Suchen, Verarbeiten und Aufbewahren", "en": "1. Search, Process, and Archive"}'>1. Buscar, Procesar y Archivar</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Usar estrategias para buscar y filtrar fuentes, evaluar los datos con pensamiento crítico y guardar los archivos organizadamente usando la nube.", "de": "Strategien zur Suche und Filterung von Quellen nutzen, Daten kritisch bewerten und Dateien organisiert in der Cloud speichern.", "en": "Use strategies to search and filter sources, evaluate data critically, and organize files securely using the cloud."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk2', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">📡</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "2. Comunicar y Cooperar", "de": "2. Kommunizieren und Kooperieren", "en": "2. Communicate and Cooperate"}'>2. Comunicar y Cooperar</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Interactuar digitalmente, colaborar en equipo en el mismo documento de forma simultánea y aplicar las normas de comportamiento social o \"netiqueta\".", "de": "Digital interagieren, zeitgleich im Team an demselben Dokument arbeiten und soziale Verhaltensregeln (\"Netiquette\") anwenden.", "en": "Interact digitally, collaborate in real time on shared documents, and apply social behavior rules or \"netiquette\"."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 5 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #ef4444; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">🎨</div>
+                            <h2 data-lang-content='{"es": "Marco KMK: Competencias 3 y 4", "de": "KMK-Rahmen: Kompetenzen 3 & 4", "en": "KMK Framework: Competencies 3 & 4"}'>Marco KMK: Competencias 3 y 4</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "La Conferencia de Ministros de Educación de Alemania (KMK) establece los estándares mediante competencias clave (haz clic para descubrir):", "de": "Die Kultusministerkonferenz (KMK) legt Standards durch Schlüsselkompetenzen fest (Klicke zum Entdecken):", "en": "The German Conference of Ministers of Education (KMK) establishes standards through key competencies (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk3', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🎨</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "3. Producir y Presentar", "de": "3. Produzieren und Präsentieren", "en": "3. Produce and Present"}'>3. Producir y Presentar</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Planificar y fusionar contenidos creative respetando requisitos legales cruciales como los derechos de autor, las licencias y la propiedad intelectual.", "de": "Kreative Inhalte planen und gestalten und dabei Urheberrechte, Lizenzen und geistiges Eigentum respektieren.", "en": "Plan and design creative content while respecting crucial legal requirements like copyright, licenses, and intellectual property."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk4', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🛡️</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "4. Protegerse y Actuar con Seguridad", "de": "4. Schützen und Sicher Agieren", "en": "4. Protect and Act Safely"}'>4. Protegerse y Actuar con Seguridad</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Involucra tres factores de protección: cuidar la privacidad (seguridad de los datos), proteger la salud (evitando adicciones) y ser consciente del impacto de la tecnología en el medio ambiente.", "de": "Umfasst drei Schutzfaktoren: Privatsphäre schützen (Datensicherheit), Gesundheit erhalten (Suchtprävention) und sich der Umweltbelastung durch Technologie bewusst sein.", "en": "Involves three protection factors: protecting privacy (data security), safeguarding health (preventing screen addiction), and being aware of the environmental impact of technology."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 6 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #8b5cf6; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">⚙️</div>
+                            <h2 data-lang-content='{"es": "Marco KMK: Competencias 5 y 6", "de": "KMK-Rahmen: Kompetenzen 5 & 6", "en": "KMK Framework: Competencies 5 & 6"}'>Marco KMK: Competencias 5 y 6</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "La Conferencia de Ministros de Educación de Alemania (KMK) establece los estándares mediante competencias clave (haz clic para descubrir):", "de": "Die Kultusministerkonferenz (KMK) legt Standards durch Schlüsselkompetenzen fest (Klicke zum Entdecken):", "en": "The German Conference of Ministers of Education (KMK) establishes standards through key competencies (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk5', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">⚙️</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "5. Solucionar Problemas", "de": "5. Problemlösen und Handeln", "en": "5. Problem Solving"}'>5. Solucionar Problemas</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Identificar fallas técnicas, seleccionar la herramienta correcta y aprender a planificar secuencias estructuradas mediante algoritmos.", "de": "Technische Fehler erkennen, das richtige Werkzeug auswählen und logische Abläufe mittels Algorithmen planen.", "en": "Identify technical failures, select the right tool, and learn to plan structured sequences using algorithms."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk6', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🧠</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "6. Analizar y Reflexionar", "de": "6. Analysieren und Reflektieren", "en": "6. Analyze and Reflect"}'>6. Analizar y Reflexionar</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Detectar los intereses detrás de los contenidos en internet, evaluar críticamente las construcciones mediáticas y reconocer la gran influencia de la tecnología en la toma de decisiones y en la economía.", "de": "Interessen in Web-Inhalten erkennen, Medienkonstruktionen kritisch bewerten und den Einfluss von Technologie auf Entscheidungen und Wirtschaft verstehen.", "en": "Detect the interests behind internet contents, critically evaluate media constructions, and recognize the strong influence of technology on decision-making and the economy."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 7 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #ec4899; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">🎓</div>
+                            <h2 data-lang-content='{"es": "Meta Final: Ciudadanía Digital", "de": "Endziel: Digitale Bürgerschaft", "en": "Ultimate Goal: Digital Citizenship"}'>Meta Final: Ciudadanía Digital</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "El objetivo de todo el programa es preparar a los estudiantes para el futuro (haz clic para descubrir):", "de": "Das Ziel des gesamten Programms ist es, die Schüler auf die Zukunft vorzubereiten (Klicke zum Entdecken):", "en": "The goal of the entire program is to prepare students for the future (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid" style="max-width: 500px; margin: 0 auto;">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'finalgoal', 'fanfare', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🚀</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "Ciudadanía Digital y Autonomía", "de": "Digitale Bürgerschaft und Eigenständigkeit", "en": "Digital Citizenship and Autonomy"}'>Ciudadanía Digital y Autonomía</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "El objetivo de todo el programa es preparar a los estudiantes para que se conviertan en ciudadanos digitales, conscientes y autónomos.", "de": "Das Ziel des gesamten Programms ist es, die Schüler darauf vorzubereiten, bewusste und eigenständige digitale Bürger zu werden.", "en": "The goal of the entire program is to prepare students to become conscious and autonomous digital citizens."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 8 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #06b6d4; text-align: left; align-items: stretch; justify-content: flex-start; min-height: 400px; padding: 25px 35px;">
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                <div class="slide-icon" style="margin: 0; font-size: 2.5em; animation: bounceIcon 2s ease-in-out infinite alternate;">🌟</div>
+                                <h2 style="font-size: 1.6em; text-align: left; margin: 0;" data-lang-content='{"es": "¡Listo para la Aventura!", "de": "Bereit für das Abenteuer!", "en": "Ready for Adventure!"}'>¡Listo para la Aventura!</h2>
+                            </div>
+                            
+                            <h3 style="font-size: 1.05em; font-weight: 700; color: #4f46e5; margin: 0 0 12px 0;" data-lang-content='{"es": "El Pasaporte al Mundo Digital: Guía de Implementación del Medienpass y las Competencias KMK", "de": "Der Reisepass zur digitalen Welt: Implementierungsleitfaden für den Medienpass und die KMK-Kompetenzen", "en": "The Passport to the Digital World: Implementation Guide for the Medienpass and KMK Competencies"}'>El Pasaporte al Mundo Digital: Guía de Implementación del Medienpass y las Competencias KMK</h3>
+                            
+                            <div class="slide-scroll-content">
+                                <!-- Section 1: What is Medienpass -->
+                                <div class="slide-section-title">
+                                    📖 <span data-lang-content='{"es": "¿Qué es el Medienpass?", "de": "Was ist der Medienpass?", "en": "What is the Medienpass?"}'>¿Qué es el Medienpass?</span>
+                                </div>
+                                <p class="slide-detail-p" data-lang-content='{"es": "Es un cuaderno de trabajo que empodera a todos los estudiantes para desarrollar sus competencias digitales de manera lúdica. Se fundamenta en tres pilares:", "de": "Es ist ein Arbeitsheft, das alle Schüler befähigt, ihre digitalen Kompetenzen spielerisch zu entwickeln. Er basiert auf drei Säulen:", "en": "It is a workbook that empowers all students to develop their digital skills in a playful way. It is based on three pillars:"}'></p>
+                                <ul class="slide-bullets">
+                                    <li>
+                                        <strong data-lang-content='{"es": "Centrado en el Estudiante:", "de": "Schülerzentriert:", "en": "Student-Centered:"}'>Centrado en el Estudiante:</strong>
+                                        <span data-lang-content='{"es": " Los alumnos son los dueños y responsables de su propio proceso de aprendizaje.", "de": " Die Schüler sind die Eigentümer und Verantwortlichen ihres eigenen Lernprozesses.", "en": " Students are the owners and responsible for their own learning process."}'> Los alumnos son los dueños y responsables de su propio proceso de aprendizaje.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Transversal:", "de": "Fächerübergreifend:", "en": "Transversal:"}'>Transversal:</strong>
+                                        <span data-lang-content='{"es": " Se puede aplicar en todas las materias escolares, con un énfasis en la clase de alemán.", "de": " Es kann in allen Schulfächern angewendet werden, mit Schwerpunkt auf dem Deutschunterricht.", "en": " It can be applied in all school subjects, with an emphasis on German class."}'> Se puede aplicar en todas las materias escolares, con un énfasis en la clase de alemán.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Formato Híbrido:", "de": "Hybrides Format:", "en": "Hybrid Format:"}'>Formato Híbrido:</strong>
+                                        <span data-lang-content='{"es": " Está diseñado para trabajarse de forma impresa en el salón regular o de forma digital en las aulas de tecnología.", "de": " Entwickelt, um gedruckt im normalen Klassenzimmer oder digital im Technologieunterricht bearbeitet zu werden.", "en": " Designed to be worked in print in the regular classroom or digitally in technology classes."}'> Está diseñado para trabajarse de forma impresa en el salón regular o de forma digital en las aulas de tecnología.</span>
+                                    </li>
+                                </ul>
+
+                                <!-- Section 2: Methodology -->
+                                <div class="slide-section-title">
+                                    🔄 <span data-lang-content='{"es": "Metodología del Medienpass", "de": "Medienpass-Methodik", "en": "Medienpass Methodology"}'>Metodología del Medienpass</span>
+                                </div>
+                                <p class="slide-detail-p" data-lang-content='{"es": "El proceso del alumno sigue un ciclo de tres pasos:", "de": "Der Schülerprozess folgt einem Zyklus von drei Schritten:", "en": "The student\'s process follows a three-step cycle:"}'></p>
+                                <ul class="slide-bullets">
+                                    <li>
+                                        <strong data-lang-content='{"es": "Realizar actividades (retos):", "de": "Aktivitäten (Herausforderungen) durchführen:", "en": "Perform activities (challenges):"}'>Realizar actividades (retos):</strong>
+                                        <span data-lang-content='{"es": " Los alumnos realizan tareas y retos para aprender sobre tecnología.", "de": " Die Schüler führen Aufgaben und Herausforderungen durch, um über Technologie zu lernen.", "en": " Students perform tasks and challenges to learn about technology."}'> Los alumnos realizan tareas y retos para aprender sobre tecnología.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Recibir recompensas (estrellas):", "de": "Belohnungen erhalten (Sterne):", "en": "Receive rewards (stars):"}'>Recibir recompensas (estrellas):</strong>
+                                        <span data-lang-content='{"es": " Representadas con estrellas que reflejan el progreso y esfuerzos.", "de": " Dargestellt durch Sterne, die den Fortschritt und Einsatz widerspiegeln.", "en": " Represented by stars reflecting progress and efforts."}'> Representadas con estrellas que reflejan el progreso y esfuerzos.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Validación:", "de": "Validierung:", "en": "Validation:"}'>Validación:</strong>
+                                        <span data-lang-content='{"es": " Donde un profesor revisa y aprueba o valida la tarea completada.", "de": " Bei der ein Lehrer die abgeschlossene Aufgabe überprüft und genehmigt oder validiert.", "en": " Where a teacher reviews and approves or validates the completed task."}'> Donde un profesor revisa y aprueba o valida la tarea completada.</span>
+                                    </li>
+                                </ul>
+
+                                <!-- Section 3: KMK Framework -->
+                                <div class="slide-section-title">
+                                    🎓 <span data-lang-content='{"es": "El Marco de Referencia KMK", "de": "Der KMK-Referenzrahmen", "en": "The KMK Reference Framework"}'>El Marco de Referencia KMK</span>
+                                </div>
+                                <p class="slide-detail-p" data-lang-content='{"es": "La Conferencia de Ministros de Educación de Alemania (KMK) establece los estándares para que los estudiantes participen de manera activa y segura en el mundo digital mediante 6 competencias clave:", "de": "Die Kultusministerkonferenz (KMK) legt die Standards fest, damit Schüler durch 6 Schlüsselkompetenzen aktiv und sicher an der digitalen Welt teilnehmen können:", "en": "The German Conference of Ministers of Education (KMK) establishes the standards for students to participate actively and safely in the digital world through 6 key competencies:"}'></p>
+                                <ul class="slide-bullets">
+                                    <li>
+                                        <strong data-lang-content='{"es": "Buscar, Procesar y Archivar:", "de": "Suchen, Verarbeiten und Aufbewahren:", "en": "Search, Process, and Archive:"}'>Buscar, Procesar y Archivar:</strong>
+                                        <span data-lang-content='{"es": " Usar estrategias para buscar y filtrar fuentes, evaluar los datos con pensamiento crítico y guardar los archivos organizadamente usando la nube.", "de": " Strategien zur Suche und Filterung von Quellen nutzen, Daten kritisch bewerten und Dateien organisiert in der Cloud speichern.", "en": " Use strategies to search and filter sources, critically evaluate data, and organize files securely using the cloud."}'> Usar estrategias para buscar y filtrar fuentes, evaluar los datos con pensamiento crítico y guardar los archivos organizadamente usando la nube.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Comunicar y Cooperar:", "de": "Kommunizieren und Kooperieren:", "en": "Communicate and Cooperate:"}'>Comunicar y Cooperar:</strong>
+                                        <span data-lang-content='{"es": " Interactuar digitalmente, elaborar documentos en equipo de forma simultánea y aplicar las normas de comportamiento social o \"netiqueta\".", "de": " Digital interagieren, zeitgleich im Team an demselben Dokument arbeiten und soziale Verhaltensregeln (\"Netiquette\") anwenden.", "en": " Interact digitally, collaborate in real time on shared documents, and apply rules of social behavior or \"netiquette\"."}'> Interactuar digitalmente, elaborar documentos en equipo de forma simultánea y aplicar las normas de comportamiento social o "netiqueta".</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Producir y Presentar:", "de": "Produzieren und Präsentieren:", "en": "Produce and Present:"}'>Producir y Presentar:</strong>
+                                        <span data-lang-content='{"es": " Planificar y fusionar contenidos creativos respetando requisitos legales cruciales como los derechos de autor, las licencias y la propiedad intelectual.", "de": " Kreative Inhalte planen und gestalten und dabei wichtige rechtliche Anforderungen wie Urheberrechte, Lizenzen und geistiges Eigentum respektieren.", "en": " Plan and combine creative content while respecting crucial legal requirements such as copyright, licenses, and intellectual property."}'> Planificar y fusionar contenidos creativos respetando requisitos legales cruciales como los derechos de autor, las licencias y la propiedad intelectual.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Protegerse y Actuar con Seguridad:", "de": "Schützen und Sicher Agieren:", "en": "Protect and Act Safely:"}'>Protegerse y Actuar con Seguridad:</strong>
+                                        <span data-lang-content='{"es": " Involucra tres factores de protección: cuidar la privacidad (seguridad de los datos), proteger la salud (evitando adicciones) y ser consciente del impacto de la tecnología en el medio ambiente.", "de": " Umfasst drei Schutzfaktoren: Privatsphäre schützen (Datensicherheit), Gesundheit erhalten (Suchtprävention) und sich der Umweltbelastung durch Technologie bewusst sein.", "en": " Involves three protection factors: protecting privacy (data security), safeguarding health (preventing screen addiction), and being aware of the environmental impact of technology."}'> Involucra tres factores de protección: cuidar la privacidad (seguridad de los datos), proteger la salud (evitando adicciones) y ser consciente del impacto de la tecnología en el medio ambiente.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Solucionar Problemas:", "de": "Problemlösen und Handeln:", "en": "Problem Solving:"}'>Solucionar Problemas:</strong>
+                                        <span data-lang-content='{"es": " Identificar fallas técnicas, seleccionar la herramienta correcta y aprender a planificar secuencias estructuradas mediante algoritmos.", "de": " Technische Fehler erkennen, das richtige Werkzeug auswählen und logische Abläufe mittels Algorithmen planen.", "en": " Identify technical failures, select the right tool, and learn to plan structured sequences using algorithms."}'> Identificar fallas técnicas, seleccionar la herramienta correcta y aprender a planificar secuencias estructuradas mediante algoritmos.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Analizar y Reflexionar:", "de": "Analysieren und Reflektieren:", "en": "Analyze and Reflect:"}'>Analizar y Reflexionar:</strong>
+                                        <span data-lang-content='{"es": " Detectar los intereses detrás de los contenidos en internet, evaluar críticamente las construcciones mediáticas y reconocer la gran influencia de la tecnología en la toma de decisiones y en la economía.", "de": " Interessen in Web-Inhalten erkennen, Medienkonstruktionen kritisch bewerten und den Einfluss von Technologie auf Entscheidungen und Wirtschaft verstehen.", "en": " Detect the interests behind internet contents, critically evaluate media constructions, and recognize the strong influence of technology on decision-making and the economy."}'> Detectar los intereses detrás de los contenidos en internet, evaluar críticamente las construcciones mediáticas y reconocer la gran influencia de la tecnología en la toma de decisiones y en la economía.</span>
+                                    </li>
+                                </ul>
+
+                                <!-- Section 4: Ultimate Goal -->
+                                <div class="slide-section-title">
+                                    🎯 <span data-lang-content='{"es": "Meta Final", "de": "Endziel", "en": "Ultimate Goal"}'>Meta Final</span>
+                                </div>
+                                <p class="slide-detail-p" data-lang-content='{"es": "El objetivo de todo el programa es preparar a los estudiantes para que se conviertan en ciudadanos digitales, conscientes y autónomos.", "de": "Das Ziel des gesamten Programms ist es, die Schüler darauf vorzubereiten, bewusste und eigenständige digitale Bürger zu werden.", "en": "The goal of the entire program is to prepare students to become conscious and autonomous digital citizens."}'></p>
+                            </div>
+
+                            <p style="margin-top: 15px; font-weight: 700; color: #1e293b; font-size: 0.95em;" data-lang-content='{"es": "Ahora completa el cuestionario diagnóstico interactivo que aparece abajo para iniciar oficialmente tus retos. ¡Tú puedes lograrlo!", "de": "Fülle nun den interaktiven Diagnosefragebogen unten aus, um deine Herausforderungen offiziell zu starten. Du schaffst das!", "en": "Now complete the interactive diagnostic questionnaire below to officially start your challenges. You can do it!"}'>Ahora completa el cuestionario diagnóstico interactivo que aparece abajo para iniciar oficialmente tus retos. ¡Tú puedes lograrlo!</p>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="slide-nav">
+                        <button class="slide-btn prev-btn" type="button" onclick="moveSlide(-1)">❮</button>
+                        <div class="slide-dots">
+                            <span class="dot active" onclick="currentSlide(1)"></span>
+                            <span class="dot" onclick="currentSlide(2)"></span>
+                            <span class="dot" onclick="currentSlide(3)"></span>
+                            <span class="dot" onclick="currentSlide(4)"></span>
+                            <span class="dot" onclick="currentSlide(5)"></span>
+                            <span class="dot" onclick="currentSlide(6)"></span>
+                            <span class="dot" onclick="currentSlide(7)"></span>
+                            <span class="dot" onclick="currentSlide(8)"></span>
+                        </div>
+                        <button class="slide-btn next-btn" type="button" onclick="moveSlide(1)">❯</button>
+                    </div>
+                </div>
+            </div>
+        <% } %>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario de Equipos — MedienPass</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; margin: 0; padding: 0; }
+        .inv-header {
+            background: linear-gradient(135deg, #1e1b4b, #4338ca);
+            color: white; padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .hero-title {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hero-icon {
+            font-size: 1.8em;
+        }
+
+        .hero-title-text {
+            font-size: 2.2em; /* Grande */
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            background: linear-gradient(90deg, #fbbf24, #f9a8d4, #a78bfa, #67e8f9, #fbbf24);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle-custom {
+            font-size: 1.1em; /* Más grande */
+            font-weight: 900;
+            color: #fbbf24; /* highlight */
+            margin: 0;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-subtitle {
+            font-size: 0.7em;
+            opacity: 0.85;
+            margin: 0;
+        }
+        .inv-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+        
+        .card { background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .card h2 { margin: 0 0 16px; color: #1e1b4b; display: flex; align-items: center; gap: 10px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .stat-card .num { font-size: 2em; font-weight: 800; }
+        .stat-card .label { color: #64748b; font-size: 0.85em; }
+        .stat-card.total { border-left: 4px solid #4f46e5; }
+        .stat-card.available { border-left: 4px solid #10b981; }
+        .stat-card.assigned { border-left: 4px solid #f59e0b; }
+        .stat-card.maintenance { border-left: 4px solid #ef4444; }
+        
+        .filter-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+        .filter-bar select, .filter-bar input { padding: 8px 14px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9em; }
+        .filter-bar button { padding: 8px 16px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        
+        .btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: #4f46e5; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 0.85em; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 12px; text-align: left; font-size: 0.8em; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+        tr:hover { background: #fafbfe; }
+        
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: 600; }
+        .badge-available { background: #d1fae5; color: #065f46; }
+        .badge-assigned { background: #fef3c7; color: #92400e; }
+        .badge-maintenance { background: #fee2e2; color: #991b1b; }
+        .badge-broken { background: #991b1b; color: white; }
+        
+        .back-link { color: rgba(255,255,255,0.8); text-decoration: none; }
+        .back-link:hover { color: white; }
+        
+        .toast { position: fixed; bottom: 24px; right: 24px; background: #059669; color: white; padding: 14px 24px; border-radius: 12px; display: none; z-index: 1000; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 16px; padding: 24px; max-width: 500px; width: 90%; }
+        .modal h3 { margin: 0 0 16px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-weight: 600; color: #475569; margin-bottom: 6px; font-size: 0.9em; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+        
+        @media print {
+            .inv-header, .filter-bar, .btn, .modal { display: none !important; }
+            .card { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="inv-header">
+        <div class="header-left">
+            <h1 class="hero-title">
+                <span class="hero-icon">💻</span>
+                <span class="hero-title-text notranslate" translate="no">INVENTARIO DE EQUIPOS</span>
+            </h1>
+            <p class="subtitle-custom">PSP - EDUCACIÓN EN MEDIOS - DEUTSCHE SCHULE</p>
+            <p class="header-subtitle">Deutsche Schule Barranquilla — Aula Móvil 1 (AM1)</p>
+        </div>
+        <div>
+            <a href="/admin" class="back-link"><i class="fas fa-arrow-left"></i> Volver al Admin</a>
+        </div>
+    </div>
+
+    <div class="inv-container">
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <div class="num" id="statTotal">0</div>
+                <div class="label">Total Equipos</div>
+            </div>
+            <div class="stat-card available">
+                <div class="num" id="statAvailable">0</div>
+                <div class="label">Disponibles</div>
+            </div>
+            <div class="stat-card assigned">
+                <div class="num" id="statAssigned">0</div>
+                <div class="label">Asignados</div>
+            </div>
+            <div class="stat-card maintenance">
+                <div class="num" id="statMaintenance">0</div>
+                <div class="label">En Mantenimiento</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card">
+            <div class="filter-bar">
+                <select id="filterLocation" onchange="loadDevices()">
+                    <option value="">Todos los salones</option>
+                    <option value="AM1">Aula Móvil 1</option>
+                    <option value="AM2">Aula Móvil 2</option>
+                    <option value="C11">C11</option>
+                    <option value="C12">C12</option>
+                    <option value="Chomsky">Chomsky</option>
+                    <option value="Biblioteca">Biblioteca</option>
+                </select>
+                <select id="filterStatus" onchange="loadDevices()">
+                    <option value="">Todos los estados</option>
+                    <option value="available">Disponible</option>
+                    <option value="assigned">Asignado</option>
+                    <option value="maintenance">En Mantenimiento</option>
+                    <option value="broken">Dañado</option>
+                </select>
+                <button onclick="openAddModal()"><i class="fas fa-plus"></i> Agregar Equipo</button>
+                <button onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Serial</th>
+                        <th>Tipo</th>
+                        <th>Marca/Modelo</th>
+                        <th>Ubicación</th>
+                        <th>Estado</th>
+                        <th>Notas</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="devicesTableBody">
+                    <tr><td colspan="7" style="text-align:center; color:#64748b;">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Agregar/Editar -->
+    <div class="modal" id="deviceModal">
+        <div class="modal-content">
+            <h3 id="modalTitle"><i class="fas fa-plus"></i> Agregar Equipo</h3>
+            <form id="deviceForm">
+                <input type="hidden" id="deviceId">
+                <div class="form-group">
+                    <label>Serial Number *</label>
+                    <input type="text" id="serial_number" required placeholder="Ej: DSB-STU-001">
+                </div>
+                <div class="form-group">
+                    <label>Tipo *</label>
+                    <select id="type" required>
+                        <option value="laptop">Laptop</option>
+                        <option value="tablet">Tablet</option>
+                        <option value="proyector">Proyector</option>
+                        <option value="audifonos">Audífonos</option>
+                        <option value="teclado">Teclado</option>
+                        <option value="mouse">Mouse</option>
+                        <option value="cargador">Cargador</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Marca</label>
+                    <input type="text" id="brand" placeholder="Ej: Dell">
+                </div>
+                <div class="form-group">
+                    <label>Modelo</label>
+                    <input type="text" id="model" placeholder="Ej: Latitude 3320">
+                </div>
+                <div class="form-group">
+                    <label>Ubicación *</label>
+                    <select id="location" required>
+                        <option value="AM1">Aula Móvil 1</option>
+                        <option value="AM2">Aula Móvil 2</option>
+                        <option value="C11">C11</option>
+                        <option value="C12">C12</option>
+                        <option value="Chomsky">Chomsky</option>
+                        <option value="Biblioteca">Biblioteca</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Estado</label>
+                    <select id="status">
+                        <option value="available">Disponible</option>
+                        <option value="assigned">Asignado</option>
+                        <option value="maintenance">En Mantenimiento</option>
+                        <option value="broken">Dañado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notas</label>
+                    <input type="text" id="notes" placeholder="Ej: Estudiante 1">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" style="background:#e2e8f0;" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let editingDevice = null;
+
+        function showToast(msg, isError) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.background = isError ? '#ef4444' : '#10b981';
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+
+        async function loadDevices() {
+            const location = document.getElementById('filterLocation').value;
+            const status = document.getElementById('filterStatus').value;
+            
+            let url = '/api/devices';
+            const params = [];
+            if (location) params.push('location=' + location);
+            if (status) params.push('status=' + status);
+            if (params.length) url += '?' + params.join('&');
+
+            try {
+                const resp = await fetch(url);
+                const result = await resp.json();
+                
+                if (!result.success || !result.devices.length) {
+                    document.getElementById('devicesTableBody').innerHTML = 
+                        '<tr><td colspan="7" style="text-align:center; color:#64748b;">No hay equipos registrados</td></tr>';
+                    updateStats([]);
+                    return;
+                }
+
+                updateStats(result.devices);
+                
+                document.getElementById('devicesTableBody').innerHTML = result.devices.map(d => `
+                    <tr>
+                        <td><strong>${d.serial_number}</strong></td>
+                        <td>${d.type}</td>
+                        <td>${d.brand || ''} ${d.model || ''}</td>
+                        <td>${d.location}</td>
+                        <td><span class="badge badge-${d.status}">${getStatusLabel(d.status)}</span></td>
+                        <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis;">${d.notes || '—'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="openEditModal(${JSON.stringify(d).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading devices:', e);
+                showToast('Error al cargar equipos', true);
+            }
+        }
+
+        function updateStats(devices) {
+            const total = devices.length;
+            const available = devices.filter(d => d.status === 'available').length;
+            const assigned = devices.filter(d => d.status === 'assigned').length;
+            const maintenance = devices.filter(d => d.status === 'maintenance' || d.status === 'broken').length;
+            
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statAvailable').textContent = available;
+            document.getElementById('statAssigned').textContent = assigned;
+            document.getElementById('statMaintenance').textContent = maintenance;
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                'available': 'Disponible',
+                'assigned': 'Asignado',
+                'maintenance': 'En Mantenimiento',
+                'broken': 'Dañado'
+            };
+            return labels[status] || status;
+        }
+
+        function openAddModal() {
+            editingDevice = null;
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus"></i> Agregar Equipo';
+            document.getElementById('deviceForm').reset();
+            document.getElementById('deviceId').value = '';
+            document.getElementById('deviceModal').classList.add('active');
+        }
+
+        function openEditModal(device) {
+            editingDevice = device;
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Equipo';
+            document.getElementById('deviceId').value = device.id;
+            document.getElementById('serial_number').value = device.serial_number;
+            document.getElementById('type').value = device.type;
+            document.getElementById('brand').value = device.brand || '';
+            document.getElementById('model').value = device.model || '';
+            document.getElementById('location').value = device.location;
+            document.getElementById('status').value = device.status;
+            document.getElementById('notes').value = device.notes || '';
+            document.getElementById('deviceModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('deviceModal').classList.remove('active');
+        }
+
+        document.getElementById('deviceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const device = {
+                serial_number: document.getElementById('serial_number').value,
+                type: document.getElementById('type').value,
+                brand: document.getElementById('brand').value || null,
+                model: document.getElementById('model').value || null,
+                location: document.getElementById('location').value,
+                status: document.getElementById('status').value,
+                notes: document.getElementById('notes').value || null
+            };
+
+            const id = document.getElementById('deviceId').value;
+            const url = id ? '/api/devices/' + id : '/api/devices';
+            const method = id ? 'PUT' : 'POST';
+
+            try {
+                const resp = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(device)
+                });
+                const result = await resp.json();
+                
+                if (result.success) {
+                    showToast(id ? 'Equipo actualizado' : 'Equipo agregado');
+                    closeModal();
+                    loadDevices();
+                } else {
+                    showToast(result.message || 'Error', true);
+                }
+            } catch (e) {
+                showToast('Error de conexión', true);
+            }
+        });
+
+        loadDevices();
+    </script>
+</body>
+</html>

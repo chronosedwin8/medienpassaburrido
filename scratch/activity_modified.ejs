@@ -1,0 +1,3097 @@
+<%- include('partials/header') %>
+
+    <div class="navigation-bar">
+        <a href="/<%= section === 'tecnologia' ? '' : '?year=' + currentYear %>" class="back-link">
+            <i class="fas fa-arrow-left"></i> <span data-i18n="back">Zurück</span>
+        </a>
+        <button onclick="window.print()" class="print-btn">
+            <i class="fas fa-print"></i> <span data-i18n="print">Drucken</span>
+        </button>
+    </div>
+
+    <div class="activity-header" style="border-left-color: <%= activity.color || '#ccc' %>;">
+        <div class="icon" style="font-size: 4em; color: <%= activity.color || '#333' %>;">
+            <%= activity.icon %>
+        </div>
+        <h1 data-lang-content='<%- JSON.stringify(activity.title) %>'>
+            <span class="lang-line lang-primary">
+                <%= activity.title.de %>
+            </span>
+        </h1>
+        <% if (activity.subtitle) { %>
+            <p class="subtitle" data-lang-content='<%- JSON.stringify(activity.subtitle) %>'>
+                <span class="lang-line lang-primary">
+                    <%= activity.subtitle.de %>
+                </span>
+            </p>
+        <% } %>
+        <% if (activity.instruction) { %>
+            <div class="activity-instruction" data-lang-content='<%- JSON.stringify(activity.instruction) %>' style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid var(--primary); text-align: left; font-size: 0.95em; color: #334155;">
+                <span class="lang-line lang-primary">
+                    <%- activity.instruction.de %>
+                </span>
+            </div>
+        <% } %>
+
+        <% 
+        const getStudentGrade = (className) => {
+            if (!className) return '5';
+            const match = className.match(/\d+/);
+            return match ? match[0] : '5';
+        };
+        const studentGrade = student ? getStudentGrade(student.class_name) : '5';
+        const activeSub = activity.subject || 'aleman';
+        const activeLvl = activity.level || '1';
+        const configKey = `${studentGrade}_${activeSub}_${activeLvl}`;
+        let toolDescription = (typeof challengeToolsConfig !== 'undefined' && challengeToolsConfig) ? challengeToolsConfig[configKey] : '';
+        let isDefault = false;
+        if (!toolDescription || toolDescription.trim().length === 0) {
+            if (typeof defaultAgentTools !== 'undefined' && defaultAgentTools && defaultAgentTools[activeLvl]) {
+                toolDescription = defaultAgentTools[activeLvl];
+                isDefault = true;
+            }
+        }
+        %>
+
+        <% if (toolDescription && (typeof toolDescription === 'string' ? toolDescription.trim().length > 0 : true)) { %>
+            <div class="teacher-agent-card">
+                <div class="agent-avatar-area">
+                    <span class="agent-avatar">🤖</span>
+                    <div class="agent-title-area">
+                        <h4 data-i18n="teacherAgentTitle">Agente del Profesor</h4>
+                        <p data-i18n="teacherAgentSub">Herramientas sugeridas para esta actividad</p>
+                    </div>
+                </div>
+                <div class="agent-content" <%- isDefault ? `data-lang-content='${JSON.stringify(toolDescription).replace(/'/g, "&#39;")}'` : '' %>>
+                    <i class="fa-solid fa-quote-left text-blue-300 mr-1"></i><%= isDefault ? (toolDescription.es || toolDescription.de || '') : toolDescription %><i class="fa-solid fa-quote-right text-blue-300 ml-1"></i>
+                </div>
+            </div>
+        <% } %>
+
+
+
+
+<!-- Star Self-Evaluation -->
+<% if (activity.id !== 'profile') { %>
+    <div class="star-self-eval" id="starSelfEval" style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #8b5cf6;">
+        <span class="star-eval-label" data-i18n="selfEvaluation">Autoevaluación</span>
+        <p style="font-size: 0.9em; color: #4b5563; margin: 5px 0 10px 0;">
+            Estimado estudiante, tu autoevaluación será analizada por Inteligencia Artificial, la cual te dará un puntaje teniendo en cuenta tu respuesta y la ampliación de la misma en la sección de ¿Puedes explicar por qué seleccionaste esa respuesta?
+        </p>
+        <div class="star-rating-interactive" id="starRating">
+            <% for (let i=1; i<=5; i++) { %>
+                <span class="star-clickable" data-star="<%= i %>"
+                    onclick="setStarRating(<%= i %>)">☆</span>
+            <% } %>
+        </div>
+        <input type="hidden" id="star_rating_value" name="star_rating" value="0">
+    </div>
+<% } %>
+</div>
+
+    <form id="activityForm">
+
+        <% if (activity.id === 'profile') { %>
+            <div class="reto0-accordion" id="reto0Accordion">
+                <!-- Panel 1: Misión descubre el medienpass -->
+                <div class="accordion-panel" id="panel-1">
+                    <button type="button" class="accordion-header active" onclick="toggleAccordionPanel(1)">
+                        <div class="panel-header-left">
+                            <span class="panel-num">1</span>
+                            <span class="panel-title">Misión: descubre el medienpass</span>
+                        </div>
+                        <span class="panel-arrow">▼</span>
+                    </button>
+                    <div class="accordion-content" style="display: block;">
+                        <p class="panel-description">🧭 Debes hacer clic en los botones de desplazamiento y en los botones explicativos y ganar puntos o XP.</p>
+                        <div class="section" id="reto-zero-section" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                <div class="slideshow-container">
+                    <!-- Gamified Quest Tracker -->
+                    <div class="quest-tracker-container" id="questTracker">
+                        <div class="quest-tracker-header">
+                            <span class="quest-tracker-title">
+                                🧭 <span data-lang-content='{"es": "Misión: ¡Descubre el Medienpass!", "de": "Mission: Entdecke den Medienpass!", "en": "Mission: Discover the Medienpass!"}'>Misión: ¡Descubre el Medienpass!</span>
+                            </span>
+                            <span class="quest-tracker-stats" id="quest-tracker-count">⭐ 0 XP</span>
+                        </div>
+                        <div class="quest-tracker-progress">
+                            <div class="quest-tracker-fill" id="quest-tracker-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 1 -->
+                    <div class="mySlides fade">
+                        <div class="slide-card" style="border-top-color: #6366f1;">
+                            <div class="slide-icon">🚀</div>
+                            <h2 data-lang-content='{"es": "El Pasaporte al Mundo Digital", "de": "Der Reisepass zur digitalen Welt", "en": "The Passport to the Digital World"}'>El Pasaporte al Mundo Digital</h2>
+                            <p data-lang-content='{"es": "Guía de Implementación del Medienpass y las Competencias KMK. ¡Tu aventura digital comienza hoy!", "de": "Implementierungsleitfaden für den Medienpass und die KMK-Kompetenzen. Dein digitales Abenteuer beginnt heute!", "en": "Implementation Guide for the Medienpass and KMK Competencies. Your digital adventure starts today!"}'>Guía de Implementación del Medienpass</p>
+                        </div>
+                    </div>
+                    <!-- Slide 2 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #3b82f6; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">📖</div>
+                            <h2 data-lang-content='{"es": "¿Qué es el Medienpass?", "de": "Was ist der Medienpass?", "en": "What is the Medienpass?"}'>¿Qué es el Medienpass?</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "Es un cuaderno de trabajo que empodera a todos los estudiantes para desarrollar sus competencias digitales de manera lúdica. Se fundamenta en tres pilares (haz clic para descubrir cada uno):", "de": "Es ist ein Arbeitsheft, das alle Schüler befähigt, ihre digitalen Kompetenzen spielerisch zu entwickeln. Er basiert auf drei Säulen (Klicke zum Entdecken):", "en": "It is a workbook that empowers all students to develop their digital skills in a playful way. It is based on three pillars (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'pillar1', 'pop', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">👤</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "Centrado en el Estudiante", "de": "Schülerzentriert", "en": "Student-Centered"}'>Centrado en el Estudiante</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Los alumnos son los dueños y responsables de su propio proceso de aprendizaje.", "de": "Die Schüler sind die Eigentümer und Verantwortlichen ihres eigenen Lernprozesses.", "en": "Students are the owners and responsible for their own learning process."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'pillar2', 'pop', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">📚</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "Transversal", "de": "Fächerübergreifend", "en": "Transversal"}'>Transversal</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Se puede aplicar en todas las materias escolares, con un énfasis en la clase de alemán.", "de": "Es kann in allen Schulfächern angewendet werden, mit Schwerpunkt auf dem Deutschunterricht.", "en": "It can be applied in all school subjects, with an emphasis on German class."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'pillar3', 'pop', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">💻</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "Formato Híbrido", "de": "Hybrides Format", "en": "Hybrid Format"}'>Formato Híbrido</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Está diseñado para trabajarse de forma impresa en el salón regular o de forma digital en las aulas de tecnología.", "de": "Entwickelt, um gedruckt im Klassenzimmer oder digital im Technologieunterricht bearbeitet zu werden.", "en": "Designed to be worked in print in the classroom or digitally in technology classes."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 3 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #10b981; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">🔄</div>
+                            <h2 data-lang-content='{"es": "Metodología del Medienpass", "de": "Medienpass-Methodik", "en": "Medienpass Methodology"}'>Metodología del Medienpass</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "El proceso del alumno sigue un ciclo de tres pasos (haz clic para descubrir cada uno):", "de": "Der Schülerprozess folgt einem Zyklus von drei Schritten (Klicke zum Entdecken):", "en": "The student\'s process follows a three-step cycle (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'method1', 'coin', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🎯</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "1. Realizar Actividades (Retos)", "de": "1. Aktivitäten (Herausforderungen) durchführen", "en": "1. Perform Activities (Challenges)"}'>Realizar actividades (retos)</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Completar las tareas de aprendizaje digital asignadas por tus profesores.", "de": "Absolviere die von deinen Lehrern zugewiesenen digitalen Aufgaben.", "en": "Complete the digital learning tasks assigned by your teachers."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'method2', 'coin', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">⭐</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "2. Recibir Recompensas", "de": "2. Belohnungen erhalten", "en": "2. Receive Rewards"}'>Recibir recompensas</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Obtener estrellas que reflejan tu progreso, dedicación y esfuerzos en cada materia.", "de": "Erhalte Sterne, die deinen Fortschritt, deinen Einsatz und deine Bemühungen in jedem Fach widerspiegeln.", "en": "Get stars reflecting your progress, dedication, and efforts in each subject."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'method3', 'coin', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">✅</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "3. Validación Docente", "de": "3. Validierung durch Lehrer", "en": "3. Teacher Validation"}'>Validación</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Culmina cuando tu profesor revisa y aprueba o valida formalmente la tarea completada.", "de": "Es endet, wenn dein Lehrer deine abgeschlossene Aufgabe überprüft und genehmigt oder validiert.", "en": "Ends when your teacher reviews and approves or validates the completed task."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 4 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #f59e0b; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">🔍</div>
+                            <h2 data-lang-content='{"es": "Marco KMK: Competencias 1 y 2", "de": "KMK-Rahmen: Kompetenzen 1 & 2", "en": "KMK Framework: Competencies 1 & 2"}'>Marco KMK: Competencias 1 y 2</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "La Conferencia de Ministros de Educación de Alemania (KMK) establece los estándares mediante competencias clave (haz clic para descubrir):", "de": "Die Kultusministerkonferenz (KMK) legt Standards durch Schlüsselkompetenzen fest (Klicke zum Entdecken):", "en": "The German Conference of Ministers of Education (KMK) establishes standards through key competencies (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk1', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🔍</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "1. Buscar, Procesar y Archivar", "de": "1. Suchen, Verarbeiten und Aufbewahren", "en": "1. Search, Process, and Archive"}'>1. Buscar, Procesar y Archivar</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Usar estrategias para buscar y filtrar fuentes, evaluar los datos con pensamiento crítico y guardar los archivos organizadamente usando la nube.", "de": "Strategien zur Suche und Filterung von Quellen nutzen, Daten kritisch bewerten und Dateien organisiert in der Cloud speichern.", "en": "Use strategies to search and filter sources, evaluate data critically, and organize files securely using the cloud."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk2', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">📡</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "2. Comunicar y Cooperar", "de": "2. Kommunizieren und Kooperieren", "en": "2. Communicate and Cooperate"}'>2. Comunicar y Cooperar</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Interactuar digitalmente, colaborar en equipo en el mismo documento de forma simultánea y aplicar las normas de comportamiento social o \"netiqueta\".", "de": "Digital interagieren, zeitgleich im Team an demselben Dokument arbeiten und soziale Verhaltensregeln (\"Netiquette\") anwenden.", "en": "Interact digitally, collaborate in real time on shared documents, and apply social behavior rules or \"netiquette\"."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 5 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #ef4444; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">🎨</div>
+                            <h2 data-lang-content='{"es": "Marco KMK: Competencias 3 y 4", "de": "KMK-Rahmen: Kompetenzen 3 & 4", "en": "KMK Framework: Competencies 3 & 4"}'>Marco KMK: Competencias 3 y 4</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "La Conferencia de Ministros de Educación de Alemania (KMK) establece los estándares mediante competencias clave (haz clic para descubrir):", "de": "Die Kultusministerkonferenz (KMK) legt Standards durch Schlüsselkompetenzen fest (Klicke zum Entdecken):", "en": "The German Conference of Ministers of Education (KMK) establishes standards through key competencies (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk3', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🎨</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "3. Producir y Presentar", "de": "3. Produzieren und Präsentieren", "en": "3. Produce and Present"}'>3. Producir y Presentar</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Planificar y fusionar contenidos creative respetando requisitos legales cruciales como los derechos de autor, las licencias y la propiedad intelectual.", "de": "Kreative Inhalte planen und gestalten und dabei Urheberrechte, Lizenzen und geistiges Eigentum respektieren.", "en": "Plan and design creative content while respecting crucial legal requirements like copyright, licenses, and intellectual property."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk4', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🛡️</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "4. Protegerse y Actuar con Seguridad", "de": "4. Schützen und Sicher Agieren", "en": "4. Protect and Act Safely"}'>4. Protegerse y Actuar con Seguridad</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Involucra tres factores de protección: cuidar la privacidad (seguridad de los datos), proteger la salud (evitando adicciones) y ser consciente del impacto de la tecnología en el medio ambiente.", "de": "Umfasst drei Schutzfaktoren: Privatsphäre schützen (Datensicherheit), Gesundheit erhalten (Suchtprävention) und sich der Umweltbelastung durch Technologie bewusst sein.", "en": "Involves three protection factors: protecting privacy (data security), safeguarding health (preventing screen addiction), and being aware of the environmental impact of technology."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 6 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #8b5cf6; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">⚙️</div>
+                            <h2 data-lang-content='{"es": "Marco KMK: Competencias 5 y 6", "de": "KMK-Rahmen: Kompetenzen 5 & 6", "en": "KMK Framework: Competencies 5 & 6"}'>Marco KMK: Competencias 5 y 6</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "La Conferencia de Ministros de Educación de Alemania (KMK) establece los estándares mediante competencias clave (haz clic para descubrir):", "de": "Die Kultusministerkonferenz (KMK) legt Standards durch Schlüsselkompetenzen fest (Klicke zum Entdecken):", "en": "The German Conference of Ministers of Education (KMK) establishes standards through key competencies (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk5', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">⚙️</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "5. Solucionar Problemas", "de": "5. Problemlösen und Handeln", "en": "5. Problem Solving"}'>5. Solucionar Problemas</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Identificar fallas técnicas, seleccionar la herramienta correcta y aprender a planificar secuencias estructuradas mediante algoritmos.", "de": "Technische Fehler erkennen, das richtige Werkzeug auswählen und logische Abläufe mittels Algorithmen planen.", "en": "Identify technical failures, select the right tool, and learn to plan structured sequences using algorithms."}'></p>
+                                    </div>
+                                </div>
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'kmk6', 'chime', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🧠</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "6. Analizar y Reflexionar", "de": "6. Analysieren und Reflektieren", "en": "6. Analyze and Reflect"}'>6. Analizar y Reflexionar</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "Detectar los intereses detrás de los contenidos en internet, evaluar críticamente las construcciones mediáticas y reconocer la gran influencia de la tecnología en la toma de decisiones y en la economía.", "de": "Interessen in Web-Inhalten erkennen, Medienkonstruktionen kritisch bewerten und den Einfluss von Technologie auf Entscheidungen und Wirtschaft verstehen.", "en": "Detect the interests behind internet contents, critically evaluate media constructions, and recognize the strong influence of technology on decision-making and the economy."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 7 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #ec4899; text-align: center; align-items: stretch;">
+                            <div class="slide-icon">🎓</div>
+                            <h2 data-lang-content='{"es": "Meta Final: Ciudadanía Digital", "de": "Endziel: Digitale Bürgerschaft", "en": "Ultimate Goal: Digital Citizenship"}'>Meta Final: Ciudadanía Digital</h2>
+                            <p style="margin-bottom: 15px;" data-lang-content='{"es": "El objetivo de todo el programa es preparar a los estudiantes para el futuro (haz clic para descubrir):", "de": "Das Ziel des gesamten Programms ist es, die Schüler auf die Zukunft vorzubereiten (Klicke zum Entdecken):", "en": "The goal of the entire program is to prepare students for the future (Click to explore):"}'></p>
+                            
+                            <div class="concept-grid" style="max-width: 500px; margin: 0 auto;">
+                                <div class="concept-item-card" onclick="exploreConcept(this, 'finalgoal', 'fanfare', event)">
+                                    <div class="concept-header-row">
+                                        <span class="concept-badge-icon">🚀</span>
+                                        <span class="concept-title-text" data-lang-content='{"es": "Ciudadanía Digital y Autonomía", "de": "Digitale Bürgerschaft und Eigenständigkeit", "en": "Digital Citizenship and Autonomy"}'>Ciudadanía Digital y Autonomía</span>
+                                        <span class="concept-status-check">🔍</span>
+                                    </div>
+                                    <div class="concept-body-content">
+                                        <p data-lang-content='{"es": "El objetivo de todo el programa es preparar a los estudiantes para que se conviertan en ciudadanos digitales, conscientes y autónomos.", "de": "Das Ziel des gesamten Programms ist es, die Schüler darauf vorzubereiten, bewusste und eigenständige digitale Bürger zu werden.", "en": "The goal of the entire program is to prepare students to become conscious and autonomous digital citizens."}'></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 8 -->
+                    <div class="mySlides fade" style="display:none;">
+                        <div class="slide-card" style="border-top-color: #06b6d4; text-align: left; align-items: stretch; justify-content: flex-start; min-height: 400px; padding: 25px 35px;">
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                <div class="slide-icon" style="margin: 0; font-size: 2.5em; animation: bounceIcon 2s ease-in-out infinite alternate;">🌟</div>
+                                <h2 style="font-size: 1.6em; text-align: left; margin: 0;" data-lang-content='{"es": "¡Listo para la Aventura!", "de": "Bereit für das Abenteuer!", "en": "Ready for Adventure!"}'>¡Listo para la Aventura!</h2>
+                            </div>
+                            
+                            <h3 style="font-size: 1.05em; font-weight: 700; color: #4f46e5; margin: 0 0 12px 0;" data-lang-content='{"es": "El Pasaporte al Mundo Digital: Guía de Implementación del Medienpass y las Competencias KMK", "de": "Der Reisepass zur digitalen Welt: Implementierungsleitfaden für den Medienpass und die KMK-Kompetenzen", "en": "The Passport to the Digital World: Implementation Guide for the Medienpass and KMK Competencies"}'>El Pasaporte al Mundo Digital: Guía de Implementación del Medienpass y las Competencias KMK</h3>
+                            
+                            <div class="slide-scroll-content">
+                                <!-- Section 1: What is Medienpass -->
+                                <div class="slide-section-title">
+                                    📖 <span data-lang-content='{"es": "¿Qué es el Medienpass?", "de": "Was ist der Medienpass?", "en": "What is the Medienpass?"}'>¿Qué es el Medienpass?</span>
+                                </div>
+                                <p class="slide-detail-p" data-lang-content='{"es": "Es un cuaderno de trabajo que empodera a todos los estudiantes para desarrollar sus competencias digitales de manera lúdica. Se fundamenta en tres pilares:", "de": "Es ist ein Arbeitsheft, das alle Schüler befähigt, ihre digitalen Kompetenzen spielerisch zu entwickeln. Er basiert auf drei Säulen:", "en": "It is a workbook that empowers all students to develop their digital skills in a playful way. It is based on three pillars:"}'></p>
+                                <ul class="slide-bullets">
+                                    <li>
+                                        <strong data-lang-content='{"es": "Centrado en el Estudiante:", "de": "Schülerzentriert:", "en": "Student-Centered:"}'>Centrado en el Estudiante:</strong>
+                                        <span data-lang-content='{"es": " Los alumnos son los dueños y responsables de su propio proceso de aprendizaje.", "de": " Die Schüler sind die Eigentümer und Verantwortlichen ihres eigenen Lernprozesses.", "en": " Students are the owners and responsible for their own learning process."}'> Los alumnos son los dueños y responsables de su propio proceso de aprendizaje.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Transversal:", "de": "Fächerübergreifend:", "en": "Transversal:"}'>Transversal:</strong>
+                                        <span data-lang-content='{"es": " Se puede aplicar en todas las materias escolares, con un énfasis en la clase de alemán.", "de": " Es kann in allen Schulfächern angewendet werden, mit Schwerpunkt auf dem Deutschunterricht.", "en": " It can be applied in all school subjects, with an emphasis on German class."}'> Se puede aplicar en todas las materias escolares, con un énfasis en la clase de alemán.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Formato Híbrido:", "de": "Hybrides Format:", "en": "Hybrid Format:"}'>Formato Híbrido:</strong>
+                                        <span data-lang-content='{"es": " Está diseñado para trabajarse de forma impresa en el salón regular o de forma digital en las aulas de tecnología.", "de": " Entwickelt, um gedruckt im normalen Klassenzimmer oder digital im Technologieunterricht bearbeitet zu werden.", "en": " Designed to be worked in print in the regular classroom or digitally in technology classes."}'> Está diseñado para trabajarse de forma impresa en el salón regular o de forma digital en las aulas de tecnología.</span>
+                                    </li>
+                                </ul>
+
+                                <!-- Section 2: Methodology -->
+                                <div class="slide-section-title">
+                                    🔄 <span data-lang-content='{"es": "Metodología del Medienpass", "de": "Medienpass-Methodik", "en": "Medienpass Methodology"}'>Metodología del Medienpass</span>
+                                </div>
+                                <p class="slide-detail-p" data-lang-content='{"es": "El proceso del alumno sigue un ciclo de tres pasos:", "de": "Der Schülerprozess folgt einem Zyklus von drei Schritten:", "en": "The student\'s process follows a three-step cycle:"}'></p>
+                                <ul class="slide-bullets">
+                                    <li>
+                                        <strong data-lang-content='{"es": "Realizar actividades (retos):", "de": "Aktivitäten (Herausforderungen) durchführen:", "en": "Perform activities (challenges):"}'>Realizar actividades (retos):</strong>
+                                        <span data-lang-content='{"es": " Los alumnos realizan tareas y retos para aprender sobre tecnología.", "de": " Die Schüler führen Aufgaben und Herausforderungen durch, um über Technologie zu lernen.", "en": " Students perform tasks and challenges to learn about technology."}'> Los alumnos realizan tareas y retos para aprender sobre tecnología.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Recibir recompensas (estrellas):", "de": "Belohnungen erhalten (Sterne):", "en": "Receive rewards (stars):"}'>Recibir recompensas (estrellas):</strong>
+                                        <span data-lang-content='{"es": " Representadas con estrellas que reflejan el progreso y esfuerzos.", "de": " Dargestellt durch Sterne, die den Fortschritt und Einsatz widerspiegeln.", "en": " Represented by stars reflecting progress and efforts."}'> Representadas con estrellas que reflejan el progreso y esfuerzos.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Validación:", "de": "Validierung:", "en": "Validation:"}'>Validación:</strong>
+                                        <span data-lang-content='{"es": " Donde un profesor revisa y aprueba o valida la tarea completada.", "de": " Bei der ein Lehrer die abgeschlossene Aufgabe überprüft und genehmigt oder validiert.", "en": " Where a teacher reviews and approves or validates the completed task."}'> Donde un profesor revisa y aprueba o valida la tarea completada.</span>
+                                    </li>
+                                </ul>
+
+                                <!-- Section 3: KMK Framework -->
+                                <div class="slide-section-title">
+                                    🎓 <span data-lang-content='{"es": "El Marco de Referencia KMK", "de": "Der KMK-Referenzrahmen", "en": "The KMK Reference Framework"}'>El Marco de Referencia KMK</span>
+                                </div>
+                                <p class="slide-detail-p" data-lang-content='{"es": "La Conferencia de Ministros de Educación de Alemania (KMK) establece los estándares para que los estudiantes participen de manera activa y segura en el mundo digital mediante 6 competencias clave:", "de": "Die Kultusministerkonferenz (KMK) legt die Standards fest, damit Schüler durch 6 Schlüsselkompetenzen aktiv und sicher an der digitalen Welt teilnehmen können:", "en": "The German Conference of Ministers of Education (KMK) establishes the standards for students to participate actively and safely in the digital world through 6 key competencies:"}'></p>
+                                <ul class="slide-bullets">
+                                    <li>
+                                        <strong data-lang-content='{"es": "Buscar, Procesar y Archivar:", "de": "Suchen, Verarbeiten und Aufbewahren:", "en": "Search, Process, and Archive:"}'>Buscar, Procesar y Archivar:</strong>
+                                        <span data-lang-content='{"es": " Usar estrategias para buscar y filtrar fuentes, evaluar los datos con pensamiento crítico y guardar los archivos organizadamente usando la nube.", "de": " Strategien zur Suche und Filterung von Quellen nutzen, Daten kritisch bewerten und Dateien organisiert in der Cloud speichern.", "en": " Use strategies to search and filter sources, critically evaluate data, and organize files securely using the cloud."}'> Usar estrategias para buscar y filtrar fuentes, evaluar los datos con pensamiento crítico y guardar los archivos organizadamente usando la nube.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Comunicar y Cooperar:", "de": "Kommunizieren und Kooperieren:", "en": "Communicate and Cooperate:"}'>Comunicar y Cooperar:</strong>
+                                        <span data-lang-content='{"es": " Interactuar digitalmente, elaborar documentos en equipo de forma simultánea y aplicar las normas de comportamiento social o \"netiqueta\".", "de": " Digital interagieren, zeitgleich im Team an demselben Dokument arbeiten und soziale Verhaltensregeln (\"Netiquette\") anwenden.", "en": " Interact digitally, collaborate in real time on shared documents, and apply rules of social behavior or \"netiquette\"."}'> Interactuar digitalmente, elaborar documentos en equipo de forma simultánea y aplicar las normas de comportamiento social o "netiqueta".</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Producir y Presentar:", "de": "Produzieren und Präsentieren:", "en": "Produce and Present:"}'>Producir y Presentar:</strong>
+                                        <span data-lang-content='{"es": " Planificar y fusionar contenidos creativos respetando requisitos legales cruciales como los derechos de autor, las licencias y la propiedad intelectual.", "de": " Kreative Inhalte planen und gestalten und dabei wichtige rechtliche Anforderungen wie Urheberrechte, Lizenzen und geistiges Eigentum respektieren.", "en": " Plan and combine creative content while respecting crucial legal requirements such as copyright, licenses, and intellectual property."}'> Planificar y fusionar contenidos creativos respetando requisitos legales cruciales como los derechos de autor, las licencias y la propiedad intelectual.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Protegerse y Actuar con Seguridad:", "de": "Schützen und Sicher Agieren:", "en": "Protect and Act Safely:"}'>Protegerse y Actuar con Seguridad:</strong>
+                                        <span data-lang-content='{"es": " Involucra tres factores de protección: cuidar la privacidad (seguridad de los datos), proteger la salud (evitando adicciones) y ser consciente del impacto de la tecnología en el medio ambiente.", "de": " Umfasst drei Schutzfaktoren: Privatsphäre schützen (Datensicherheit), Gesundheit erhalten (Suchtprävention) und sich der Umweltbelastung durch Technologie bewusst sein.", "en": " Involves three protection factors: protecting privacy (data security), safeguarding health (preventing screen addiction), and being aware of the environmental impact of technology."}'> Involucra tres factores de protección: cuidar la privacidad (seguridad de los datos), proteger la salud (evitando adicciones) y ser consciente del impacto de la tecnología en el medio ambiente.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Solucionar Problemas:", "de": "Problemlösen und Handeln:", "en": "Problem Solving:"}'>Solucionar Problemas:</strong>
+                                        <span data-lang-content='{"es": " Identificar fallas técnicas, seleccionar la herramienta correcta y aprender a planificar secuencias estructuradas mediante algoritmos.", "de": " Technische Fehler erkennen, das richtige Werkzeug auswählen und logische Abläufe mittels Algorithmen planen.", "en": " Identify technical failures, select the right tool, and learn to plan structured sequences using algorithms."}'> Identificar fallas técnicas, seleccionar la herramienta correcta y aprender a planificar secuencias estructuradas mediante algoritmos.</span>
+                                    </li>
+                                    <li>
+                                        <strong data-lang-content='{"es": "Analizar y Reflexionar:", "de": "Analysieren und Reflektieren:", "en": "Analyze and Reflect:"}'>Analizar y Reflexionar:</strong>
+                                        <span data-lang-content='{"es": " Detectar los intereses detrás de los contenidos en internet, evaluar críticamente las construcciones mediáticas y reconocer la gran influencia de la tecnología en la toma de decisiones y en la economía.", "de": " Interessen in Web-Inhalten erkennen, Medienkonstruktionen kritisch bewerten und den Einfluss von Technologie auf Entscheidungen und Wirtschaft verstehen.", "en": " Detect the interests behind internet contents, critically evaluate media constructions, and recognize the strong influence of technology on decision-making and the economy."}'> Detectar los intereses detrás de los contenidos en internet, evaluar críticamente las construcciones mediáticas y reconocer la gran influencia de la tecnología en la toma de decisiones y en la economía.</span>
+                                    </li>
+                                </ul>
+
+                                <!-- Section 4: Ultimate Goal -->
+                                <div class="slide-section-title">
+                                    🎯 <span data-lang-content='{"es": "Meta Final", "de": "Endziel", "en": "Ultimate Goal"}'>Meta Final</span>
+                                </div>
+                                <p class="slide-detail-p" data-lang-content='{"es": "El objetivo de todo el programa es preparar a los estudiantes para que se conviertan en ciudadanos digitales, conscientes y autónomos.", "de": "Das Ziel des gesamten Programms ist es, die Schüler darauf vorzubereiten, bewusste und eigenständige digitale Bürger zu werden.", "en": "The goal of the entire program is to prepare students to become conscious and autonomous digital citizens."}'></p>
+                            </div>
+
+                            <p style="margin-top: 15px; font-weight: 700; color: #1e293b; font-size: 0.95em;" data-lang-content='{"es": "Ahora completa el cuestionario diagnóstico interactivo que aparece abajo para iniciar oficialmente tus retos. ¡Tú puedes lograrlo!", "de": "Fülle nun den interaktiven Diagnosefragebogen unten aus, um deine Herausforderungen offiziell zu starten. Du schaffst das!", "en": "Now complete the interactive diagnostic questionnaire below to officially start your challenges. You can do it!"}'>Ahora completa el cuestionario diagnóstico interactivo que aparece abajo para iniciar oficialmente tus retos. ¡Tú puedes lograrlo!</p>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="slide-nav">
+                        <button class="slide-btn prev-btn" type="button" onclick="moveSlide(-1)">❮</button>
+                        <div class="slide-dots">
+                            <span class="dot active" onclick="currentSlide(1)"></span>
+                            <span class="dot" onclick="currentSlide(2)"></span>
+                            <span class="dot" onclick="currentSlide(3)"></span>
+                            <span class="dot" onclick="currentSlide(4)"></span>
+                            <span class="dot" onclick="currentSlide(5)"></span>
+                            <span class="dot" onclick="currentSlide(6)"></span>
+                            <span class="dot" onclick="currentSlide(7)"></span>
+                            <span class="dot" onclick="currentSlide(8)"></span>
+                        </div>
+                        <button class="slide-btn next-btn" type="button" onclick="moveSlide(1)">❯</button>
+                    </div>
+                </div>
+            </div>
+                        <div class="panel-actions" style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="accordion-next-btn" onclick="advanceAccordionPanel(1)">
+                                Siguiente Módulo <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 2: Mi avatar favorito -->
+                <div class="accordion-panel" id="panel-2">
+                    <button type="button" class="accordion-header" onclick="toggleAccordionPanel(2)">
+                        <div class="panel-header-left">
+                            <span class="panel-num">2</span>
+                            <span class="panel-title">Mi avatar favorito</span>
+                        </div>
+                        <span class="panel-arrow">▼</span>
+                    </button>
+                    <div class="accordion-content" style="display: none;">
+                        <p class="panel-description">👤 Elige tu avatar favorito. Tu identidad digital es muy valiosa; no compartas fotos reales en sitios públicos de internet.</p>
+                        <div class="section" style="text-align: center;">
+                                <h2><i class="fas fa-camera"></i> <span data-i18n="profilePictureTitle">Mein
+                                        Profilbild</span>
+                                </h2>
+
+                                <div class="avatar-selector-container" id="avatarSelectorContainer">
+                                    <p style="margin-bottom: 15px; color: #64748b; font-weight: 600;" data-i18n="avatarInstruction">Selecciona tu avatar / Wähle deinen Avatar:</p>
+                                    <div class="avatar-grid" id="avatarGrid">
+                                        <!-- Avatares: Animales, Dino, Emojis, Tecnología, Deportes, Números, Ciencia, Arte y Materias -->
+                                        <% const avatars = [
+                                            '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🦄','🐝','🐛','🦋','🐢','🐙','🐠','🐳','🐊','🐅','🐆','🦓','🦍','🐘','🦛','🦏','🐪','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔',
+                                            '🦖','🦕',
+                                            '0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟',
+                                            '🤖','👽','👾','🦸‍♂️','🦸‍♀️','🧙‍♂️','🧙‍♀️','🧛‍♂️','🧛‍♀️','🧚‍♂️','🧚‍♀️','🧜‍♂️','🧜‍♀️','🧝‍♂️','🧝‍♀️','🧞‍♂️','🧞‍♀️','🧟‍♂️','🧟‍♀️',
+                                            '💻','📱','🎧','🎮','🖥️','⌨️','🖱️','🔋','📡','🛰️','🚀','🛸',
+                                            '🧪','⚗️','🔬','⚛️','🔭','🧬','🧫',
+                                            '🎨','🖌️','🖍️','🖼️','🎭','🎻','🎸','🎹','🎷','🎺','🎵','🎬',
+                                            '⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🥋','🤺','🏊','🚴','🏆',
+                                            '📚','📓','📔','📒','📕','📗','📘','📙','📜','📄','📰','🌎','🗺️','🧭','📐','📏','🕰️','💡','🧮','♟️','🎲','🧩','🪁',
+                                            '🍎','🍔','🍕','🍦','🍩','✈️','🏎️','🚲','🌈','⭐','🔥','⚡','❄️',
+                                            'α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'
+                                        ]; %>
+                                        <% avatars.forEach((av, idx) => { %>
+                                            <div class="avatar-option" data-avatar="<%= av %>" onclick="selectAvatar('<%= av %>')"><%= av %></div>
+                                        <% }); %>
+                                    </div>
+                                    
+                                    <div class="selected-avatar-display" style="margin-top: 20px; text-align: center;">
+                                        <p style="font-weight: 600; color: #4338ca;">Tu selección:</p>
+                                        <div id="currentAvatarDisplay" style="font-size: 4em; margin: 10px auto; width: 80px; height: 80px; line-height: 80px; background: #e0e7ff; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 3px solid #4f46e5; color: #1e1b4b;">❓</div>
+                                    </div>
+
+                                    <input type="hidden" id="profile_photo" name="profile_photo" value="">
+                                    
+                                    <div style="text-align: center; margin-top: 25px;">
+                                        <button type="button" class="save-btn" onclick="saveAvatarAndContinue(this)" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);">
+                                            <i class="fas fa-save"></i> Guardar mi Avatar y Continuar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <style>
+                                    .avatar-grid {
+                                        display: flex;
+                                        flex-wrap: wrap;
+                                        gap: 8px;
+                                        justify-content: center;
+                                        max-width: 600px;
+                                        margin: 0 auto;
+                                        max-height: 250px;
+                                        overflow-y: auto;
+                                        padding: 10px;
+                                        border: 2px solid #e2e8f0;
+                                        border-radius: 12px;
+                                        background: #f8fafc;
+                                    }
+                                    .avatar-option {
+                                        font-size: 1.6em;
+                                        cursor: pointer;
+                                        width: 40px;
+                                        height: 40px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        background: white;
+                                        border-radius: 10px;
+                                        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                                        transition: transform 0.2s, background 0.2s;
+                                        border: 2px solid transparent;
+                                        color: #1e293b;
+                                    }
+                                    .avatar-option:hover {
+                                        transform: scale(1.15);
+                                        background: #eef2ff;
+                                    }
+                                    .avatar-option.selected {
+                                        border-color: #4f46e5;
+                                        background: #e0e7ff;
+                                        transform: scale(1.15);
+                                        box-shadow: 0 4px 10px rgba(79,70,229,0.3);
+                                    }
+                                    
+                                    /* Custom scrollbar */
+                                    .avatar-grid::-webkit-scrollbar { width: 8px; }
+                                    .avatar-grid::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+                                    .avatar-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+                                    .avatar-grid::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+                                </style>
+                            </div>
+                        <div class="panel-actions" style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="save-btn" onclick="saveProfileModule(2, this)">
+                                <i class="fas fa-save"></i> Guardar mi Avatar y Continuar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 3: Este soy yo!!! -->
+                <div class="accordion-panel" id="panel-3">
+                    <button type="button" class="accordion-header" onclick="toggleAccordionPanel(3)">
+                        <div class="panel-header-left">
+                            <span class="panel-num">3</span>
+                            <span class="panel-title">Este soy yo!!!</span>
+                        </div>
+                        <span class="panel-arrow">▼</span>
+                    </button>
+                    <div class="accordion-content" style="display: none;">
+                        <p class="panel-description">📝 Completa tu perfil. Tus datos personales son sensibles y merecen ser protegidos de personas extrañas.</p>
+                        
+<div class="profile-fields-section">
+    <% activity.evidence.forEach(item=> { %>
+        <% if (!item.id.startsWith('eval_q')) { %>
+            <div class="form-group">
+                <label for="<%= item.id %>" data-lang-content="<%- JSON.stringify(item.label).replace(/"/g, '&quot;') %>">
+                    <span class="lang-line lang-primary">
+                        <%= (item.label && item.label.es) || (item.label && item.label.de) || '' %>
+                    </span>
+                </label>
+                <% if (item.type === 'text') { %>
+                    <input type="text" id="<%= item.id %>" name="<%= item.id %>" placeholder="Escribe aquí...">
+                <% } else if (item.type === 'textarea') { %>
+                    <textarea id="<%= item.id %>" name="<%= item.id %>" rows="<%= item.rows || 3 %>" placeholder="Escribe aquí..."></textarea>
+                <% } %>
+            </div>
+        <% } %>
+    <% }) %>
+</div>
+
+                        <div class="panel-actions" style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="save-btn" onclick="saveProfileModule(3, this)">
+                                <i class="fas fa-save"></i> Guardar Datos Personales y Continuar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 4: Mis asignaturas y sus profesores -->
+                <div class="accordion-panel" id="panel-4">
+                    <button type="button" class="accordion-header" onclick="toggleAccordionPanel(4)">
+                        <div class="panel-header-left">
+                            <span class="panel-num">4</span>
+                            <span class="panel-title">Mis asignaturas y sus profesores</span>
+                        </div>
+                        <span class="panel-arrow">▼</span>
+                    </button>
+                    <div class="accordion-content" style="display: none;">
+                        <p class="panel-description">🏫 Aquí están las materias y los profesores que te van a ayudar a desarrollar tu Medienpass.</p>
+                        <div class="section teachers-by-subject-section">
+                                                <h2><i class="fas fa-chalkboard-teacher"></i>
+                                                    <span data-i18n="myTeachers">Meine Lehrer*innen / Mis
+                                                        Profesores</span>
+                                                </h2>
+                                                <div class="teachers-grid">
+                                                    <% activity.teachersBySubject.forEach(t=> { %>
+                                                        <div class="teacher-card"
+                                                            style="border-color: <%= t.subjectColor %>">
+                                                            <div class="teacher-card-header"
+                                                                style="background: <%= t.subjectColor %>15">
+                                                                <span class="teacher-subject-icon">
+                                                                    <%= t.subjectIcon %>
+                                                                </span>
+                                                                <span class="teacher-subject-name"
+                                                                    data-lang-content="<%- JSON.stringify(t.subjectName).replace(/"/g, '&quot;') %>">
+                                                                    <span class="lang-line lang-primary">
+                                                                        <%= t.subjectName.de %>
+                                                                    </span>
+                                                                </span>
+                                                            </div>
+                                                            <div class="teacher-card-input">
+                                                                <input type="text" id="<%= t.fieldId %>"
+                                                                    name="<%= t.fieldId %>"
+                                                                    list="teacher_datalist"
+                                                                    data-lang-content="<%- JSON.stringify(t.label).replace(/"/g, '&quot;') %>"
+                                                                    placeholder="Name / Nombre"
+                                                                    value="<%= (typeof teacherConfig !== 'undefined' && teacherConfig[t.subjectId]) ? teacherConfig[t.subjectId] : 'NO APLICA' %>">
+                                                            </div>
+                                                        </div>
+                                                        <% }) %>
+                                                </div>
+                                                <datalist id="teacher_datalist">
+                                                    <option value="NO APLICA">
+                                                    <% if(typeof allTeachers !== 'undefined') { allTeachers.forEach(function(teacher) { %>
+                                                        <option value="<%= teacher %>">
+                                                    <% }); } %>
+                                                </datalist>
+                                            </div>
+                        <div class="panel-actions" style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="save-btn" onclick="saveProfileModule(4, this)">
+                                <i class="fas fa-save"></i> Guardar Profesores y Continuar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 5: ¿Estás listo para la evaluación? -->
+                <div class="accordion-panel" id="panel-5">
+                    <button type="button" class="accordion-header" onclick="toggleAccordionPanel(5)">
+                        <div class="panel-header-left">
+                            <span class="panel-num">5</span>
+                            <span class="panel-title">¿Estás listo para la evaluación?</span>
+                        </div>
+                        <span class="panel-arrow">▼</span>
+                    </button>
+                    <div class="accordion-content" style="display: none;">
+                        <p class="panel-description">✏️ En este nivel ya debes tener muy claro para qué sirve el MedienPass. ¡Es hora de la evaluación!</p>
+                        <div id="edilim-game-container" style="display: none; margin-bottom: 30px; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); padding: 25px; overflow: hidden; position: relative;">
+                                            <div class="edilim-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569;">
+                                                    <span class="edilim-stat-icon">🏆</span>
+                                                    <span class="edilim-stat-label">Aciertos</span>: <span id="edilim-hits" style="color: #10b981;">0</span> / <%= activity.evidence.filter(item => item.id.startsWith('eval_q')).length %>
+                                                </div>
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569;">
+                                                    <span class="edilim-stat-icon">⚠️</span>
+                                                    <span class="edilim-stat-label">Errores</span>: <span id="edilim-errors" style="color: #ef4444;">0</span>
+                                                </div>
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569; background: #f1f5f9; padding: 6px 14px; border-radius: 9999px;">
+                                                    <span class="edilim-stat-icon">⏱️</span>
+                                                    <span id="edilim-timer" style="font-family: monospace;">00:00</span>
+                                                </div>
+                                            </div>
+                                            <div class="edilim-progress-container" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; margin-bottom: 25px;">
+                                                <div id="edilim-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4f46e5, #8b5cf6); border-radius: 9999px; transition: width 0.4s ease;"></div>
+                                            </div>
+                                            <div id="edilim-question-body" style="min-height: 250px; display: flex; flex-direction: column; justify-content: center;">
+                                                <!-- Populated by JS -->
+                                            </div>
+                                            <div id="edilim-feedback-box" class="edilim-feedback" style="display: none; align-items: center; gap: 10px; justify-content: center; padding: 12px; border-radius: 12px; margin-top: 20px; font-weight: 700; font-size: 1.1em;">
+                                                <!-- Feedback message -->
+                                            </div>
+                                        </div>
+
+                                        <div id="reto0-practice-footer" style="text-align: center; margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px;">
+                                            <button type="button" id="start-reto0-eval-btn" class="btn btn-primary btn-lg" style="padding: 15px 30px; font-weight: bold; font-size: 1.2em; animation: pulse 2s infinite;" data-i18n="readyForEvalBtn">
+                                                ¡ESTÁS LISTO PARA LA EVALUACIÓN DEL RETO CERO!
+                                            </button>
+                                        </div>
+                                        <div id="reto0-eval-save-footer" class="save-actions" style="display: none; text-align: center; margin-top: 20px; margin-bottom: 20px;">
+                                            <button type="button" class="save-btn" id="saveBtnQuiz" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; display: inline-block;">
+                                                <i class="fas fa-cloud-upload-alt"></i> <span data-i18n="save">Speichern</span>
+                                            </button>
+                                            <div class="save-status" id="saveStatusQuiz" style="margin-top: 8px;"></div>
+                                        </div>
+                        <div id="reto0-eval-save-footer" class="save-actions" style="display: none; text-align: center; margin-top: 20px;">
+                            <button type="button" class="save-btn" id="saveBtnQuiz" onclick="saveProfileModule(5, this)">
+                                <i class="fas fa-cloud-upload-alt"></i> Guardar y Terminar Reto 0
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden radio fields for Edilim integration -->
+            
+<div style="display: none;">
+    <% activity.evidence.forEach(item=> { %>
+        <% if (item.id.startsWith('eval_q')) { %>
+            <div class="form-group">
+                <% item.options.forEach((opt, optIdx) => { %>
+                    <input type="radio" id="<%= item.id %>_<%= optIdx %>" name="<%= item.id %>" value="<%= opt.val !== undefined ? opt.val : optIdx %>" data-correct="<%= opt.correct ? 'true' : 'false' %>">
+                <% }) %>
+            </div>
+        <% } %>
+    <% }) %>
+</div>
+
+
+            <!-- Success Banner for Reto 0 Completion -->
+            <div id="reto0-success-banner" class="reto0-success-banner" style="display: none; margin-top: 30px; padding: 25px; background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+                <div class="banner-icon" style="font-size: 3.5em; margin-bottom: 15px;">🎉✨🚀</div>
+                <h3 style="color: #1e3a8a; font-size: 1.8em; margin-bottom: 10px; font-weight: 700;">¡Muy bien! Ahora ve al siguiente módulo.</h3>
+                <p style="color: #1e40af; font-size: 1.15em; margin-bottom: 20px;">Has completado exitosamente la autoevaluación y diagnóstico del Reto Cero.</p>
+                <a href="/" class="btn-back-dashboard" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 12px 30px; border-radius: 30px; font-weight: bold; text-decoration: none; box-shadow: 0 4px 15px rgba(59,130,246,0.4); transition: all 0.2s;"><i class="fas fa-arrow-left"></i> Volver al Dashboard</a>
+            </div>
+        <% } %>
+
+
+        <% if (activity.competencies && activity.competencies.length> 0) { %>
+            <div class="section">
+                <h2><i class="fas fa-star"></i> <span data-i18n="competenciesTitle">Kompetenzen & Erfolge</span></h2>
+                <p class="instruction" data-i18n="competenciesInstruction">Markiere die Fähigkeiten, die du beherrscht:
+                </p>
+                <div class="competency-list">
+                    <% activity.competencies.forEach((comp, index)=> { %>
+                        <div class="competency-item">
+                            <div class="comp-text" data-lang-content="<%- JSON.stringify(comp).replace(/"/g, '&quot;') %>">
+                                <span class="lang-line lang-primary">
+                                    <%= typeof comp==='object' ? comp.de : comp %>
+                                </span>
+                            </div>
+                            <div class="comp-achievement">
+                                <span class="achievement-icon">
+                                    <%= activity.icon %>
+                                </span>
+                                <label class="custom-checkbox">
+                                    <input type="checkbox" id="comp_<%= index %>" name="competency_<%= index %>">
+                                    <span class="checkmark"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <% }) %>
+                </div>
+            </div>
+            <% } %>
+
+                <% if (activity.competencyGroups && activity.competencyGroups.length> 0) { %>
+                    <div class="section competency-groups-section">
+                        <div class="comp-group-table">
+                            <div class="comp-group-header">
+                                <div class="cg-col-comp" data-i18n="competenciaCol">Competencia</div>
+                                <div class="cg-col-evidence" data-i18n="evidenciaCol">Evidencia</div>
+                                <div class="cg-col-logro" data-i18n="logroCol">Logro</div>
+                            </div>
+                            <% activity.competencyGroups.forEach((group, gIdx)=> { %>
+                                <div class="comp-group-row">
+                                    <div class="cg-col-comp">
+                                        <div class="cg-comp-text"
+                                            data-lang-content="<%- JSON.stringify(group.competency).replace(/"/g, '&quot;') %>">
+                                            <span class="lang-line lang-primary">
+                                                <%= group.competency.de %>
+                                            </span>
+                                            <span class="lang-line lang-secondary">
+                                                <%= group.competency.es %>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="cg-col-evidence">
+                                        <% group.evidence.forEach(item=> { %>
+                                            <% if (item.type==='label' ) { %>
+                                                <div class="cg-evidence-label"
+                                                    data-lang-content="<%- JSON.stringify(item.label).replace(/"/g, '&quot;') %>">
+                                                    <span class="lang-line lang-primary">
+                                                        <%= item.label.de %>
+                                                    </span>
+                                                </div>
+                                                <% } else if (item.type==='textarea' ) { %>
+                                                    <div class="cg-evidence-field">
+                                                        <label data-lang-content="<%- JSON.stringify(item.label).replace(/"/g, '&quot;') %>">
+                                                            <span class="lang-line lang-primary">
+                                                                <%= item.label.de %>
+                                                            </span>
+                                                        </label>
+                                                        <textarea id="<%= item.id %>" name="<%= item.id %>" rows="2"
+                                                            data-i18n-placeholder="answerPlaceholder"
+                                                            placeholder="Deine Antwort hier..."></textarea>
+                                                    </div>
+                                                    <% } else { %>
+                                                        <div class="cg-evidence-field">
+                                                            <label
+                                                                data-lang-content="<%- JSON.stringify(item.label).replace(/"/g, '&quot;') %>">
+                                                                <span class="lang-line lang-primary">
+                                                                    <%= item.label.de %>
+                                                                </span>
+                                                            </label>
+                                                            <input type="text" id="<%= item.id %>" name="<%= item.id %>"
+                                                                data-i18n-placeholder="answerPlaceholder"
+                                                                placeholder="Deine Antwort hier...">
+                                                        </div>
+                                                        <% } %>
+                                                            <% }) %>
+                                    </div>
+                                    <div class="cg-col-logro">
+                                        <% for (let s=1; s <=group.stars; s++) { %>
+                                            <div class="cg-star-row">
+                                                <span class="cg-star" data-group="<%= gIdx %>" data-star="<%= s %>"
+                                                    onclick="setCgStar(<%= gIdx %>, <%= s %>)">☆</span>
+                                                <label class="cg-checkbox">
+                                                    <input type="checkbox" id="cg_check_<%= gIdx %>_<%= s %>"
+                                                        name="cg_check_<%= gIdx %>_<%= s %>">
+                                                    <span class="checkmark"></span>
+                                                </label>
+                                            </div>
+                                            <% } %>
+                                                <input type="hidden" id="cg_stars_<%= gIdx %>"
+                                                    name="cg_stars_<%= gIdx %>" value="0">
+                                    </div>
+                                </div>
+                                <% }) %>
+                        </div>
+
+                        <!-- Total Stars Summary -->
+                        <div class="cg-total-summary">
+                            <span class="cg-total-label">
+                                <i class="fas fa-star" style="color: #f59e0b;"></i>
+                                <span data-i18n="totalStarsCollected">Ich habe insgesamt gesammelt:</span>
+                            </span>
+                            <span class="cg-total-value" id="cgTotalValue">0</span>
+                            <span class="cg-total-of">/ <%= activity.stars %></span>
+                            <span data-lang-content="<%- JSON.stringify(activity.achievement).replace(/"/g, '&quot;') %>">
+                                <%= activity.achievement.de %>
+                            </span>
+                        </div>
+                    </div>
+                    <% } %>
+
+                        <% if (activity.id==='profile' && false) { %>
+<div class="section" style="text-align: center;">
+<h2><i class="fas fa-camera"></i> <span data-i18n="profilePictureTitle">Mein
+                                        Profilbild</span>
+                                </h2>
+
+                                <div class="avatar-selector-container" id="avatarSelectorContainer">
+                                    <p style="margin-bottom: 15px; color: #64748b; font-weight: 600;" data-i18n="avatarInstruction">Selecciona tu avatar / Wähle deinen Avatar:</p>
+                                    <div class="avatar-grid" id="avatarGrid">
+                                        <!-- Avatares: Animales, Dino, Emojis, Tecnología, Deportes, Números, Ciencia, Arte y Materias -->
+                                        <% const avatars = [
+                                            '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🦄','🐝','🐛','🦋','🐢','🐙','🐠','🐳','🐊','🐅','🐆','🦓','🦍','🐘','🦛','🦏','🐪','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔',
+                                            '🦖','🦕',
+                                            '0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟',
+                                            '🤖','👽','👾','🦸‍♂️','🦸‍♀️','🧙‍♂️','🧙‍♀️','🧛‍♂️','🧛‍♀️','🧚‍♂️','🧚‍♀️','🧜‍♂️','🧜‍♀️','🧝‍♂️','🧝‍♀️','🧞‍♂️','🧞‍♀️','🧟‍♂️','🧟‍♀️',
+                                            '💻','📱','🎧','🎮','🖥️','⌨️','🖱️','🔋','📡','🛰️','🚀','🛸',
+                                            '🧪','⚗️','🔬','⚛️','🔭','🧬','🧫',
+                                            '🎨','🖌️','🖍️','🖼️','🎭','🎻','🎸','🎹','🎷','🎺','🎵','🎬',
+                                            '⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🥋','🤺','🏊','🚴','🏆',
+                                            '📚','📓','📔','📒','📕','📗','📘','📙','📜','📄','📰','🌎','🗺️','🧭','📐','📏','🕰️','💡','🧮','♟️','🎲','🧩','🪁',
+                                            '🍎','🍔','🍕','🍦','🍩','✈️','🏎️','🚲','🌈','⭐','🔥','⚡','❄️',
+                                            'α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'
+                                        ]; %>
+                                        <% avatars.forEach((av, idx) => { %>
+                                            <div class="avatar-option" data-avatar="<%= av %>" onclick="selectAvatar('<%= av %>')"><%= av %></div>
+                                        <% }); %>
+                                    </div>
+                                    
+                                    <div class="selected-avatar-display" style="margin-top: 20px; text-align: center;">
+                                        <p style="font-weight: 600; color: #4338ca;">Tu selección:</p>
+                                        <div id="currentAvatarDisplay" style="font-size: 4em; margin: 10px auto; width: 80px; height: 80px; line-height: 80px; background: #e0e7ff; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 3px solid #4f46e5; color: #1e1b4b;">❓</div>
+                                    </div>
+
+                                    <input type="hidden" id="profile_photo" name="profile_photo" value="">
+                                    
+                                    <div style="text-align: center; margin-top: 25px;">
+                                        <button type="button" class="save-btn" onclick="saveAvatarAndContinue(this)" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);">
+                                            <i class="fas fa-save"></i> Guardar mi Avatar y Continuar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <style>
+                                    .avatar-grid {
+                                        display: flex;
+                                        flex-wrap: wrap;
+                                        gap: 8px;
+                                        justify-content: center;
+                                        max-width: 600px;
+                                        margin: 0 auto;
+                                        max-height: 250px;
+                                        overflow-y: auto;
+                                        padding: 10px;
+                                        border: 2px solid #e2e8f0;
+                                        border-radius: 12px;
+                                        background: #f8fafc;
+                                    }
+                                    .avatar-option {
+                                        font-size: 1.6em;
+                                        cursor: pointer;
+                                        width: 40px;
+                                        height: 40px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        background: white;
+                                        border-radius: 10px;
+                                        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                                        transition: transform 0.2s, background 0.2s;
+                                        border: 2px solid transparent;
+                                        color: #1e293b;
+                                    }
+                                    .avatar-option:hover {
+                                        transform: scale(1.15);
+                                        background: #eef2ff;
+                                    }
+                                    .avatar-option.selected {
+                                        border-color: #4f46e5;
+                                        background: #e0e7ff;
+                                        transform: scale(1.15);
+                                        box-shadow: 0 4px 10px rgba(79,70,229,0.3);
+                                    }
+                                    
+                                    /* Custom scrollbar */
+                                    .avatar-grid::-webkit-scrollbar { width: 8px; }
+                                    .avatar-grid::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+                                    .avatar-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+                                    .avatar-grid::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+                                </style>
+                            </div>
+                            <% } %>
+
+                                <% if (activity.evidence && activity.evidence.length > 0 && activity.id !== 'profile') { %>
+                                    <div class="section">
+                                        <h2><i class="fas fa-file-alt"></i> <span data-i18n="evidenceTitle">Nachweise / Evidenz</span></h2>
+                                        <% activity.evidence.forEach(item=> { %>
+                                            <div class="form-group">
+                                                <label for="<%= item.id %>" data-lang-content="<%- JSON.stringify(item.label).replace(/"/g, '&quot;') %>">
+                                                    <span class="lang-line lang-primary">
+                                                        <%= (item.label && item.label.de) || (item.label && item.label.es) || '' %>
+                                                    </span>
+                                                </label>
+
+                                                <% if (item.practice_explanation) { %>
+                                                    <div class="practice-explanation-box" style="display:none;" data-lang-content="<%- JSON.stringify(item.practice_explanation).replace(/"/g, '&quot;') %>">
+                                                        <p><%= item.practice_explanation.es %></p>
+                                                    </div>
+                                                <% } %>
+
+                                                <% if (item.type === 'text') { %>
+                                                    <input type="text" id="<%= item.id %>" name="<%= item.id %>" data-i18n-placeholder="answerPlaceholder" placeholder="Deine Antwort hier...">
+                                                <% } else if (item.type === 'textarea') { %>
+                                                    <textarea id="<%= item.id %>" name="<%= item.id %>" rows="<%= item.rows || 3 %>" data-i18n-placeholder="answerPlaceholder" placeholder="Deine Antwort hier..."></textarea>
+                                                <% } else if (item.type === 'radio_group') { %>
+                                                    <div class="radio-group" id="group_<%= item.id %>">
+                                                        <% item.options.forEach((opt, optIdx) => {
+                                                            const safeId = item.id + '_' + optIdx;
+                                                            const optLabel = (typeof opt === 'object') ? (opt.label || opt) : opt;
+                                                            %>
+                                                            <div class="radio-item" style="margin-bottom:8px; display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="document.getElementById('<%= safeId %>').checked = true; if(typeof updateStarSummary === 'function') updateStarSummary();">
+                                                                <input type="radio" id="<%= safeId %>" name="<%= item.id %>" value="<%= opt.val !== undefined ? opt.val : optIdx %>" data-correct="<%= opt.correct ? 'true' : 'false' %>" onchange="if(typeof updateStarSummary === 'function') updateStarSummary()" style="cursor:pointer; width:18px; height:18px;">
+                                                                <label for="<%= safeId %>" style="display:inline; font-weight:normal; cursor:pointer; margin:0;" <% if (typeof opt === 'object') { %> data-lang-content="<%- JSON.stringify(optLabel).replace(/"/g, '&quot;') %>" <% } %>>
+                                                                    <% if (typeof opt === 'object') { %>
+                                                                        <span class="lang-line lang-primary">
+                                                                            <%= optLabel.de || optLabel.es || '' %>
+                                                                        </span>
+                                                                    <% } else { %>
+                                                                        <%= opt %>
+                                                                    <% } %>
+                                                                </label>
+                                                            </div>
+                                                        <% }) %>
+                                                    </div>
+                                                <% } %>
+
+                                                <% if (item.hint) { %>
+                                                    <div class="question-hint-box" style="margin-top: 8px; font-size: 0.85em; color: #475569; display: flex; align-items: start; gap: 6px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                                                        <span style="font-size: 1.15em; line-height: 1.2;">💡</span>
+                                                        <span class="lang-line lang-primary" data-lang-content="<%- JSON.stringify(item.hint).replace(/"/g, '&quot;') %>"><%= item.hint.de || item.hint.es || '' %></span>
+                                                    </div>
+                                                <% } %>
+
+                                                <% if (activity.id !== 'profile' && activity.id !== 'notes' && item.type !== 'checkbox_group') { %>
+                                                    <% if (!item.id.endsWith('_explain')) { %>
+                                                        <div class="field-star-rating" data-field-id="<%= item.id %>">
+                                                            <span class="field-star-label">⭐</span>
+                                                            <span class="mini-star" data-val="1">☆</span>
+                                                            <span class="mini-star" data-val="2">☆</span>
+                                                            <span class="mini-star" data-val="3">☆</span>
+                                                            <span class="mini-star" data-val="4">☆</span>
+                                                            <span class="mini-star" data-val="5">☆</span>
+                                                            <span class="sad-face-indicator" id="sad_<%= item.id %>" style="display: none; margin-left: 10px; font-size: 1.2em; cursor: default;" title="Respuesta incorrecta sin argumentación">😢</span>
+                                                            <input type="hidden" id="star_<%= item.id %>" name="star_<%= item.id %>" value="0">
+                                                        </div>
+                                                    <% } %>
+                                                <% } %>
+                                            </div>
+                                        <% }) %>
+                                    </div>
+
+                                    <% if (activity.id === 'profile' && false) { %>
+<!-- Edilim Game Container -->
+                                        <div id="edilim-game-container" style="display: none; margin-bottom: 30px; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); padding: 25px; overflow: hidden; position: relative;">
+                                            <div class="edilim-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569;">
+                                                    <span class="edilim-stat-icon">🏆</span>
+                                                    <span class="edilim-stat-label">Aciertos</span>: <span id="edilim-hits" style="color: #10b981;">0</span> / <%= activity.evidence.filter(item => item.id.startsWith('eval_q')).length %>
+                                                </div>
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569;">
+                                                    <span class="edilim-stat-icon">⚠️</span>
+                                                    <span class="edilim-stat-label">Errores</span>: <span id="edilim-errors" style="color: #ef4444;">0</span>
+                                                </div>
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569; background: #f1f5f9; padding: 6px 14px; border-radius: 9999px;">
+                                                    <span class="edilim-stat-icon">⏱️</span>
+                                                    <span id="edilim-timer" style="font-family: monospace;">00:00</span>
+                                                </div>
+                                            </div>
+                                            <div class="edilim-progress-container" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; margin-bottom: 25px;">
+                                                <div id="edilim-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4f46e5, #8b5cf6); border-radius: 9999px; transition: width 0.4s ease;"></div>
+                                            </div>
+                                            <div id="edilim-question-body" style="min-height: 250px; display: flex; flex-direction: column; justify-content: center;">
+                                                <!-- Populated by JS -->
+                                            </div>
+                                            <div id="edilim-feedback-box" class="edilim-feedback" style="display: none; align-items: center; gap: 10px; justify-content: center; padding: 12px; border-radius: 12px; margin-top: 20px; font-weight: 700; font-size: 1.1em;">
+                                                <!-- Feedback message -->
+                                            </div>
+                                        </div>
+
+                                        <div id="reto0-practice-footer" style="text-align: center; margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px;">
+                                            <button type="button" id="start-reto0-eval-btn" class="btn btn-primary btn-lg" style="padding: 15px 30px; font-weight: bold; font-size: 1.2em; animation: pulse 2s infinite;" data-i18n="readyForEvalBtn">
+                                                ¡ESTÁS LISTO PARA LA EVALUACIÓN DEL RETO CERO!
+                                            </button>
+                                        </div>
+                                        <div id="reto0-eval-save-footer" class="save-actions" style="display: none; text-align: center; margin-top: 20px; margin-bottom: 20px;">
+                                            <button type="button" class="save-btn" id="saveBtnQuiz" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; display: inline-block;">
+                                                <i class="fas fa-cloud-upload-alt"></i> <span data-i18n="save">Speichern</span>
+                                            </button>
+                                            <div class="save-status" id="saveStatusQuiz" style="margin-top: 8px;"></div>
+                                        </div>
+                                    <% } %>
+                                <% } %>
+
+                                        <% if (activity.teachersBySubject && activity.teachersBySubject.length > 0 && activity.id !== 'profile') { %>
+                                            <div class="section teachers-by-subject-section">
+                                                <h2><i class="fas fa-chalkboard-teacher"></i>
+                                                    <span data-i18n="myTeachers">Meine Lehrer*innen / Mis
+                                                        Profesores</span>
+                                                </h2>
+                                                <div class="teachers-grid">
+                                                    <% activity.teachersBySubject.forEach(t=> { %>
+                                                        <div class="teacher-card"
+                                                            style="border-color: <%= t.subjectColor %>">
+                                                            <div class="teacher-card-header"
+                                                                style="background: <%= t.subjectColor %>15">
+                                                                <span class="teacher-subject-icon">
+                                                                    <%= t.subjectIcon %>
+                                                                </span>
+                                                                <span class="teacher-subject-name"
+                                                                    data-lang-content="<%- JSON.stringify(t.subjectName).replace(/"/g, '&quot;') %>">
+                                                                    <span class="lang-line lang-primary">
+                                                                        <%= t.subjectName.de %>
+                                                                    </span>
+                                                                </span>
+                                                            </div>
+                                                            <div class="teacher-card-input">
+                                                                <input type="text" id="<%= t.fieldId %>"
+                                                                    name="<%= t.fieldId %>"
+                                                                    list="teacher_datalist"
+                                                                    data-lang-content="<%- JSON.stringify(t.label).replace(/"/g, '&quot;') %>"
+                                                                    placeholder="Name / Nombre"
+                                                                    value="<%= (typeof teacherConfig !== 'undefined' && teacherConfig[t.subjectId]) ? teacherConfig[t.subjectId] : 'NO APLICA' %>">
+                                                            </div>
+                                                        </div>
+                                                        <% }) %>
+                                                </div>
+                                                <datalist id="teacher_datalist">
+                                                    <option value="NO APLICA">
+                                                    <% if(typeof allTeachers !== 'undefined') { allTeachers.forEach(function(teacher) { %>
+                                                        <option value="<%= teacher %>">
+                                                    <% }); } %>
+                                                </datalist>
+                                            </div>
+                                            <% } %>
+
+                                                <% if (activity.achievement) { %>
+                                                    <div class="section">
+                                                        <div class="achievement-section">
+                                                            <label for="achievement_count"
+                                                                style="margin: 0; font-size: 1.2em;">
+                                                                <i class="fas fa-trophy"></i> <span
+                                                                    data-i18n="totalCollected">Ich habe
+                                                                    insgesamt gesammelt:</span>
+                                                            </label>
+                                                            <div class="achievement-input">
+                                                                <input type="number" id="achievement_count"
+                                                                    name="achievement_count" min="0" max="10">
+                                                                <span class="achievement-label"
+                                                                    data-lang-content="<%- JSON.stringify(activity.achievement).replace(/"/g, '&quot;') %>">
+                                                                    <%= typeof activity.achievement==='object' ?
+                                                                        activity.achievement.de : activity.achievement
+                                                                        %>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <% } %>
+
+                                                        <% if (activity.id !=='profile' && activity.id !=='notes' ) { %>
+                                                            <div class="section star-summary-section">
+                                                                <div class="star-summary-card" id="starSummaryCard">
+                                                                    <i class="fas fa-star"
+                                                                        style="color: #f59e0b; font-size: 1.8em;"></i>
+                                                                    <div class="star-summary-text">
+                                                                        <span class="star-summary-label"
+                                                                            data-i18n="starSummaryLabel">Resultado:</span>
+                                                                        <span class="star-summary-value"
+                                                                            id="starSummaryValue">0
+                                                                            / 0
+                                                                            ⭐</span>
+                                                                    </div>
+                                                                    <div class="star-summary-bar">
+                                                                        <div class="star-summary-fill"
+                                                                            id="starSummaryFill" style="width: 0%;">
+                                                                        </div>
+                                                                    </div>
+                                                                    <p class="star-summary-message"
+                                                                        id="starSummaryMessage"></p>
+                                                                </div>
+                                                            </div>
+                                                            <% } %>
+
+                                                                <!-- ═══ BLOQUE MULTIMEDIA ═══ -->
+                                                                <% if (activity.id !== 'profile' && activity.id !== 'notes') { %>
+                                                                <div class="multimedia-block" id="multimediaBlock">
+                                                                    <h3><span style="font-size:1.3em;">📱</span>
+                                                                        Evidencia Digital / Producto Multimedia
+                                                                        <span style="font-size:0.75em; font-weight:400; color:#059669; margin-left:8px;">(Mínimo 1 enlace)</span>
+                                                                    </h3>
+                                                                    <p style="color:#6b7280; font-size:0.9em; margin:0 0 16px;">
+                                                                        Agrega al menos <strong>un vínculo</strong> a un producto digital que hayas creado para este reto
+                                                                        (<strong>ClassNotebook</strong>, YouTube, Canva, SharePoint, etc.).
+                                                                        Esto puede ser un video, presentación, infografía, Canvas u otro medio.
+                                                                    </p>
+
+                                                                    <!-- ¿Sí o No? -->
+                                                                    <div style="display:flex; gap:12px; margin-bottom:16px;">
+                                                                        <button type="button" class="multimedia-type-btn" id="mmYesBtn" onclick="toggleMultimediaForm(true)" style="flex:1; max-width:120px;">
+                                                                            <span class="mt-icon">✅</span> Sí
+                                                                        </button>
+                                                                        <button type="button" class="multimedia-type-btn" id="mmNoBtn" onclick="toggleMultimediaForm(false)" style="flex:1; max-width:120px;">
+                                                                            <span class="mt-icon">❌</span> No
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <!-- Formulario del producto (se muestra si dice Sí) -->
+                                                                    <div id="mmProductForm" style="display:none;">
+                                                                        <p style="font-size:0.9em; font-weight:600; color:#5b21b6; margin-bottom:10px;">Tipo de producto:</p>
+                                                                        <div class="multimedia-type-grid">
+                                                                            <button type="button" class="multimedia-type-btn" data-type="video" onclick="selectMmType('video')">
+                                                                                <span class="mt-icon">🎬</span> Video
+                                                                            </button>
+                                                                            <button type="button" class="multimedia-type-btn" data-type="presentacion" onclick="selectMmType('presentacion')">
+                                                                                <span class="mt-icon">📊</span> Presentación
+                                                                            </button>
+                                                                            <button type="button" class="multimedia-type-btn" data-type="canvas" onclick="selectMmType('canvas')">
+                                                                                <span class="mt-icon">🎨</span> Canvas
+                                                                            </button>
+                                                                            <button type="button" class="multimedia-type-btn" data-type="otro" onclick="selectMmType('otro')">
+                                                                                <span class="mt-icon">📁</span> Otro
+                                                                            </button>
+                                                                        </div>
+                                                                        <input type="hidden" id="mm_product_type" name="mm_product_type" value="">
+
+                                                                        <label class="mm-label">📝 Descripción breve del producto:</label>
+                                                                        <textarea id="mm_description" name="mm_description" class="mm-input" rows="2"
+                                                                            placeholder="Ej: Video explicando los ecosistemas para la clase de Naturales..."></textarea>
+
+                                                                        <label class="mm-label">🔗 Link del producto (URL de ClassNotebook, YouTube, Canva, SharePoint, etc.):</label>
+                                                                        <input type="url" id="mm_link" name="mm_link" class="mm-input"
+                                                                            placeholder="https://...">
+
+                                                                        <label class="mm-label">🖼️ Link de imagen de captura de pantalla / evidencia (URL):</label>
+                                                                        <input type="url" id="mm_image_url" name="mm_image_url" class="mm-input"
+                                                                            placeholder="https://... (imagen, captura de pantalla, etc.)">
+
+                                                                        <div id="mm_image_preview" style="margin-top:12px; display:none;">
+                                                                            <img id="mm_preview_img" src="" alt="Vista previa" style="max-width:200px; max-height:120px; border-radius:8px; border:2px solid #a78bfa;" onerror="this.parentElement.style.display='none'">
+                                                                        </div>
+
+                                                                        <button type="button" class="save-btn" id="mmSaveBtn"
+                                                                            style="background:linear-gradient(135deg,#7c3aed,#a855f7); margin-top:18px; font-size:0.95em;"
+                                                                            onclick="saveMultimediaProduct()">
+                                                                            <i class="fas fa-cloud-upload-alt"></i> Guardar Producto Multimedia
+                                                                        </button>
+                                                                        <div id="mmSaveStatus" style="margin-top:8px; font-size:0.85em; color:#059669;"></div>
+                                                                    </div>
+                                                                </div>
+                                                                <% } %>
+
+                                                                <% if (activity.id !== 'profile') { %>
+<div class="save-actions">
+<button type="button" class="save-btn" id="saveBtn">
+                                                                        <i class="fas fa-cloud-upload-alt"></i> <span
+                                                                            data-i18n="save">Speichern</span>
+                                                                    </button>
+                                                                    <div class="save-status" id="saveStatus"></div>
+                                                                </div>
+    <% } %>
+</form>
+
+
+
+
+
+
+    <script>
+        // Reto 0 Practice Mode Logic
+        let setEvaluationMode = null;
+        document.addEventListener('DOMContentLoaded', function() {
+            const isReto0 = '<%= activity.id %>' === 'profile';
+            if (isReto0) {
+                const formGroups = document.querySelectorAll('.form-group');
+                const saveBtn = document.getElementById('saveBtn');
+                const startEvalBtn = document.getElementById('start-reto0-eval-btn');
+                
+                const rawEvidence = <%- JSON.stringify(activity.evidence) %>;
+                const quizQuestions = rawEvidence.filter(item => item.id.startsWith('eval_q'));
+
+                let currentHits = 0;
+                let currentErrors = 0;
+                let currentQuestionIdx = 0;
+                let timerInterval = null;
+                let secondsElapsed = 0;
+
+                const edilimTranslations = {
+                    es: {
+                        score: "Aciertos",
+                        mistakes: "Errores",
+                        time: "Tiempo",
+                        correctMsg: "¡Excelente! Respuesta correcta.",
+                        tryAgainMsg: "Incorrecto. ¡Inténtalo de nuevo!",
+                        gradTitle: "¡FELICITACIONES, CIUDADANO DIGITAL!",
+                        gradSubtitle: "Has completado exitosamente la evaluación del Reto Cero de forma interactiva.",
+                        gradNextInstructions: "Guarda tu progreso presionando el botón 'GUARDAR' que aparece a continuación.",
+                    },
+                    de: {
+                        score: "Erfolge",
+                        mistakes: "Fehler",
+                        time: "Zeit",
+                        correctMsg: "Hervorragend! Richtige Antwort.",
+                        tryAgainMsg: "Falsch. Versuch es noch einmal!",
+                        gradTitle: "HERZLICHEN GLÜCKWUNSCH, DIGITALER BÜRGER!",
+                        gradSubtitle: "Du hast die Bewertung von Challenge Null erfolgreich und interaktiv abgeschlossen.",
+                        gradNextInstructions: "Speichere deinen Fortschritt, indem du auf die Schaltfläche 'SPEICHERN' unten klickst.",
+                    },
+                    en: {
+                        score: "Hits",
+                        mistakes: "Mistakes",
+                        time: "Time",
+                        correctMsg: "Excellent! Correct answer.",
+                        tryAgainMsg: "Incorrect. Try again!",
+                        gradTitle: "CONGRATULATIONS, DIGITAL CITIZEN!",
+                        gradSubtitle: "You have successfully completed the Challenge Zero evaluation interactively.",
+                        gradNextInstructions: "Save your progress by clicking the 'SAVE' button below.",
+                    }
+                };
+
+                function getTranslation(key) {
+                    const lang = window.langUtils ? window.langUtils.getLang() : 'de';
+                    return (edilimTranslations[lang] && edilimTranslations[lang][key]) || edilimTranslations['de'][key] || key;
+                }
+
+                function playBeep(isSuccess) {
+                    try {
+                        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                        if (!AudioContextClass) return;
+                        const ctx = new AudioContextClass();
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        
+                        if (isSuccess) {
+                            osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                            osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+                            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                            osc.start(ctx.currentTime);
+                            osc.stop(ctx.currentTime + 0.35);
+                        } else {
+                            osc.frequency.setValueAtTime(150, ctx.currentTime);
+                            osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.25);
+                            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                            osc.start(ctx.currentTime);
+                            osc.stop(ctx.currentTime + 0.3);
+                        }
+                    } catch (e) {
+                        console.warn('AudioContext failed:', e);
+                    }
+                }
+
+                window.renderEdilimQuestion = function(index) {
+                    const lang = window.langUtils ? window.langUtils.getLang() : 'de';
+                    const q = quizQuestions[index];
+                    if (!q) return;
+                    
+                    const questionText = q.label[lang] || q.label.es || q.label;
+                    
+                    let html = `
+                        <div class="edilim-question-title">
+                            <span class="edilim-question-num">${index + 1}</span>
+                            <h2>${questionText}</h2>
+                        </div>
+                        <div class="edilim-options-grid">
+                    `;
+                    
+                    q.options.forEach((opt, optIdx) => {
+                        const optLabel = typeof opt === 'object' ? (opt.label || opt) : opt;
+                        const optText = typeof optLabel === 'object' ? (optLabel[lang] || optLabel.es || optLabel.de || '') : optLabel;
+                        
+                        html += `
+                            <button type="button" class="edilim-option-btn" data-correct="${opt.correct}" onclick="handleOptionClick(this, ${index}, ${optIdx})">
+                                <span class="option-letter">${String.fromCharCode(65 + optIdx)}</span>
+                                <span class="option-text">${optText}</span>
+                            </button>
+                        `;
+                    });
+                    
+                    html += `</div>`;
+                    
+                    document.getElementById('edilim-question-body').innerHTML = html;
+                    
+                    const feedbackBox = document.getElementById('edilim-feedback-box');
+                    feedbackBox.style.display = 'none';
+                    feedbackBox.className = 'edilim-feedback';
+                };
+
+                window.handleOptionClick = function(btn, qIdx, optIdx) {
+                    const isCorrect = btn.getAttribute('data-correct') === 'true';
+                    const feedbackBox = document.getElementById('edilim-feedback-box');
+                    const optionBtns = document.querySelectorAll('.edilim-option-btn');
+                    
+                    if (isCorrect) {
+                        optionBtns.forEach(b => b.disabled = true);
+                        btn.classList.add('correct');
+                        playBeep(true);
+                        
+                        // Check actual radio button in hidden layout
+                        const radioId = `${quizQuestions[qIdx].id}_${optIdx}`;
+                        const hiddenRadio = document.getElementById(radioId);
+                        if (hiddenRadio) {
+                            hiddenRadio.checked = true;
+                            if (typeof updateStarSummary === 'function') updateStarSummary();
+                        }
+                        
+                        feedbackBox.style.display = 'flex';
+                        feedbackBox.className = 'edilim-feedback correct bounce-in';
+                        feedbackBox.innerHTML = `<span>🎉</span> <strong>${getTranslation('correctMsg')}</strong>`;
+                        
+                        currentHits++;
+                        document.getElementById('edilim-hits').textContent = currentHits;
+                        
+                        const pct = Math.round(((qIdx + 1) / quizQuestions.length) * 100);
+                        document.getElementById('edilim-progress-fill').style.width = pct + '%';
+                        
+                        setTimeout(() => {
+                            if (currentQuestionIdx < quizQuestions.length - 1) {
+                                currentQuestionIdx++;
+                                renderEdilimQuestion(currentQuestionIdx);
+                            } else {
+                                showGraduationScreen();
+                            }
+                        }, 1500);
+                    } else {
+                        btn.classList.add('incorrect');
+                        btn.classList.add('wobble');
+                        btn.disabled = true;
+                        playBeep(false);
+                        
+                        feedbackBox.style.display = 'flex';
+                        feedbackBox.className = 'edilim-feedback incorrect shake';
+                        feedbackBox.innerHTML = `<span>❌</span> <strong>${getTranslation('tryAgainMsg')}</strong>`;
+                        
+                        currentErrors++;
+                        document.getElementById('edilim-errors').textContent = currentErrors;
+                        
+                        setTimeout(() => btn.classList.remove('wobble'), 500);
+                    }
+                };
+
+                function showGraduationScreen() {
+                    if (timerInterval) clearInterval(timerInterval);
+                    if (typeof saveLocally === 'function') saveLocally();
+                    
+                    const totalTimeMins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+                    const totalTimeSecs = String(secondsElapsed % 60).padStart(2, '0');
+                    
+                    let html = `
+                        <div class="edilim-graduation-card bounce-in">
+                            <div class="grad-badge">🎓🏆🌟</div>
+                            <h2>${getTranslation('gradTitle')}</h2>
+                            <p class="grad-subtitle">${getTranslation('gradSubtitle')}</p>
+                            
+                            <div class="grad-stats">
+                                <div class="grad-stat-box">
+                                    <span class="grad-stat-val">${currentHits}</span>
+                                    <span class="grad-stat-lbl">${getTranslation('score')}</span>
+                                </div>
+                                <div class="grad-stat-box">
+                                    <span class="grad-stat-val">${currentErrors}</span>
+                                    <span class="grad-stat-lbl">${getTranslation('mistakes')}</span>
+                                </div>
+                                <div class="grad-stat-box">
+                                    <span class="grad-stat-val">${totalTimeMins}:${totalTimeSecs}</span>
+                                    <span class="grad-stat-lbl">${getTranslation('time')}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="grad-next-steps">
+                                <p>👇 ${getTranslation('gradNextInstructions')}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.getElementById('edilim-question-body').innerHTML = html;
+                    document.getElementById('edilim-progress-fill').style.width = '100%';
+                    document.getElementById('edilim-progress-fill').style.background = 'linear-gradient(90deg, #10b981, #059669)';
+                    
+                    const saveBtnQuiz = document.getElementById('reto0-eval-save-footer');
+                    if (saveBtnQuiz) saveBtnQuiz.style.display = 'block';
+                    
+                    if (saveBtn) saveBtn.style.display = 'inline-block';
+                }
+
+                function startTimer() {
+                    secondsElapsed = 0;
+                    if (timerInterval) clearInterval(timerInterval);
+                    timerInterval = setInterval(() => {
+                        secondsElapsed++;
+                        const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+                        const secs = String(secondsElapsed % 60).padStart(2, '0');
+                        document.getElementById('edilim-timer').textContent = `${mins}:${secs}`;
+                    }, 1000);
+                }
+
+                function setPracticeMode() {
+                    formGroups.forEach(group => {
+                        const radioGroup = group.querySelector('.radio-group');
+                        const explanation = group.querySelector('.practice-explanation-box');
+                        
+                        // Hide standard quiz fields and label headers
+                        const hasRadio = group.querySelector('.radio-group');
+                        const isLabel = group.querySelector('[id*="eval_kv"]');
+                        if (hasRadio || isLabel || (group.innerHTML && group.innerHTML.includes('eval_q'))) {
+                            group.style.display = 'none';
+                        }
+                        
+                        if (explanation) {
+                            explanation.style.display = 'block';
+                            explanation.style.background = 'rgba(74, 144, 226, 0.1)';
+                            explanation.style.borderLeft = '4px solid #4a90e2';
+                            explanation.style.padding = '15px';
+                            explanation.style.margin = '10px 0';
+                            explanation.style.borderRadius = '0 8px 8px 0';
+                        }
+                    });
+                    
+                    const edilimContainer = document.getElementById('edilim-game-container');
+                    if (edilimContainer) edilimContainer.style.display = 'none';
+                    
+                    if (saveBtn) saveBtn.style.display = 'none';
+                    const saveBtnQuiz = document.getElementById('reto0-eval-save-footer');
+                    if (saveBtnQuiz) saveBtnQuiz.style.display = 'none';
+                }
+
+                setEvaluationMode = function() {
+                    formGroups.forEach(group => {
+                        const explanation = group.querySelector('.practice-explanation-box');
+                        if (explanation) explanation.style.display = 'none';
+                        
+                        // Hide standard question groups
+                        const hasRadio = group.querySelector('.radio-group');
+                        const isLabel = group.querySelector('[id*="eval_kv"]');
+                        if (hasRadio || isLabel || (group.innerHTML && group.innerHTML.includes('eval_q'))) {
+                            group.style.display = 'none';
+                        }
+                    });
+                    
+                    const edilimContainer = document.getElementById('edilim-game-container');
+                    if (edilimContainer) {
+                        edilimContainer.style.display = 'block';
+                        
+                        currentHits = 0;
+                        currentErrors = 0;
+                        currentQuestionIdx = 0;
+                        document.getElementById('edilim-hits').textContent = '0';
+                        document.getElementById('edilim-errors').textContent = '0';
+                        document.getElementById('edilim-progress-fill').style.width = '0%';
+                        document.getElementById('edilim-progress-fill').style.background = 'linear-gradient(90deg, #4f46e5, #8b5cf6)';
+                        
+                        renderEdilimQuestion(0);
+                        startTimer();
+                        
+                        edilimContainer.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    if (startEvalBtn) startEvalBtn.parentElement.style.display = 'none';
+                    // Scroll to top of evaluation
+                    const evalHeader = document.querySelector('[data-lang-content*="eval_kv"]');
+                    if (evalHeader) evalHeader.scrollIntoView({ behavior: 'smooth' });
+                }
+
+                // Default to Practice Mode if not already completed
+                setPracticeMode();
+
+                if (startEvalBtn) {
+                    startEvalBtn.addEventListener('click', function() {
+                        setEvaluationMode();
+                    });
+                }
+            }
+        });
+    </script>
+    <style>
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(74, 144, 226, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(74, 144, 226, 0); }
+        }
+        .practice-explanation-box p {
+            margin: 0;
+            line-height: 1.5;
+            color: #e0e0e0;
+        }
+
+        /* Agente del Profesor Card */
+        .teacher-agent-card {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 2px solid #bfdbfe;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+            animation: revealIn 0.6s ease-out;
+            text-align: left;
+        }
+        .agent-avatar-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .agent-avatar {
+            font-size: 2.2em;
+            background: #fff;
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+            display: inline-block;
+        }
+        .agent-title-area h4 {
+            margin: 0;
+            font-size: 1.15em;
+            font-weight: 800;
+            color: #1e3a8a;
+        }
+        .agent-title-area p {
+            margin: 2px 0 0 0;
+            font-size: 0.85em;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        .agent-content {
+            font-size: 0.95em;
+            color: #1e3a8a;
+            line-height: 1.6;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 12px 16px;
+            border-radius: 10px;
+            border-left: 4px solid #3b82f6;
+            font-weight: 500;
+        }
+
+        /* Scrollable content inside slide-card */
+        .slide-scroll-content {
+            max-height: 280px;
+            overflow-y: auto;
+            width: 100%;
+            text-align: left;
+            padding-right: 12px;
+            margin-top: 10px;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+        }
+        .slide-scroll-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .slide-scroll-content::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 6px;
+        }
+        .slide-scroll-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 6px;
+            border: 2px solid #f1f5f9;
+        }
+        .slide-scroll-content::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .slide-section-title {
+            font-size: 1em;
+            font-weight: 700;
+            color: #1e293b;
+            margin-top: 14px;
+            margin-bottom: 6px;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .slide-section-title:first-of-type {
+            margin-top: 0;
+        }
+        .slide-detail-p {
+            font-size: 0.9em !important;
+            color: #475569 !important;
+            line-height: 1.5 !important;
+            margin-bottom: 10px !important;
+        }
+        .slide-bullets {
+            list-style-type: none;
+            padding-left: 0;
+            margin-bottom: 10px;
+            margin-top: 5px;
+        }
+        .slide-bullets li {
+            font-size: 0.88em;
+            color: #475569;
+            margin-bottom: 6px;
+            line-height: 1.5;
+            padding-left: 18px;
+            position: relative;
+        }
+        .slide-bullets li::before {
+            content: "•";
+            color: #3b82f6;
+            font-weight: bold;
+            font-size: 1.1em;
+            position: absolute;
+            left: 4px;
+            top: -1px;
+        }
+
+        /* Gamified Quest Tracker */
+        .quest-tracker-container {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
+        }
+        .quest-tracker-container.completed {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 2px solid #10b981;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1);
+        }
+        .quest-tracker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .quest-tracker-title {
+            font-size: 0.95em;
+            font-weight: 800;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .quest-tracker-container.completed .quest-tracker-title {
+            color: #065f46;
+        }
+        .quest-tracker-stats {
+            font-size: 0.95em;
+            font-weight: 800;
+            color: #4f46e5;
+            background: #e0e7ff;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.1);
+        }
+        .quest-tracker-container.completed .quest-tracker-stats {
+            color: #ffffff;
+            background: #10b981;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+            animation: pulse 1.5s infinite;
+        }
+        .quest-tracker-progress {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .quest-tracker-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3b82f6, #6366f1);
+            border-radius: 9999px;
+            transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .quest-tracker-container.completed .quest-tracker-fill {
+            background: linear-gradient(90deg, #10b981, #059669);
+        }
+
+        /* Concept Card Grid */
+        .concept-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 15px;
+            width: 100%;
+        }
+        .concept-item-card {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            user-select: none;
+        }
+        .concept-item-card:hover {
+            transform: translateY(-2px);
+            border-color: #3b82f6;
+            box-shadow: 0 6px 12px -2px rgba(59, 130, 246, 0.08);
+        }
+        .concept-item-card.discovered {
+            border-color: #10b981;
+            background: #f0fdf4;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.05);
+        }
+        .concept-header-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+        }
+        .concept-badge-icon {
+            font-size: 1.4em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            transition: all 0.3s ease;
+        }
+        .concept-item-card.discovered .concept-badge-icon {
+            background: #d1fae5;
+            transform: scale(1.1);
+        }
+        .concept-title-text {
+            font-size: 0.95em;
+            font-weight: 800;
+            color: #334155;
+            flex-grow: 1;
+        }
+        .concept-item-card.discovered .concept-title-text {
+            color: #065f46;
+        }
+        .concept-status-check {
+            font-size: 0.85em;
+            color: #94a3b8;
+            background: #f1f5f9;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .concept-item-card.discovered .concept-status-check {
+            color: #ffffff;
+            background: #10b981;
+            transform: rotate(360deg);
+        }
+        .concept-body-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0, 1, 0, 1);
+            font-size: 0.88em;
+            color: #475569;
+            line-height: 1.5;
+            margin-top: 0;
+        }
+        .concept-item-card.discovered .concept-body-content {
+            max-height: 200px;
+            margin-top: 10px;
+            transition: max-height 0.4s ease-in;
+        }
+
+        /* Floating +10 XP text animation */
+        .xp-float {
+            position: absolute;
+            color: #10b981;
+            font-weight: 900;
+            font-size: 1.1em;
+            pointer-events: none;
+            z-index: 100;
+            animation: xpFloatAnim 0.8s ease-out forwards;
+        }
+        @keyframes xpFloatAnim {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            50% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+            100% { transform: translateY(-40px) scale(0.9); opacity: 0; }
+        }
+
+        /* Slide Deck / Carousel Styles */
+        .slideshow-container {
+            max-width: 800px;
+            position: relative;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            padding: 24px;
+            overflow: hidden;
+        }
+        .slide-card {
+            text-align: center;
+            padding: 20px 40px;
+            border-top: 5px solid #3b82f6;
+            border-radius: 12px;
+            background: #f8fafc;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .slide-icon {
+            font-size: 3.5em;
+            margin-bottom: 8px;
+            animation: bounceIcon 2s ease-in-out infinite alternate;
+        }
+        .slide-card h2 {
+            font-size: 1.8em;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0;
+        }
+        .slide-card p {
+            font-size: 1.05em;
+            color: #475569;
+            line-height: 1.6;
+            margin: 0;
+            max-width: 600px;
+        }
+        .slide-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 16px;
+        }
+        .slide-btn {
+            background: #f1f5f9;
+            border: none;
+            color: #475569;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            user-select: none;
+        }
+        .slide-btn:hover {
+            background: #3b82f6;
+            color: #fff;
+            transform: scale(1.1);
+        }
+        .slide-dots {
+            display: flex;
+            gap: 8px;
+        }
+        .dot {
+            cursor: pointer;
+            height: 12px;
+            width: 12px;
+            background-color: #cbd5e1;
+            border-radius: 50%;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        .dot.active, .dot:hover {
+            background-color: #3b82f6;
+            transform: scale(1.2);
+        }
+        @keyframes bounceIcon {
+            from { transform: translateY(0); }
+            to { transform: translateY(-8px); }
+        }
+        .mySlides {
+            animation: fadeEffect 0.5s ease-in-out;
+        }
+        @keyframes fadeEffect {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        /* Edilim Game Styles */
+        .edilim-question-title {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            text-align: left;
+        }
+        .edilim-question-num {
+            background: #4f46e5;
+            color: #ffffff;
+            font-size: 1.2em;
+            font-weight: 800;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+        }
+        .edilim-question-title h2 {
+            font-size: 1.25em;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0;
+            line-height: 1.4;
+        }
+        .edilim-options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .edilim-option-btn {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 16px;
+            font-size: 1.05em;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            width: 100%;
+        }
+        .edilim-option-btn:hover:not(:disabled) {
+            border-color: #3b82f6;
+            background: #f8fafc;
+            color: #1e293b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+        }
+        .option-letter {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.9em;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .edilim-option-btn:hover:not(:disabled) .option-letter {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        .option-text {
+            line-height: 1.4;
+        }
+        .edilim-option-btn.correct {
+            border-color: #10b981;
+            background: #ecfdf5;
+            color: #065f46;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+        }
+        .edilim-option-btn.correct .option-letter {
+            background: #10b981;
+            color: #ffffff;
+        }
+        .edilim-option-btn.incorrect {
+            border-color: #ef4444;
+            background: #fef2f2;
+            color: #991b1b;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+        }
+        .edilim-option-btn.incorrect .option-letter {
+            background: #ef4444;
+            color: #ffffff;
+        }
+        .edilim-feedback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+            border-radius: 12px;
+            padding: 10px;
+            font-weight: 700;
+        }
+        .edilim-feedback.correct {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .edilim-feedback.incorrect {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        
+        /* Graduation Screen Styles */
+        .edilim-graduation-card {
+            text-align: center;
+            padding: 20px 10px;
+        }
+        .grad-badge {
+            font-size: 3.5em;
+            margin-bottom: 15px;
+        }
+        .edilim-graduation-card h2 {
+            font-size: 1.6em;
+            font-weight: 900;
+            color: #1e1b4b;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            line-height: 1.3;
+        }
+        .grad-subtitle {
+            font-size: 1.05em;
+            color: #475569;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .grad-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .grad-stat-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 15px 25px;
+            min-width: 110px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .grad-stat-val {
+            display: block;
+            font-size: 1.8em;
+            font-weight: 900;
+            color: #4f46e5;
+            line-height: 1.2;
+        }
+        .grad-stat-lbl {
+            font-size: 0.8em;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+        .grad-next-steps {
+            background: #eef2ff;
+            border: 1px solid #e0e7ff;
+            border-radius: 12px;
+            padding: 12px;
+            color: #4338ca;
+            font-weight: 700;
+            font-size: 0.95em;
+            margin-top: 10px;
+        }
+        
+        /* Keyframe animations */
+        @keyframes wobble {
+            0%, 100% { transform: translateX(0); }
+            15% { transform: translateX(-6px) rotate(-1deg); }
+            30% { transform: translateX(5px) rotate(1deg); }
+            45% { transform: translateX(-4px) rotate(-1deg); }
+            60% { transform: translateX(3px) rotate(1deg); }
+            75% { transform: translateX(-2px) rotate(0deg); }
+        }
+        .wobble {
+            animation: wobble 0.5s ease-in-out;
+        }
+    </style>
+
+    <script>
+        // ─── Concept Gamification & Sound Logic ───
+        const exploredConcepts = new Set();
+        const TOTAL_CONCEPTS = 13;
+
+        // Custom Sound Player using browser's Web Audio API
+        window.playCustomSound = function(type) {
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                const ctx = new AudioContextClass();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                const now = ctx.currentTime;
+                
+                if (type === 'pop') {
+                    // Short cute bubble pop
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(450, now);
+                    osc.frequency.exponentialRampToValueAtTime(1300, now + 0.08);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'coin') {
+                    // Double coin collector ping
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(987.77, now); // B5
+                    osc.frequency.setValueAtTime(1318.51, now + 0.07); // E6
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.setValueAtTime(0.08, now + 0.07);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'chime') {
+                    // Shiny magic chime/sparkle
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(1567.98, now + 0.22); // G6
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+                    osc.start(now);
+                    osc.stop(now + 0.22);
+                } else if (type === 'fanfare') {
+                    // Triumphant 8-bit victory fanfare (C5, E5, G5, C6)
+                    osc.type = 'square';
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    const duration = 0.08;
+                    gain.gain.setValueAtTime(0.04, now);
+                    notes.forEach((freq, idx) => {
+                        const noteTime = now + (idx * duration);
+                        osc.frequency.setValueAtTime(freq, noteTime);
+                        if (idx === notes.length - 1) {
+                            gain.gain.setValueAtTime(0.04, noteTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, noteTime + 0.35);
+                        }
+                    });
+                    osc.start(now);
+                    osc.stop(now + (notes.length * duration) + 0.35);
+                } else if (type === 'tick') {
+                    // Simple interface tick/tap
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                }
+            } catch (e) {
+                console.warn('Sound play failed:', e);
+            }
+        };
+
+        // Explore Concept Handler
+        window.exploreConcept = function(element, conceptId, soundType, event) {
+            // Determine clicked position for float text
+            let x = 40;
+            let y = 10;
+            if (event && event.clientX && event.clientY) {
+                const rect = element.getBoundingClientRect();
+                x = event.clientX - rect.left;
+                y = event.clientY - rect.top;
+            }
+
+            // Only add XP and float if not already explored
+            if (!exploredConcepts.has(conceptId)) {
+                exploredConcepts.add(conceptId);
+                
+                // Spawn XP Float text
+                const xpFloat = document.createElement('span');
+                xpFloat.className = 'xp-float';
+                xpFloat.textContent = '+10 XP';
+                xpFloat.style.left = `${x}px`;
+                xpFloat.style.top = `${y}px`;
+                element.appendChild(xpFloat);
+                setTimeout(() => xpFloat.remove(), 800);
+
+                // Play sound
+                playCustomSound(soundType);
+                
+                // Set discovered class
+                element.classList.add('discovered');
+
+                // Update progress bar
+                updateQuestTracker();
+            } else {
+                // If already discovered, just play tick sound and toggle expansion visual (standard check)
+                playCustomSound('tick');
+                element.classList.add('discovered'); // ensure it stays open
+            }
+        };
+
+        function updateQuestTracker() {
+            const countEl = document.getElementById('quest-tracker-count');
+            const fillEl = document.getElementById('quest-tracker-fill');
+            const trackerContainer = document.getElementById('questTracker');
+            if (!countEl || !fillEl) return;
+
+            const size = exploredConcepts.size;
+            const pct = (size / TOTAL_CONCEPTS) * 100;
+            
+            // i18n label
+            const lang = window.langUtils ? window.langUtils.getLang() : 'es';
+            let label = `${size * 10} XP`;
+            if (lang === 'de') {
+                label = `${size * 10} XP`;
+            } else if (lang === 'en') {
+                label = `${size * 10} XP`;
+            }
+            
+            countEl.textContent = `⭐ ${label}`;
+            fillEl.style.width = `${pct}%`;
+
+            if (size === TOTAL_CONCEPTS) {
+                trackerContainer.classList.add('completed');
+                // Play final epic fanfare and confetti
+                setTimeout(() => {
+                    playCustomSound('fanfare');
+                    spawnConfetti();
+                }, 300);
+            }
+        }
+
+        function spawnConfetti() {
+            const colors = ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899'];
+            const container = document.body;
+            for (let i = 0; i < 40; i++) {
+                const p = document.createElement('div');
+                p.style.position = 'fixed';
+                p.style.width = Math.random() * 8 + 6 + 'px';
+                p.style.height = Math.random() * 8 + 6 + 'px';
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.left = Math.random() * 100 + 'vw';
+                p.style.top = '-10px';
+                p.style.borderRadius = '50%';
+                p.style.zIndex = '9999';
+                p.style.pointerEvents = 'none';
+                
+                container.appendChild(p);
+                
+                const duration = Math.random() * 2 + 1.5;
+                const drift = (Math.random() - 0.5) * 200;
+                
+                p.animate([
+                    { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                    { transform: `translateY(105vh) translateX(${drift}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                ], {
+                    duration: duration * 1000,
+                    easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)'
+                });
+                
+                setTimeout(() => p.remove(), duration * 1000);
+            }
+        }
+
+        // ─── Slide Deck Logic ───
+        let slideIndex = 1;
+        function showSlides(n) {
+            let i;
+            let slides = document.getElementsByClassName("mySlides");
+            let dots = document.getElementsByClassName("dot");
+            if (!slides || slides.length === 0) return;
+            if (n > slides.length) {slideIndex = 1}
+            if (n < 1) {slideIndex = slides.length}
+            for (i = 0; i < slides.length; i++) {
+                slides[i].style.display = "none";
+            }
+            for (i = 0; i < dots.length; i++) {
+                dots[i].className = dots[i].className.replace(" active", "");
+            }
+            slides[slideIndex-1].style.display = "block";
+            dots[slideIndex-1].className += " active";
+        }
+        function moveSlide(n) {
+            showSlides(slideIndex += n);
+        }
+        function currentSlide(n) {
+            showSlides(slideIndex = n);
+        }
+        // Initialize slideshow on load if elements exist
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.getElementsByClassName("mySlides").length > 0) {
+                showSlides(slideIndex);
+            }
+        });
+    </script>
+
+    <script>
+        // ─── Star Rating ───
+        let currentStarRating = 0;
+        function setStarRating(rating) {
+            currentStarRating = rating;
+            document.getElementById('star_rating_value').value = rating;
+            const stars = document.querySelectorAll('.star-clickable');
+            stars.forEach(star => {
+                const val = parseInt(star.getAttribute('data-star'));
+                star.textContent = val <= rating ? '★' : '☆';
+                star.classList.toggle('star-filled', val <= rating);
+            });
+        }
+
+        // ─── Mini Star Rating per Field (Automatic Scoring Rules) ───
+        function checkCoherence(text) {
+            const trimmed = text.trim();
+            if (trimmed.length < 40) return false;
+            const words = trimmed.split(/\s+/).filter(w => w.length > 0);
+            if (words.length < 8) return false;
+            
+            // Character variety check
+            const uniqueChars = new Set(trimmed.toLowerCase().replace(/\s/g, ''));
+            if (uniqueChars.size < 5) return false;
+            
+            // Word variety check
+            const uniqueWords = new Set(words.map(w => w.toLowerCase()));
+            if (uniqueWords.size < words.length / 2) return false;
+            
+            return true;
+        }
+
+        function recalculateInteractiveStars() {
+            // Find all radio group questions (like r1_aleman_k5_q1)
+            document.querySelectorAll('.radio-group').forEach(group => {
+                const fieldId = group.id.replace('group_', '');
+                
+                // Get corresponding explain field (textarea)
+                const explainInput = document.getElementById(fieldId + '_explain');
+                const selectedRadio = group.querySelector('input[type="radio"]:checked');
+                const starInput = document.getElementById('star_' + fieldId);
+                const sadFace = document.getElementById('sad_' + fieldId);
+                const starContainer = document.querySelector(`.field-star-rating[data-field-id="${fieldId}"]`);
+                
+                if (!starInput) return; // Skip if no rating container exists
+                
+                let stars = 0;
+                let showSad = false;
+                
+                if (selectedRadio) {
+                    const isCorrect = selectedRadio.getAttribute('data-correct') === 'true';
+                    const explanationText = explainInput ? explainInput.value : '';
+                    const hasCoherentExplain = checkCoherence(explanationText);
+                    
+                    if (isCorrect) {
+                        stars = 3;
+                        if (hasCoherentExplain) {
+                            stars += 2; // total 5
+                        }
+                    } else {
+                        // Incorrect answer
+                        if (hasCoherentExplain) {
+                            stars = 3; // 1 + 2 = 3
+                        } else {
+                            stars = 0;
+                            showSad = true; // Incorrect AND no coherent argument -> 0 stars + sad face
+                        }
+                    }
+                } else {
+                    // Not answered yet
+                    stars = 0;
+                    showSad = false;
+                }
+                
+                // Update hidden input
+                starInput.value = stars;
+                
+                // Update sad face visual
+                if (sadFace) {
+                    sadFace.style.display = showSad ? 'inline' : 'none';
+                }
+                
+                // Update stars visual
+                if (starContainer) {
+                    starContainer.querySelectorAll('.mini-star').forEach(star => {
+                        const val = parseInt(star.getAttribute('data-val'));
+                        star.textContent = val <= stars ? '★' : '☆';
+                        star.classList.toggle('mini-star-filled', val <= stars);
+                    });
+                }
+            });
+            
+            // Trigger the general star summary calculation
+            if (typeof updateStarSummary === 'function') {
+                updateStarSummary();
+            }
+        }
+
+        function setFieldStar(fieldId, rating) {
+            const container = document.querySelector(`.field-star-rating[data-field-id="${fieldId}"]`);
+            if (!container) return;
+
+            const hiddenInput = document.getElementById('star_' + fieldId);
+            hiddenInput.value = rating;
+
+            container.querySelectorAll('.mini-star').forEach(star => {
+                const val = parseInt(star.getAttribute('data-val'));
+                star.textContent = val <= rating ? '★' : '☆';
+                star.classList.toggle('mini-star-filled', val <= rating);
+            });
+
+            updateStarSummary();
+        }
+
+        // ─── Competency Group Stars ───
+        function setCgStar(groupIdx, starVal) {
+            const hidden = document.getElementById('cg_stars_' + groupIdx);
+            if (!hidden) return;
+            const currentVal = parseInt(hidden.value) || 0;
+            const newVal = (currentVal === starVal) ? 0 : starVal;
+            hidden.value = newVal;
+
+            // Update star display for this group
+            document.querySelectorAll(`.cg-star[data-group="${groupIdx}"]`).forEach(star => {
+                const val = parseInt(star.getAttribute('data-star'));
+                star.textContent = val <= newVal ? '★' : '☆';
+                star.classList.toggle('cg-star-filled', val <= newVal);
+            });
+            updateCgTotal();
+            updateStarSummary();
+        }
+
+        function updateCgTotal() {
+            const totalEl = document.getElementById('cgTotalValue');
+            if (!totalEl) return;
+            let total = 0;
+            document.querySelectorAll('[id^="cg_stars_"]').forEach(input => {
+                total += parseInt(input.value) || 0;
+            });
+            totalEl.textContent = total;
+        }
+
+        function updateStarSummary() {
+            const summaryValue = document.getElementById('starSummaryValue');
+            const summaryFill = document.getElementById('starSummaryFill');
+            const summaryMessage = document.getElementById('starSummaryMessage');
+            if (!summaryValue) return;
+
+            const isProfile = '<%= activity.id %>' === 'profile';
+
+            let totalPoints = 0;
+            let maxPoints = 0;
+
+            if (isProfile) {
+                // Quiz calculation for profile (Reto 0)
+                document.querySelectorAll('.radio-group').forEach(group => {
+                    maxPoints++;
+                    const selected = group.querySelector('input[type="radio"]:checked');
+                    if (selected && selected.getAttribute('data-correct') === 'true') {
+                        totalPoints++;
+                    }
+                });
+                
+                summaryValue.textContent = `${totalPoints} / ${maxPoints} ✅`;
+            } else {
+                // Normal star calculation
+                document.querySelectorAll('.field-star-rating').forEach(container => {
+                    const fieldId = container.getAttribute('data-field-id');
+                    const input = document.getElementById('star_' + fieldId);
+                    if (input) {
+                        totalPoints += parseInt(input.value) || 0;
+                        maxPoints += 5;
+                    }
+                });
+
+                if (currentStarRating > 0) {
+                    totalPoints += currentStarRating;
+                    const maxMain = document.querySelectorAll('.star-clickable').length;
+                    maxPoints += maxMain;
+                }
+                summaryValue.textContent = `${totalPoints} / ${maxPoints} ⭐`;
+            }
+
+            const pct = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 0;
+            summaryFill.style.width = pct + '%';
+
+            // Color based on percentage
+            if (pct >= 80) {
+                summaryFill.style.background = 'linear-gradient(90deg, #059669, #10b981)';
+                summaryMessage.innerHTML = isProfile ? 
+                    '<span style="color:#059669; font-weight:bold;">🎉 ¡APROBADO! Excelente dominio.</span>' : 
+                    '🎉 ¡Excelente trabajo! / Ausgezeichnet!';
+            } else if (pct >= 50) {
+                summaryFill.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+                summaryMessage.innerHTML = isProfile ? 
+                    '<span style="color:#f59e0b; font-weight:bold;">⚠️ NECESITAS 80% PARA APROBAR. ¡Sigue revisando!</span>' : 
+                    '👍 ¡Buen avance! / Guter Fortschritt!';
+            } else if (pct > 0) {
+                summaryFill.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+                summaryMessage.innerHTML = isProfile ? 
+                    '<span style="color:#ef4444; font-weight:bold;">❌ DEBES REPETIR. Lee detenidamente el documento.</span>' : 
+                    '💪 ¡Sigue adelante! / Weiter so!';
+            } else {
+                summaryFill.style.background = '#e2e8f0';
+                summaryMessage.textContent = '';
+            }
+
+            // Expose percentage for save logic
+            window.currentScorePct = pct;
+        }
+
+        function selectAvatar(avatarChar) {
+            const photoInput = document.getElementById('profile_photo');
+            const avatarDisplay = document.getElementById('currentAvatarDisplay');
+
+            // Update hidden input if it exists
+            if (photoInput) {
+                photoInput.value = avatarChar;
+            }
+            
+            // Update visual display if it exists
+            if (avatarDisplay) {
+                avatarDisplay.innerText = avatarChar;
+            }
+            
+            // Update selection highlight if options exist
+            document.querySelectorAll('.avatar-option').forEach(el => {
+                el.classList.remove('selected');
+                if (el.getAttribute('data-avatar') === avatarChar) {
+                    el.classList.add('selected');
+                    try {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    } catch(e) {}
+                }
+            });
+        }
+
+        // Dummy function called by existing data restoration code
+        function showCapturedPhoto(photoData) {
+            const photoInput = document.getElementById('profile_photo');
+            const photoDisplay = document.getElementById('capturedPhotoDisplay');
+            const startArea = document.getElementById('cameraStartArea');
+
+            if (photoInput) photoInput.value = '';
+            if (photoDisplay) photoDisplay.style.display = 'none';
+            if (startArea) startArea.style.display = 'block';
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const activityId = '<%= activity.id %>';
+            const form = document.getElementById('activityForm');
+            const inputs = form.querySelectorAll('input, textarea, select');
+            const saveBtn = document.getElementById('saveBtn');
+            const saveStatus = document.getElementById('saveStatus');
+
+            function t(key) {
+                const lang = window.langUtils ? window.langUtils.getLang() : 'de';
+                return (window.i18n && window.i18n[lang] && window.i18n[lang][key]) || key;
+            }
+
+            // ── Load existing data ──
+            try {
+                const response = await fetch('/api/load/' + activityId);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const savedData = result.data;
+                    inputs.forEach(input => {
+                        if (savedData[input.id] !== undefined) {
+                            if (input.type === 'checkbox') {
+                                input.checked = savedData[input.id] === true;
+                            } else {
+                                input.value = savedData[input.id];
+                            }
+                        }
+                    });
+                    // Restore star rating
+                    if (savedData.star_rating) {
+                        setStarRating(parseInt(savedData.star_rating));
+                    }
+                    // Restore profile photo (avatar)
+                    if (savedData.profile_photo) {
+                        selectAvatar(savedData.profile_photo);
+                    }
+                    // Restore field stars
+                    if (activityId !== 'profile') {
+                        recalculateInteractiveStars();
+                    } else {
+                        document.querySelectorAll('.field-star-rating').forEach(container => {
+                            const fieldId = container.getAttribute('data-field-id');
+                            const starKey = 'star_' + fieldId;
+                            if (savedData[starKey]) {
+                                setFieldStar(fieldId, parseInt(savedData[starKey]));
+                            }
+                        });
+                        updateStarSummary();
+                    }
+                    if (activityId === 'profile' && window.currentScorePct > 0) {
+                        if (typeof setEvaluationMode === 'function') setEvaluationMode();
+                    }
+                } else {
+                    throw new Error("No data from server");
+                }
+            } catch (e) {
+                console.log('Loading from localStorage fallback');
+                const storageKey = 'medienpass_' + activityId;
+                try {
+                    const localData = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                    inputs.forEach(input => {
+                        if (localData[input.id] !== undefined) {
+                            if (input.type === 'checkbox') {
+                                input.checked = localData[input.id] === true;
+                            } else {
+                                input.value = localData[input.id];
+                            }
+                        }
+                    });
+                    if (localData.star_rating) {
+                        setStarRating(parseInt(localData.star_rating));
+                    }
+                    // Restore profile photo (avatar)
+                    if (localData.profile_photo) {
+                        selectAvatar(localData.profile_photo);
+                    }
+                    // Restore field stars
+                    if (activityId !== 'profile') {
+                        recalculateInteractiveStars();
+                    } else {
+                        document.querySelectorAll('.field-star-rating').forEach(container => {
+                            const fieldId = container.getAttribute('data-field-id');
+                            const starKey = 'star_' + fieldId;
+                            if (localData[starKey]) {
+                                setFieldStar(fieldId, parseInt(localData[starKey]));
+                            }
+                        });
+                        updateStarSummary();
+                    }
+                    if (activityId === 'profile' && window.currentScorePct > 0) {
+                        if (typeof setEvaluationMode === 'function') setEvaluationMode();
+                    }
+                } catch (ex) { /* ignore */ }
+            }
+
+            function collectData() {
+                const data = {};
+                inputs.forEach(input => {
+                    if (input.type === 'checkbox') {
+                        data[input.id] = input.checked;
+                    } else {
+                        data[input.id] = input.value;
+                    }
+                });
+                return data;
+            }
+
+            function saveLocally() {
+                const storageKey = 'medienpass_' + activityId;
+                localStorage.setItem(storageKey, JSON.stringify(collectData()));
+            }
+
+            inputs.forEach(input => {
+                input.addEventListener('change', () => {
+                    saveLocally();
+                    if (activityId !== 'profile') recalculateInteractiveStars();
+                });
+                input.addEventListener('input', () => {
+                    saveLocally();
+                    if (activityId !== 'profile') recalculateInteractiveStars();
+                });
+            });
+
+            function showToast(message, type = 'success') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'toast toast-' + type;
+                toast.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-triangle') + '"></i> ' + message;
+                container.appendChild(toast);
+                setTimeout(() => toast.classList.add('show'), 10);
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            async function performSave() {
+                const isProfile = activityId === 'profile';
+                if (isProfile && window.currentScorePct < 80) {
+                    alert('⚠️ No has alcanzado el 80% necesario para aprobar. Por favor, revisa el documento y vuelve a intentar el cuestionario.');
+                    return;
+                }
+
+                const data = collectData();
+
+                // --- Validation for ESTE SOY YO (Profile) ---
+                if (activityId === 'profile') {
+                    let hasError = false;
+                    Object.keys(data).forEach(key => {
+                        if (key.startsWith('teacher_')) {
+                            const val = data[key] ? data[key].trim() : '';
+                            const field = document.getElementById(key);
+                            if (!val) {
+                                hasError = true;
+                                if (field) field.classList.add('input-error');
+                            } else {
+                                if (field) {
+                                    field.classList.remove('input-error');
+                                    data[key] = val.toUpperCase();
+                                }
+                            }
+                        }
+                    });
+
+                    if (hasError) {
+                        showToast(t('fillRequiredFields') || 'Por favor, llena los campos obligatorios.', 'error');
+                        return;
+                    }
+                }
+
+                saveLocally();
+
+                const saveBtnQuiz = document.getElementById('saveBtnQuiz');
+                const saveStatusQuiz = document.getElementById('saveStatusQuiz');
+
+                const disableButtons = (disabled) => {
+                    if (saveBtn) saveBtn.disabled = disabled;
+                    if (saveBtnQuiz) saveBtnQuiz.disabled = disabled;
+                };
+
+                const updateButtonContent = (html) => {
+                    if (saveBtn) saveBtn.innerHTML = html;
+                    if (saveBtnQuiz) saveBtnQuiz.innerHTML = html;
+                };
+
+                disableButtons(true);
+                updateButtonContent('<i class="fas fa-spinner fa-spin"></i> ' + t('saving'));
+
+                try {
+                    const response = await fetch('/api/save/' + activityId, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    const updateStatus = (html, className) => {
+                        if (saveStatus) {
+                            saveStatus.innerHTML = html;
+                            saveStatus.className = className;
+                        }
+                        if (saveStatusQuiz) {
+                            saveStatusQuiz.innerHTML = html;
+                            saveStatusQuiz.className = className;
+                        }
+                    };
+
+                    if (result.success) {
+                        if (result.localOnly) {
+                            showToast(t('savedLocal'), 'success');
+                            updateStatus('<i class="fas fa-check-circle"></i> ' + t('localSave') + ' ' + new Date().toLocaleTimeString(), 'save-status saved');
+                        } else {
+                            showToast(t('savedSuccess'), 'success');
+                            updateStatus('<i class="fas fa-check"></i> ' + t('lastSaved') + ' ' + new Date().toLocaleTimeString(), 'save-status saved');
+                        }
+
+                        // Update header avatar dynamically if on profile page
+                        if (isProfile) {
+                            const avatarVal = document.getElementById('profile_photo')?.value;
+                            const headerAvatar = document.getElementById('headerUserAvatar');
+                            if (headerAvatar && avatarVal) {
+                                if (avatarVal.length < 15) {
+                                    headerAvatar.innerHTML = avatarVal;
+                                    headerAvatar.style.fontSize = '1.1em';
+                                } else if (avatarVal.startsWith('data:image')) {
+                                    headerAvatar.innerHTML = `<img src="${avatarVal}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+                                }
+                            }
+                        }
+                    } else {
+                        showToast(t('saveError'), 'error');
+                        updateStatus('<i class="fas fa-exclamation-triangle"></i> ' + t('saveError'), 'save-status error');
+                    }
+                } catch (e) {
+                    console.error('Save error:', e);
+                    showToast(t('noConnection'), 'error');
+                    const errStatus = '<i class="fas fa-wifi"></i> ' + t('noConnection');
+                    if (saveStatus) {
+                        saveStatus.innerHTML = errStatus;
+                        saveStatus.className = 'save-status error';
+                    }
+                    if (saveStatusQuiz) {
+                        saveStatusQuiz.innerHTML = errStatus;
+                        saveStatusQuiz.className = 'save-status error';
+                    }
+                }
+
+                disableButtons(false);
+                updateButtonContent('<i class="fas fa-cloud-upload-alt"></i> ' + t('save'));
+            }
+
+            if (saveBtn) saveBtn.addEventListener('click', performSave);
+            if (saveBtnQuiz) saveBtnQuiz.addEventListener('click', performSave);
+
+            // ═══ MULTIMEDIA PRODUCT ═══
+            const mmActivityId = '<%= activity.id %>';
+            const mmSubject = '<%= activity.subject || activity.id %>';
+            let mmSelectedType = '';
+            let mmHasProduct = false;
+
+            // Load existing multimedia product
+            if (mmActivityId !== 'profile' && mmActivityId !== 'notes') {
+                try {
+                    const mmRes = await fetch('/api/student/multimedia-product/' + mmActivityId);
+                    const mmData = await mmRes.json();
+                    if (mmData.success && mmData.data) {
+                        const p = mmData.data;
+                        mmHasProduct = true;
+                        toggleMultimediaForm(true);
+                        selectMmType(p.product_type);
+                        if (document.getElementById('mm_description')) document.getElementById('mm_description').value = p.description || '';
+                        if (document.getElementById('mm_link')) document.getElementById('mm_link').value = p.link || '';
+                        if (document.getElementById('mm_image_url')) {
+                            document.getElementById('mm_image_url').value = p.image_url || '';
+                            if (p.image_url) previewMmImage(p.image_url);
+                        }
+                        document.getElementById('mmSaveStatus').textContent = '✅ Producto guardado previamente';
+                    }
+                } catch(e) { /* no multimedia yet */ }
+            }
+
+            window.saveAvatarAndContinue = async function(btnEl) {
+                const avatar = document.getElementById('profile_photo').value;
+                if (!avatar) return alert('Por favor, selecciona un avatar primero.');
+                
+                const btn = btnEl || document.querySelector('.avatar-selector-container button.save-btn') || event?.currentTarget;
+                if (!btn) return;
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+                btn.disabled = true;
+
+                const data = collectData();
+                saveLocally();
+
+                try {
+                    const response = await fetch('/api/save/' + activityId, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const resData = await response.json();
+                    if (resData.success) {
+                        showToast('¡Avatar guardado con éxito!', 'success');
+                        
+                        // Update header avatar dynamically!
+                        const headerAvatar = document.getElementById('headerUserAvatar');
+                        if (headerAvatar && avatar) {
+                            if (avatar.length < 15) {
+                                headerAvatar.innerHTML = avatar;
+                                headerAvatar.style.fontSize = '1.1em';
+                            } else if (avatar.startsWith('data:image')) {
+                                headerAvatar.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+                            }
+                        }
+
+                        // Alerta invitando a la evaluación
+                        alert('¡Excelente! Has guardado tu perfil inicial.\n\nAhora estás invitado a completar la evaluación de tus competencias (Reto 0). ¡Sigue adelante!');
+                        
+                        // Cambiar a modo evaluación y scroll
+                        if (setEvaluationMode) {
+                            setEvaluationMode();
+                        } else {
+                            const saveActions = document.querySelector('.save-actions');
+                            if (saveActions) saveActions.scrollIntoView({behavior: 'smooth'});
+                        }
+                    } else {
+                        showToast('Error guardando el avatar.', 'error');
+                    }
+                } catch (e) {
+                    showToast('Error de red al guardar.', 'error');
+                }
+                
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            };
+        });
+
+        // Multimedia helper functions (outside DOMContentLoaded)
+        function toggleMultimediaForm(show) {
+            document.getElementById('mmYesBtn')?.classList.toggle('active', show);
+            document.getElementById('mmNoBtn')?.classList.toggle('active', !show);
+            const form = document.getElementById('mmProductForm');
+            if (form) form.style.display = show ? 'block' : 'none';
+        }
+
+        function selectMmType(type) {
+            document.querySelectorAll('.multimedia-type-btn[data-type]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === type);
+            });
+            const inp = document.getElementById('mm_product_type');
+            if (inp) inp.value = type;
+        }
+
+        function previewMmImage(url) {
+            const wrap = document.getElementById('mm_image_preview');
+            const img = document.getElementById('mm_preview_img');
+            if (url && wrap && img) {
+                img.src = url;
+                wrap.style.display = 'block';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const imgInput = document.getElementById('mm_image_url');
+            if (imgInput) imgInput.addEventListener('blur', () => previewMmImage(imgInput.value));
+        });
+
+        async function saveMultimediaProduct() {
+            const actId = '<%= activity.id %>';
+            const subject = '<%= activity.subject || activity.id %>';
+            const product_type = document.getElementById('mm_product_type')?.value;
+            if (!product_type) {
+                document.getElementById('mmSaveStatus').innerHTML = '⚠️ Selecciona primero el tipo de producto';
+                return;
+            }
+            const description = document.getElementById('mm_description')?.value || '';
+            const link = document.getElementById('mm_link')?.value || '';
+            const image_url = document.getElementById('mm_image_url')?.value || '';
+
+            document.getElementById('mmSaveBtn').disabled = true;
+            document.getElementById('mmSaveStatus').textContent = 'Guardando...';
+            try {
+                const res = await fetch('/api/student/multimedia-product', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ activity_id: actId, subject, product_type, description, link, image_url })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    document.getElementById('mmSaveStatus').innerHTML = '✅ ¡Producto multimedia guardado exitosamente!';
+                    if (image_url) previewMmImage(image_url);
+                } else {
+                    document.getElementById('mmSaveStatus').innerHTML = '❌ Error: ' + (result.message || 'No se pudo guardar');
+                }
+            } catch(e) {
+                document.getElementById('mmSaveStatus').innerHTML = '❌ Error de conexión';
+            }
+            document.getElementById('mmSaveBtn').disabled = false;
+        }
+        
+        // Funciones de cámara han sido eliminadas para utilizar el selector de avatares.
+    
+
+            
+    
+
+            window.toggleAccordionPanel = function(num) {
+                const panels = document.querySelectorAll('.accordion-panel');
+                panels.forEach(p => {
+                    const pNum = parseInt(p.getAttribute('id').split('-')[1]);
+                    const content = p.querySelector('.accordion-content');
+                    const header = p.querySelector('.accordion-header');
+                    const arrow = p.querySelector('.panel-arrow');
+                    
+                    if (pNum === num) {
+                        const isVisible = content.style.display === 'block';
+                        content.style.display = isVisible ? 'none' : 'block';
+                        if (header) header.classList.toggle('active', !isVisible);
+                        if (arrow) arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+                    } else {
+                        content.style.display = 'none';
+                        if (header) header.classList.remove('active');
+                        if (arrow) arrow.style.transform = 'rotate(0deg)';
+                    }
+                });
+            };
+
+            window.advanceAccordionPanel = function(num) {
+                toggleAccordionPanel(num + 1);
+                setTimeout(() => {
+                    const nextHeader = document.querySelector(`#panel-${num + 1} .accordion-header`);
+                    if (nextHeader) nextHeader.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 150);
+            };
+
+            window.saveProfileModule = async function(num, btnEl) {
+                if (!btnEl) return;
+                
+                if (num === 2) {
+                    const avatarVal = document.getElementById('profile_photo').value;
+                    if (!avatarVal) {
+                        alert('Por favor, selecciona un avatar primero.');
+                        return;
+                    }
+                }
+
+                const originalHtml = btnEl.innerHTML;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+                btnEl.disabled = true;
+
+                const data = collectData();
+                saveLocally();
+
+                try {
+                    const response = await fetch('/api/save/profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+
+                    const resData = await response.json();
+                    if (resData.success) {
+                        showToast('¡Módulo ' + num + ' guardado con éxito!', 'success');
+                        
+                        if (num === 2) {
+                            const avatarVal = document.getElementById('profile_photo').value;
+                            const headerAvatar = document.getElementById('headerUserAvatar');
+                            if (headerAvatar && avatarVal) {
+                                headerAvatar.innerHTML = avatarVal;
+                                headerAvatar.style.fontSize = '1.1em';
+                            }
+                        }
+
+                        if (num < 5) {
+                            advanceAccordionPanel(num);
+                        } else {
+                            const successBanner = document.getElementById('reto0-success-banner');
+                            if (successBanner) {
+                                successBanner.style.display = 'block';
+                                successBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }
+                    } else {
+                        showToast('Error al guardar el módulo.', 'error');
+                    }
+                } catch (e) {
+                    console.error('Error saving profile module:', e);
+                    showToast('Error de red. Intenta de nuevo.', 'error');
+                } finally {
+                    btnEl.innerHTML = originalHtml;
+                    btnEl.disabled = false;
+                }
+            };
+</script>

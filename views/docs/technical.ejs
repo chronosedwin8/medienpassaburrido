@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Técnico - Medienpass</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        pre, code { font-family: 'Fira Code', monospace; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.05);
+        }
+        /* Custom scrollbar for code blocks */
+        pre::-webkit-scrollbar { height: 6px; width: 6px; }
+        pre::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 text-slate-800 flex flex-col">
+
+    <!-- Top Navbar -->
+    <header class="glass-panel sticky top-0 z-50 px-6 py-4 flex justify-between items-center border-b border-white/50">
+        <div class="flex items-center space-x-3">
+            <% if (userRole === 'admin') { %>
+                <a href="/admin/dashboard" class="w-10 h-10 rounded-2xl bg-purple-600 hover:bg-purple-700 flex items-center justify-center text-white shadow-lg shadow-purple-500/30 transition" title="Volver al Panel Administrativo">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+            <% } else { %>
+                <a href="/teacher/worksheets" class="w-10 h-10 rounded-2xl bg-purple-600 hover:bg-purple-700 flex items-center justify-center text-white shadow-lg shadow-purple-500/30 transition" title="Volver al Panel Docente">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+            <% } %>
+            <div>
+                <h1 class="font-bold text-lg leading-tight text-slate-900">Manual <span class="text-purple-600">Técnico</span></h1>
+                <p class="text-xs text-slate-500 font-medium">Arquitectura, Base de Datos y Código Fuente</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <% if (userRole === 'admin') { %>
+                <a href="/admin/dashboard" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-xl transition">Volver al Panel</a>
+            <% } else { %>
+                <a href="/teacher/worksheets" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-xl transition">Volver al Panel</a>
+            <% } %>
+            <a href="/docs/user" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-sm transition">Ver Manual de Usuario</a>
+        </div>
+    </header>
+
+    <div class="flex-grow max-w-7xl mx-auto w-full px-6 py-10 flex flex-col lg:flex-row gap-8 items-start">
+        
+        <!-- Sidebar Navigation (ScrollSpy/Tabs) -->
+        <aside class="w-full lg:w-80 shrink-0 glass-panel rounded-3xl p-6 border border-white/60 sticky top-28 shadow-xl">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-purple-600 mb-4 px-3">Índice del Manual</h3>
+            <nav class="space-y-1 text-sm font-medium">
+                <a href="#arquitectura" class="flex items-center px-4 py-2.5 rounded-xl text-purple-700 bg-purple-50 hover:bg-purple-100 transition">
+                    <i class="fas fa-sitemap w-6 text-purple-500"></i> Arquitectura Global
+                </a>
+                <a href="#database" class="flex items-center px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition">
+                    <i class="fas fa-database w-6 text-slate-400"></i> Esquema Supabase SQL
+                </a>
+                <a href="#admin-panel" class="flex items-center px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition">
+                    <i class="fas fa-user-shield w-6 text-slate-400"></i> Backend Administrativo
+                </a>
+                <a href="#teacher-panel" class="flex items-center px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition">
+                    <i class="fas fa-chalkboard-teacher w-6 text-slate-400"></i> Panel Docente & Monitoreo
+                </a>
+                <a href="#student-panel" class="flex items-center px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition">
+                    <i class="fas fa-user-graduate w-6 text-slate-400"></i> Flujo Estudiantil & Reto 0
+                </a>
+            </nav>
+            <div class="mt-8 pt-6 border-t border-slate-100 px-3">
+                <div class="p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20">
+                    <h4 class="font-bold text-sm mb-1">Entorno de Ejecución</h4>
+                    <p class="text-xs text-purple-100 mb-3">Node.js v18+ y Express 4.18</p>
+                    <code class="block bg-black/30 px-2.5 py-1.5 rounded-lg text-xs font-mono">npm run dev</code>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow space-y-12 max-w-4xl w-full">
+            
+            <!-- Section 1: Arquitectura Global -->
+            <section id="arquitectura" class="glass-panel rounded-3xl p-8 border border-white/60 shadow-xl scroll-mt-28">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">1. Arquitectura Global del Sistema</h2>
+                        <p class="text-xs text-slate-500">Modelo Cliente-Servidor con Renderizado del Lado del Servidor (SSR)</p>
+                    </div>
+                </div>
+
+                <div class="space-y-6 text-slate-600 text-sm leading-relaxed">
+                    <p>
+                        La aplicación <strong>Medienpass</strong> opera bajo una arquitectura basada en Express.js con inyección de plantillas EJS para la generación dinámica de interfaces HTML. La persistencia de datos se delega en una base de datos relacional PostgreSQL administrada a través de <strong>Supabase</strong>.
+                    </p>
+
+                    <div class="grid md:grid-cols-3 gap-4 pt-2">
+                        <div class="bg-white/80 p-5 rounded-2xl border border-slate-100 shadow-sm">
+                            <i class="fas fa-layer-group text-purple-600 text-lg mb-2"></i>
+                            <h4 class="font-bold text-slate-900 mb-1">Capa de Presentación</h4>
+                            <p class="text-xs text-slate-500">Plantillas EJS modulares (`views/partials`), estilizadas con TailwindCSS y animaciones CSS nativas.</p>
+                        </div>
+                        <div class="bg-white/80 p-5 rounded-2xl border border-slate-100 shadow-sm">
+                            <i class="fas fa-server text-blue-600 text-lg mb-2"></i>
+                            <h4 class="font-bold text-slate-900 mb-1">Capa de Lógica (Express)</h4>
+                            <p class="text-xs text-slate-500">Manejo de enrutamiento asíncrono en `server.js`, validación de roles por middleware y gestión de sesiones por cookies.</p>
+                        </div>
+                        <div class="bg-white/80 p-5 rounded-2xl border border-slate-100 shadow-sm">
+                            <i class="fas fa-database text-emerald-600 text-lg mb-2"></i>
+                            <h4 class="font-bold text-slate-900 mb-1">Capa de Datos (Supabase)</h4>
+                            <p class="text-xs text-slate-500">PostgreSQL con Row Level Security (RLS) habilitado y cliente JS oficial (`@supabase/supabase-js`).</p>
+                        </div>
+                    </div>
+
+                    <h4 class="font-bold text-slate-900 pt-4">Estructura de Directorios Principal</h4>
+                    <pre class="bg-slate-900 text-slate-200 p-5 rounded-2xl text-xs overflow-x-auto leading-normal">
+medienpass_app/
+├── public/                 # Archivos estáticos (CSS, JS cliente, Imágenes, i18n)
+├── views/                  # Vistas EJS organizadas por panel
+│   ├── admin/              # Dashboard administrativo, Inventario, CRUD
+│   ├── teacher/            # Capacitación KMK, Monitoreo de Alumnos, Banco Fichas
+│   ├── docs/               # Portal interactivo de manuales (Técnico y Usuario)
+│   └── partials/           # Componentes reutilizables (Header, Footer, Modales)
+├── server.js               # Punto de entrada principal, rutas y lógica de negocio
+├── schema.sql              # Definición de tablas, índices y políticas RLS
+├── data.js & data_levels.js # Metadatos de preguntas (Reto 0 y Retos 1-6)
+└── class_teacher_config.json # Mapeo de docentes, materias y grados
+</pre>
+                </div>
+            </section>
+
+            <!-- Section 2: Esquema Supabase SQL -->
+            <section id="database" class="glass-panel rounded-3xl p-8 border border-white/60 shadow-xl scroll-mt-28">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">2. Esquema Relacional de Supabase</h2>
+                        <p class="text-xs text-slate-500">Estructura de Tablas, Índices y Seguridad RLS</p>
+                    </div>
+                </div>
+
+                <div class="space-y-6 text-slate-600 text-sm leading-relaxed">
+                    <p>
+                        La base de datos relacional consta de siete tablas principales diseñadas para garantizar la integridad referencial y un alto rendimiento en las consultas de agregación.
+                    </p>
+
+                    <div class="space-y-4">
+                        <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white/50">
+                            <div class="bg-slate-100 px-5 py-3 font-bold text-slate-800 text-xs flex justify-between items-center border-b border-slate-200">
+                                <span>Tabla: `students`</span>
+                                <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px]">Alumnos</span>
+                            </div>
+                            <div class="p-5 text-xs space-y-2">
+                                <p>Almacena la identidad de los estudiantes. El campo `username` es único y sirve para la autenticación simplificada junto con `class_name`.</p>
+                                <code class="block bg-slate-50 p-3 rounded-xl border border-slate-100 font-mono text-slate-700">id UUID PK | username TEXT UNIQUE | class_name TEXT | created_at TIMESTAMPTZ</code>
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white/50">
+                            <div class="bg-slate-100 px-5 py-3 font-bold text-slate-800 text-xs flex justify-between items-center border-b border-slate-200">
+                                <span>Tabla: `activity_responses`</span>
+                                <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px]">Evidencias & Retos</span>
+                            </div>
+                            <div class="p-5 text-xs space-y-2">
+                                <p>Almacena de forma flexible las respuestas de los estudiantes para cada reto (0 al 6) dentro de una columna JSONB (`data`). Incluye la autoevaluación por estrellas (`star_rating`).</p>
+                                <code class="block bg-slate-50 p-3 rounded-xl border border-slate-100 font-mono text-slate-700">id UUID PK | student_id UUID FK | activity_id TEXT | data JSONB | period INT | updated_at TIMESTAMPTZ</code>
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white/50">
+                            <div class="bg-slate-100 px-5 py-3 font-bold text-slate-800 text-xs flex justify-between items-center border-b border-slate-200">
+                                <span>Tabla: `teachers` & `teacher_kmk_tests`</span>
+                                <span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px]">Docentes & KMK</span>
+                            </div>
+                            <div class="p-5 text-xs space-y-2">
+                                <p>Contiene el registro de profesores, sus materias asignadas y sus resultados en el test de certificación de competencias KMK.</p>
+                                <code class="block bg-slate-50 p-3 rounded-xl border border-slate-100 font-mono text-slate-700">id UUID PK | username TEXT | password TEXT | subject TEXT | training_score INT | training_completed BOOLEAN</code>
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white/50">
+                            <div class="bg-slate-100 px-5 py-3 font-bold text-slate-800 text-xs flex justify-between items-center border-b border-slate-200">
+                                <span>Tablas de Novedades e Inventario (`incidents`, `devices`, `device_loans`)</span>
+                                <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px]">Infraestructura</span>
+                            </div>
+                            <div class="p-5 text-xs space-y-2">
+                                <p>Soportan la Bitácora de Novedades de Aula y la gestión de inventario de dispositivos hardware (laptops, tablets) de la institución.</p>
+                                <code class="block bg-slate-50 p-3 rounded-xl border border-slate-100 font-mono text-slate-700">incidents: id UUID PK | reporter_id UUID | classroom TEXT | description TEXT | priority TEXT | status TEXT</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 class="font-bold text-slate-900 pt-4">Ejemplo de Política RLS (Row Level Security)</h4>
+                    <pre class="bg-slate-900 text-slate-200 p-5 rounded-2xl text-xs overflow-x-auto leading-normal">
+-- Permitir todas las operaciones públicas (App escolar simplificada)
+CREATE POLICY "Allow all operations on activity_responses"
+    ON activity_responses FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Trigger de actualización automática de updated_at
+CREATE TRIGGER set_updated_at
+    BEFORE UPDATE ON activity_responses
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+</pre>
+                </div>
+            </section>
+
+            <!-- Section 3: Backend Administrativo -->
+            <section id="admin-panel" class="glass-panel rounded-3xl p-8 border border-white/60 shadow-xl scroll-mt-28">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">3. Backend Administrativo & Reportes</h2>
+                        <p class="text-xs text-slate-500">Gestión CRUD, Archivo de Configuración y Cálculo de KPIs</p>
+                    </div>
+                </div>
+
+                <div class="space-y-6 text-slate-600 text-sm leading-relaxed">
+                    <p>
+                        El panel administrativo (`/admin/dashboard`) es el núcleo de control institucional. Protegido por el middleware `requireAdmin`, ofrece gestión completa sobre usuarios, dispositivos y novedades.
+                    </p>
+
+                    <h4 class="font-bold text-slate-900 pt-2">Mapeo de Docentes (`class_teacher_config.json`)</h4>
+                    <p class="text-xs">
+                        Para desacoplar la asignación de profesores de la base de datos, el sistema utiliza un archivo de configuración estático que vincula cada Klasse y materia con el usuario docente correspondiente:
+                    </p>
+                    <pre class="bg-slate-900 text-slate-200 p-5 rounded-2xl text-xs overflow-x-auto leading-normal">
+{
+  "classes": {
+    "4A": { "aleman": "prof_aleman_1", "ingles": "prof_ingles_1", "espanol": "prof_espanol_1" },
+    "4B": { "aleman": "prof_aleman_2", "ingles": "prof_ingles_2", "espanol": "prof_espanol_2" }
+  }
+}
+</pre>
+
+                    <h4 class="font-bold text-slate-900 pt-4">Lógica de Cálculo Dinámico de KPIs (Reportes)</h4>
+                    <p class="text-xs">
+                        El controlador del dashboard administrativo realiza una consulta de agregación sobre `students` y `activity_responses` para calcular en tiempo real el porcentaje de avance y aprobación institucional:
+                    </p>
+                    <pre class="bg-slate-900 text-slate-200 p-5 rounded-2xl text-xs overflow-x-auto leading-normal">
+// Fragmento conceptual del controlador de reportes
+app.get('/api/admin/reports/:className', requireAdmin, async (req, res) => {
+    const { className } = req.params;
+    const { data: students } = await supabase.from('students').select('id').eq('class_name', className);
+    const { data: responses } = await supabase.from('activity_responses').select('*');
+
+    let completedCount = 0;
+    // Cálculo de umbral de aprobación del Reto 0 (>= 80% o 16/20 aciertos)
+    students.forEach(s => {
+        const resp = responses.find(r => r.student_id === s.id && r.activity_id === 'shared_profile');
+        if (resp && resp.data && calculateScore(resp.data) >= 16) completedCount++;
+    });
+    
+    res.json({ total: students.length, passed: completedCount });
+});
+</pre>
+                </div>
+            </section>
+
+            <!-- Section 4: Panel Docente & Monitoreo -->
+            <section id="teacher-panel" class="glass-panel rounded-3xl p-8 border border-white/60 shadow-xl scroll-mt-28">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">4. Panel Docente & Monitoreo en Tiempo Real</h2>
+                        <p class="text-xs text-slate-500">Evaluación KMK, Fichas Klett, Filtrado por Klasse y Modal de Evidencias</p>
+                    </div>
+                </div>
+
+                <div class="space-y-6 text-slate-600 text-sm leading-relaxed">
+                    <p>
+                        El entorno docente combina la formación continua con herramientas de seguimiento en el aula. Protegido mediante `requireTeacher`.
+                    </p>
+
+                    <div class="grid md:grid-cols-2 gap-6 pt-2">
+                        <div class="bg-white/80 p-5 rounded-2xl border border-slate-100 shadow-sm">
+                            <h4 class="font-bold text-slate-900 mb-2">Certificación KMK (`/teacher/evaluation`)</h4>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                Evalúa a los docentes en las 6 competencias del marco KMK. Requiere un puntaje mínimo del <strong>75%</strong> para certificar. Si el puntaje es menor, el sistema recomienda repasar los módulos de estudio.
+                            </p>
+                        </div>
+                        <div class="bg-white/80 p-5 rounded-2xl border border-slate-100 shadow-sm">
+                            <h4 class="font-bold text-slate-900 mb-2">Banco de Fichas (`/teacher/worksheets`)</h4>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                Ofrece hojas de trabajo de la editorial Klett. Integra un sistema de traducción automática (i18n) en el servidor que filtra los recursos en Alemán, Inglés o Español según la especialidad del profesor.
+                            </p>
+                        </div>
+                    </div>
+
+                    <h4 class="font-bold text-slate-900 pt-4">API de Monitoreo de Alumnos (`/api/teacher/progress/:className`)</h4>
+                    <p class="text-xs">
+                        Este endpoint asíncrono realiza un join lógico entre alumnos y sus respuestas de los retos 0 al 6. Calcula el promedio de estrellas y clasifica el estatus del alumno automáticamente:
+                    </p>
+                    <pre class="bg-slate-900 text-slate-200 p-5 rounded-2xl text-xs overflow-x-auto leading-normal">
+// Lógica de Clasificación por Estrellas (Backend)
+let totalStars = 0; let count = 0;
+// Iterar sobre retos 1 al 6
+if (resp && resp.data && resp.data.star_rating) {
+    totalStars += Number(resp.data.star_rating);
+    count++;
+}
+const avgStars = count > 0 ? (totalStars / count).toFixed(1) : 0;
+
+let evalStatus = 'Sin evaluar';
+if (count > 0) {
+    if (avgStars >= 4) evalStatus = 'Aprobado';          // Verde (>=4⭐)
+    else if (avgStars >= 2) evalStatus = 'En proceso';   // Amarillo (2-3⭐)
+    else evalStatus = 'Debe mejorar';                    // Rojo (1⭐)
+}
+</pre>
+
+                    <h4 class="font-bold text-slate-900 pt-4">Modal Interactivo de Evidencias (Vanilla JS DOM)</h4>
+                    <p class="text-xs">
+                        Al hacer clic en una celda de la tabla en `/teacher/progress`, el frontend captura los datos pre-cargados y abre un modal glassmorphic sin recargar la página. Detecta automáticamente si el alumno incluyó un enlace (Teams/OneDrive) y genera un botón funcional:
+                    </p>
+                    <pre class="bg-slate-900 text-slate-200 p-5 rounded-2xl text-xs overflow-x-auto leading-normal">
+// Fragmento de lógica de inyección en el Modal (Frontend JS)
+function openModal(studentName, challengeTitle, dataJson) {
+    document.getElementById('modalStudentName').textContent = studentName;
+    const container = document.getElementById('modalAnswersContainer');
+    container.innerHTML = '';
+    
+    // Mapeo dinámico de respuestas
+    Object.keys(dataJson).forEach(key => {
+        if (key === 'star_rating') return;
+        const val = dataJson[key];
+        
+        // Detección inteligente de enlaces adjuntos
+        if (typeof val === 'string' && (val.startsWith('http://') || val.startsWith('https://'))) {
+            container.innerHTML += `<a href="${val}" target="_blank" class="btn-link">🔗 Abrir enlace adjunto</a>`;
+        } else {
+            container.innerHTML += `<p class="answer-text">${val}</p>`;
+        }
+    });
+    document.getElementById('detailsModal').classList.remove('hidden');
+}
+</pre>
+                </div>
+            </section>
+
+            <!-- Section 5: Flujo Estudiantil -->
+            <section id="student-panel" class="glass-panel rounded-3xl p-8 border border-white/60 shadow-xl scroll-mt-28">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">5. Flujo Estudiantil & Reto 0 Diagnóstico</h2>
+                        <p class="text-xs text-slate-500">Librería de Avatares, Cuestionario Trilingüe y Diploma Medienpass</p>
+                    </div>
+                </div>
+
+                <div class="space-y-6 text-slate-600 text-sm leading-relaxed">
+                    <p>
+                        El panel estudiantil está diseñado para ser altamente intuitivo y gamificado. Al ingresar, el alumno selecciona su Klasse y su nombre para acceder al inventario de retos.
+                    </p>
+
+                    <div class="space-y-4 pt-2">
+                        <div class="p-5 rounded-2xl bg-white/80 border border-slate-100 shadow-sm">
+                            <h4 class="font-bold text-slate-900 mb-1">Reto 0: "Este soy yo" (`/profile`)</h4>
+                            <p class="text-xs text-slate-600">
+                                Módulo diagnóstico inicial. Cuenta con una <strong>Librería de Avatares</strong> interactiva y un inventario digital de dispositivos. El cuestionario consta de 20 preguntas con soporte trilingüe (Alemán, Inglés, Español) y explicaciones de apoyo para cada ítem.
+                            </p>
+                        </div>
+                        <div class="p-5 rounded-2xl bg-white/80 border border-slate-100 shadow-sm">
+                            <h4 class="font-bold text-slate-900 mb-1">Alternancia Práctica vs. Evaluación</h4>
+                            <p class="text-xs text-slate-600">
+                                El alumno puede alternar entre el <strong>Modo Práctica</strong> (donde lee las explicaciones formativas sin presión) y el <strong>Modo Evaluación</strong> (donde contesta formalmente el test). Se requiere alcanzar un 80% de aciertos (16/20) para aprobar.
+                            </p>
+                        </div>
+                        <div class="p-5 rounded-2xl bg-white/80 border border-slate-100 shadow-sm">
+                            <h4 class="font-bold text-slate-900 mb-1">Retos 1 al 6 y Autoevaluación por Estrellas</h4>
+                            <p class="text-xs text-slate-600">
+                                Evidencias curriculares divididas por materia. Al finalizar cada reto, el alumno se autoevalúa asignando de 1 a 5 estrellas, guiado por un prompt de Inteligencia Artificial. Al completar todos los retos exitosamente, el sistema desbloquea la descarga del <strong>Diploma Oficial Medienpass</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="glass-panel mt-auto py-6 px-6 border-t border-white/50 text-center text-xs text-slate-500">
+        <p>Medienpass App &copy; 2026 Deutsche Schule. Manual Técnico Oficial.</p>
+    </footer>
+
+    <!-- Simple ScrollSpy Script -->
+    <script>
+        const links = document.querySelectorAll('aside nav a');
+        links.forEach(link => {
+            link.addEventListener('click', () => {
+                links.forEach(l => l.className = l.className.replace('text-purple-700 bg-purple-50', 'text-slate-600'));
+                link.className = link.className.replace('text-slate-600', 'text-purple-700 bg-purple-50');
+            });
+        });
+    </script>
+</body>
+</html>

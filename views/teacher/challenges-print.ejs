@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="<%= lang %>">
+<head>
+    <meta charset="UTF-8">
+    <% 
+      let uiTexts = {
+        es: {
+          bookletTitle: "Cuadernillo de Retos Medienpass",
+          overview: "Visión completa de las preguntas y evidencias requeridas (Retos 0 al 6)",
+          grade: "Grado / Klasse",
+          spaceAnswer: "Espacio para respuesta / enlace...",
+          spaceAnswerLong: "Espacio para respuesta del alumno...",
+          noQuestions: "No hay preguntas configuradas para este reto.",
+          hint: "Pista:",
+          profileTitle: "Reto 0 - Este soy yo (Diagnóstico)",
+          profileSubtitle: "Perfil del Estudiante e Inventario Digital",
+          printBtn: "🖨️ Imprimir / Guardar PDF"
+        },
+        de: {
+          bookletTitle: "Medienpass Herausforderungsheft",
+          overview: "Vollständige Übersicht der Fragen und Nachweise (Herausforderungen 0 bis 6)",
+          grade: "Klassenstufe",
+          spaceAnswer: "Platz für Antwort / Link...",
+          spaceAnswerLong: "Platz für Schülerantwort...",
+          noQuestions: "Keine Fragen für diese Herausforderung konfiguriert.",
+          hint: "Hinweis:",
+          profileTitle: "Herausforderung 0 - Das bin ich (Diagnose)",
+          profileSubtitle: "Schülerprofil und digitales Inventar",
+          printBtn: "🖨️ Drucken / PDF speichern"
+        },
+        en: {
+          bookletTitle: "Medienpass Challenge Booklet",
+          overview: "Complete overview of questions and required evidence (Challenges 0 to 6)",
+          grade: "Klasse / Grade",
+          spaceAnswer: "Space for answer / link...",
+          spaceAnswerLong: "Space for student answer...",
+          noQuestions: "No questions configured for this challenge.",
+          hint: "Hint:",
+          profileTitle: "Challenge 0 - This is me (Diagnostic)",
+          profileSubtitle: "Student profile and digital inventory",
+          printBtn: "🖨️ Print / Save PDF"
+        }
+      };
+      let txt = uiTexts[lang] || uiTexts.es;
+
+      function getLangStr(obj, l) {
+        if (!obj) return '';
+        if (typeof obj === 'string') return obj;
+        return obj[l] || obj.es || obj.de || obj.en || '';
+      }
+    %>
+    <title><%= txt.bookletTitle %> - Klasse <%= level %></title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 40px;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #0284c7;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 28px;
+            color: #0f172a;
+            margin: 0;
+        }
+        .header p {
+            font-size: 16px;
+            color: #64748b;
+            margin: 5px 0 0 0;
+        }
+        .grade-badge {
+            display: inline-block;
+            background: #0284c7;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+        .institution {
+            font-weight: 700;
+            color: #0284c7;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .reto-card {
+            page-break-inside: avoid;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 35px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .reto-header {
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .reto-icon {
+            font-size: 32px;
+            margin-right: 16px;
+        }
+        .reto-title-group {
+            flex-grow: 1;
+        }
+        .reto-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+        .reto-subtitle {
+            font-size: 15px;
+            color: #475569;
+            margin: 4px 0 0 0;
+        }
+        .question-item {
+            margin-bottom: 18px;
+            padding-left: 12px;
+            border-left: 3px solid #0284c7;
+        }
+        .question-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+        .question-hint {
+            font-size: 12px;
+            color: #64748b;
+            font-style: italic;
+            margin-bottom: 8px;
+        }
+        .answer-box {
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 6px;
+            min-height: 45px;
+            padding: 10px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .print-options {
+            margin: 10px 0 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .print-option {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #334155;
+        }
+        .checkbox-box {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #64748b;
+            border-radius: 3px;
+            margin-right: 10px;
+            flex-shrink: 0;
+            background: #ffffff;
+        }
+        .print-btn-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .print-btn {
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+            transition: background 0.2s;
+        }
+        .print-btn:hover {
+            background-color: #0369a1;
+        }
+        @media print {
+            body { padding: 0; background: white; }
+            .print-btn-container { display: none; }
+            .reto-card { box-shadow: none; border: 1px solid #cbd5e1; background: #fafafa; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="print-btn-container">
+        <button class="print-btn" onclick="window.print()"><%= txt.printBtn %></button>
+    </div>
+
+    <div class="header">
+        <div class="institution">Deutsche Schule - Medienpass</div>
+        <h1><%= txt.bookletTitle %></h1>
+        <p><%= txt.overview %></p>
+        <span class="grade-badge"><%= txt.grade %>: <%= level %></span>
+    </div>
+
+    <!-- RETO 0: ESTE SOY YO (SHARED PROFILE) -->
+    <div class="reto-card" style="border-top: 5px solid #3b82f6;">
+        <div class="reto-header">
+            <div class="reto-icon">👤</div>
+            <div class="reto-title-group">
+                <h2 class="reto-title"><%= txt.profileTitle %></h2>
+                <p class="reto-subtitle"><%= txt.profileSubtitle %></p>
+            </div>
+        </div>
+        <div class="questions-list">
+            <% sharedProfile.evidence.forEach(function(q, index) { %>
+                <% if (q.type === 'label') { %>
+                    <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 25px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;"><%= getLangStr(q.label, lang) %></h3>
+                <% } else { %>
+                    <div class="question-item">
+                        <div class="question-label"><%= getLangStr(q.label, lang) %></div>
+                        <% if (q.hint && getLangStr(q.hint, lang)) { %>
+                            <div class="question-hint"><strong><%= txt.hint %></strong> <%= getLangStr(q.hint, lang) %></div>
+                        <% } %>
+                        <% if (q.options && q.options.length > 0) { %>
+                            <div class="print-options">
+                                <% q.options.forEach(function(opt) { %>
+                                    <div class="print-option">
+                                        <span class="checkbox-box"></span>
+                                        <span><%= getLangStr(opt, lang) %></span>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        <% } else { %>
+                            <div class="answer-box"><%= q.type === 'textarea' ? txt.spaceAnswerLong : txt.spaceAnswer %></div>
+                        <% } %>
+                    </div>
+                <% } %>
+            <% }); %>
+        </div>
+    </div>
+
+    <!-- RETOS 1 AL 6 -->
+    <% for(let i = 1; i <= 6; i++) { 
+        // Find reto in the resolved allActivities list (any subject is fine since they share questions for the same grade/level)
+        let reto = allActivities[String(i)][0]; // German, English or Spanish activity
+        let titleVal = getLangStr(reto.title, lang);
+        let subtitleVal = getLangStr(reto.subtitle, lang);
+    %>
+        <div class="reto-card" style="border-top: 5px solid <%= reto.color || '#0284c7' %>;">
+            <div class="reto-header">
+                <div class="reto-icon"><%= reto.icon || '🎯' %></div>
+                <div class="reto-title-group">
+                    <h2 class="reto-title"><%= titleVal %></h2>
+                    <p class="reto-subtitle"><%= subtitleVal %></p>
+                </div>
+            </div>
+            <div class="questions-list">
+                <% if(reto.evidence && reto.evidence.length > 0) { %>
+                    <% reto.evidence.forEach(function(q) { %>
+                        <div class="question-item">
+                            <div class="question-label"><%= getLangStr(q.label, lang) %></div>
+                            <% if (q.hint && getLangStr(q.hint, lang)) { %>
+                                <div class="question-hint"><strong><%= txt.hint %></strong> <%= getLangStr(q.hint, lang) %></div>
+                            <% } %>
+                            <% if (q.options && q.options.length > 0) { %>
+                                <div class="print-options">
+                                    <% q.options.forEach(function(opt) { %>
+                                        <div class="print-option">
+                                            <span class="checkbox-box"></span>
+                                            <span><%= getLangStr(opt, lang) %></span>
+                                        </div>
+                                    <% }); %>
+                                </div>
+                            <% } else { %>
+                                <div class="answer-box"><%= q.type === 'textarea' ? txt.spaceAnswerLong : txt.spaceAnswer %></div>
+                            <% } %>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <p style="color: #64748b; font-style: italic;"><%= txt.noQuestions %></p>
+                <% } %>
+            </div>
+        </div>
+    <% } %>
+
+    <script>
+        // Trigger print dialog automatically on load
+        window.onload = function() {
+            setTimeout(() => {
+                window.print();
+            }, 800);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Monitoreo Docente - Medienpass</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-animate {
+            animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col text-slate-800">
+    <%- include('../partials/sidebar', { context: 'teacher', activeItem: 'progress' }) %>
+
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
+
+        <!-- Welcome & Filter Section -->
+        <div class="glass-panel rounded-2xl p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-l-4 border-l-blue-600">
+            <div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-1">¡Hola, Profesor/a <%= teacher?.first_name || '' %>!</h3>
+                <p class="text-slate-600 text-sm">Filtra por tu Klasse para visualizar en tiempo real el progreso y autoevaluación de tus estudiantes.</p>
+            </div>
+            <div class="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                <!-- Filter Klasse -->
+                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 shadow-inner w-full sm:w-auto">
+                    <span class="pl-2 text-slate-400">🔍</span>
+                    <input type="text" id="classFilterInput" placeholder="Ej. 4A, 5B, 6C..." class="bg-transparent border-none focus:outline-none text-slate-800 font-medium px-2 py-1 w-24 placeholder:text-slate-400 uppercase">
+                    <button onclick="fetchProgress()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition shadow-md whitespace-nowrap">
+                        Filtrar
+                    </button>
+                </div>
+                <!-- Descargar Retos -->
+                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 shadow-inner w-full sm:w-auto">
+                    <span class="pl-2 text-slate-400">📄</span>
+                    <select id="gradeSelectBooklet" class="bg-transparent text-slate-700 font-bold text-xs py-1 px-2 border-r border-slate-200 focus:outline-none uppercase">
+                        <option value="2">Klasse 2</option>
+                        <option value="3">Klasse 3</option>
+                        <option value="4">Klasse 4</option>
+                        <option value="5" selected>Klasse 5</option>
+                        <option value="6">Klasse 6</option>
+                        <option value="7">Klasse 7</option>
+                        <option value="8">Klasse 8</option>
+                        <option value="9">Klasse 9</option>
+                        <option value="10">Klasse 10</option>
+                        <option value="11">Klasse 11</option>
+                        <option value="12">Klasse 12</option>
+                    </select>
+                    <button onclick="downloadBooklet()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition shadow-md whitespace-nowrap">
+                        Descargar Retos
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table Card -->
+        <div class="glass-panel rounded-2xl overflow-hidden shadow-sm flex-1 flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">📊</span>
+                    <h4 class="font-bold text-slate-800 text-base">Estado General de la Clase: <span id="currentClassDisplay" class="text-blue-600 font-extrabold">-</span></h4>
+                </div>
+                <div class="flex items-center gap-4 text-xs font-medium text-slate-500">
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span> Aprobado (≥ 4 ⭐)</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block"></span> En proceso (2-3 ⭐)</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> Debe mejorar (1 ⭐)</span>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="hidden flex-col items-center justify-center py-20 text-slate-500">
+                <svg class="animate-spin h-10 w-10 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="font-medium text-sm animate-pulse">Cargando progreso en tiempo real...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="flex flex-col items-center justify-center py-20 text-slate-500 px-4 text-center">
+                <span class="text-5xl mb-4">🏫</span>
+                <h5 class="font-bold text-slate-700 text-lg mb-1">Ninguna Klasse seleccionada</h5>
+                <p class="text-sm text-slate-500 max-w-md">Ingresa el nombre de una Klasse en el recuadro superior (ej. 4A) y presiona Filtrar para ver a tus alumnos.</p>
+            </div>
+
+            <!-- Table -->
+            <div id="tableContainer" class="hidden overflow-x-auto custom-scrollbar flex-1">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 bg-slate-100/75 text-slate-600 text-xs font-bold uppercase tracking-wider">
+                            <th class="py-3.5 px-6 sticky left-0 bg-slate-100/90 backdrop-blur z-10 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">Estudiante</th>
+                            <th class="py-3.5 px-4 text-center">Reto 0<br><span class="text-[10px] font-normal text-slate-500">Diagnóstico</span></th>
+                            <th class="py-3.5 px-4 text-center">Reto 1<br><span class="text-[10px] font-normal text-slate-500">Buscar/Archivar</span></th>
+                            <th class="py-3.5 px-4 text-center">Reto 2<br><span class="text-[10px] font-normal text-slate-500">Comunicar</span></th>
+                            <th class="py-3.5 px-4 text-center">Reto 3<br><span class="text-[10px] font-normal text-slate-500">Producir</span></th>
+                            <th class="py-3.5 px-4 text-center">Reto 4<br><span class="text-[10px] font-normal text-slate-500">Proteger</span></th>
+                            <th class="py-3.5 px-4 text-center">Reto 5<br><span class="text-[10px] font-normal text-slate-500">Resolver</span></th>
+                            <th class="py-3.5 px-4 text-center">Reto 6<br><span class="text-[10px] font-normal text-slate-500">Analizar</span></th>
+                            <th class="py-3.5 px-6 text-center border-l border-slate-200">Autoevaluación<br><span class="text-[10px] font-normal text-slate-500">Promedio Estrellas</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="progressTableBody" class="divide-y divide-slate-200 text-sm font-medium text-slate-700">
+                        <!-- Rows dynamically injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Glassmorphic Modal for Answers -->
+    <div id="answersModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-all">
+        <div class="glass-panel w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/80 modal-animate">
+            <!-- Modal Header -->
+            <div class="px-6 py-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between shadow-lg">
+                <div class="flex items-center space-x-3">
+                    <span id="modalRetoIcon" class="text-3xl">🎯</span>
+                    <div>
+                        <h4 id="modalRetoTitle" class="font-bold text-xl leading-tight">Reto Title</h4>
+                        <p id="modalStudentName" class="text-xs font-semibold text-blue-400 tracking-wide uppercase">Student Name</p>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition focus:outline-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Modal Content (Questions & Answers) -->
+            <div id="modalContentBody" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6 bg-white/70">
+                <!-- Dynamically injected Q&A pairs -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <span id="modalStarDisplay" class="inline-flex items-center gap-1 text-sm font-bold px-3 py-1.5 rounded-full bg-slate-200 text-slate-700 shadow-inner">
+                    ⭐ Sin autoevaluación
+                </span>
+                <button onclick="closeModal()" class="px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl text-sm transition shadow-md">
+                    Cerrar Vista
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inject Backend Data for Client-Side Reference -->
+    <script>
+        const sharedProfileConfig = <%- JSON.stringify(sharedProfile || {}) %>;
+        const allActivitiesConfig = <%- JSON.stringify(allActivities || {}) %>;
+        let currentStudentsData = [];
+
+        // Add event listener for Enter key on filter input
+        document.getElementById('classFilterInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchProgress();
+            }
+        });
+
+        async function fetchProgress() {
+            const inputVal = document.getElementById('classFilterInput').value.trim();
+            if (!inputVal) return;
+
+            document.getElementById('currentClassDisplay').innerText = inputVal.toUpperCase();
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('tableContainer').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('loadingState').classList.add('flex');
+
+            try {
+                const res = await fetch('/api/teacher/progress/' + encodeURIComponent(inputVal));
+                const data = await res.json();
+
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('loadingState').classList.remove('flex');
+                document.getElementById('tableContainer').classList.remove('hidden');
+
+                if (data.success && data.progress && data.progress.length > 0) {
+                    currentStudentsData = data.progress;
+                    renderTable(data.progress);
+                } else {
+                    currentStudentsData = [];
+                    document.getElementById('tableContainer').classList.add('hidden');
+                    document.getElementById('emptyState').classList.remove('hidden');
+                    document.querySelector('#emptyState h5').innerText = 'Sin alumnos o sin respuestas';
+                    document.querySelector('#emptyState p').innerText = 'No se encontraron alumnos para la Klasse "' + inputVal.toUpperCase() + '" o aún no han registrado actividad.';
+                }
+            } catch (e) {
+                console.error('Error fetching progress:', e);
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('emptyState').classList.remove('hidden');
+                document.querySelector('#emptyState h5').innerText = 'Error al cargar datos';
+                document.querySelector('#emptyState p').innerText = 'Ocurrió un error al consultar el servidor. Intenta nuevamente.';
+            }
+        }
+
+        function renderTable(progressList) {
+            const tbody = document.getElementById('progressTableBody');
+            tbody.innerHTML = '';
+
+            progressList.forEach((item, studentIdx) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-blue-50/50 transition';
+
+                // Student Name Cell
+                const nameTd = document.createElement('td');
+                nameTd.className = 'py-4 px-6 sticky left-0 bg-white/90 backdrop-blur z-10 shadow-[2px_0_5px_rgba(0,0,0,0.02)] font-bold text-slate-900 border-b border-slate-100';
+                nameTd.innerText = `${item.student?.last_name || ''}, ${item.student?.first_name || ''}`.replace(/^,\s*/, '');
+                tr.appendChild(nameTd);
+
+                // Reto 0 to 6 Cells
+                for (let i = 0; i <= 6; i++) {
+                    const td = document.createElement('td');
+                    td.className = 'py-4 px-4 text-center border-b border-slate-100';
+                    
+                    // Always show the "Ver" button for each reto, even if no data yet
+                    const btn = document.createElement('button');
+                    btn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-100 hover:bg-blue-600 text-blue-700 hover:text-white font-semibold text-xs transition shadow-sm border border-blue-200 hover:border-transparent';
+                    btn.innerHTML = '<span>📝 Ver</span>';
+                    btn.onclick = () => openModal(studentIdx, i);
+                    td.appendChild(btn);
+
+                    tr.appendChild(td);
+                }
+
+                // Star Rating Status Cell
+                const starTd = document.createElement('td');
+                starTd.className = 'py-4 px-6 text-center border-b border-slate-100 border-l border-slate-200';
+                
+                const badge = document.createElement('span');
+                badge.className = `inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-sm border ${item.evalColor.replace('bg-', 'border-').replace('100', '200')} ${item.evalColor}`;
+                badge.innerText = item.evalStatus;
+                starTd.appendChild(badge);
+                
+                tr.appendChild(starTd);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function getStudentGradeLevel(className) {
+            if (!className) return 5;
+            const match = className.match(/\d+/);
+            const num = match ? parseInt(match[0], 10) : 5;
+            if (num < 2) return 2;
+            if (num > 12) return 12;
+            return num;
+        }
+
+        function openModal(studentIdx, retoIdx) {
+            const studentItem = currentStudentsData[studentIdx];
+            if (!studentItem || !studentItem.retos[retoIdx]) return;
+
+            const studentName = `${studentItem.student?.first_name || ''} ${studentItem.student?.last_name || ''}`.trim();
+            const answersData = studentItem.retos[retoIdx];
+
+            let title = 'Reto 0 - Este soy yo (Diagnóstico)';
+            let icon = '👤';
+            let questionsConfig = sharedProfileConfig?.evidence || [];
+
+            if (retoIdx >= 1 && retoIdx <= 6) {
+                // Determine subject by checking the keys of answersData
+                let subject = 'aleman';
+                for (const key of Object.keys(answersData)) {
+                    if (key.includes('_ingles_')) {
+                        subject = 'ingles';
+                        break;
+                    } else if (key.includes('_espanol_')) {
+                        subject = 'espanol';
+                        break;
+                    } else if (key.includes('_aleman_')) {
+                        subject = 'aleman';
+                        break;
+                    }
+                }
+
+                // Find the activity config for this subject and retoIdx
+                const activitiesList = allActivitiesConfig[String(retoIdx)] || [];
+                const retoObj = activitiesList.find(a => a.subject === subject) || activitiesList[0];
+
+                title = retoObj?.title?.es || retoObj?.title || `Reto ${retoIdx}`;
+                icon = retoObj?.icon || '🎯';
+
+                // Resolve the correct grade-level evidence list
+                const studentClass = studentItem.student?.class_name;
+                const grade = getStudentGradeLevel(studentClass);
+                const evidenceKey = `evidence_k${grade}`;
+                questionsConfig = retoObj?.[evidenceKey] || retoObj?.evidence || [];
+            }
+
+            // Update Modal Header
+            document.getElementById('modalRetoIcon').innerText = icon;
+            document.getElementById('modalRetoTitle').innerText = title;
+            document.getElementById('modalStudentName').innerText = studentName;
+
+            // Update Modal Content Body
+            const contentBody = document.getElementById('modalContentBody');
+            contentBody.innerHTML = '';
+
+            if (questionsConfig.length === 0) {
+                contentBody.innerHTML = '<p class="text-slate-500 italic">No hay configuración de preguntas para este reto.</p>';
+            } else {
+                const lang = '<%- (teacher?.subject || "").toLowerCase() === "aleman" ? "de" : (teacher?.subject || "").toLowerCase() === "ingles" ? "en" : "es" %>';
+                let qNum = 1;
+                questionsConfig.forEach((qConfig, i) => {
+                    const qId = qConfig.id;
+                    const label = qConfig.label[lang] || qConfig.label?.es || qConfig.label || `Pregunta ${i+1}`;
+                    
+                    if (qConfig.type === 'label') {
+                        const hDiv = document.createElement('div');
+                        hDiv.className = 'border-b border-slate-200 pb-1.5 mt-6 mb-3';
+                        hDiv.innerHTML = `<h5 class="text-xs font-black text-indigo-700 uppercase tracking-wider">${label}</h5>`;
+                        contentBody.appendChild(hDiv);
+                        return;
+                    }
+                    
+                    // Match answer from answersData using qId or fallback to q1, q2...
+                    let answerVal = answersData[qId] || answersData[`q${i+1}`];
+
+                    const qDiv = document.createElement('div');
+                    qDiv.className = 'bg-slate-50 p-4 rounded-xl border border-slate-200/80 shadow-sm space-y-2';
+
+                    const lbl = document.createElement('h5');
+                    lbl.className = 'font-bold text-sm text-slate-800 leading-snug flex items-start gap-2';
+                    lbl.innerHTML = `<span class="w-5 h-5 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 text-xs mt-0.5">${qNum}</span> <span>${label}</span>`;
+                    qDiv.appendChild(lbl);
+
+                    const ans = document.createElement('div');
+                    ans.className = 'text-sm text-slate-700 pl-7 whitespace-pre-wrap font-normal';
+                    
+                    if (qConfig.options && qConfig.options.length > 0) {
+                        let optionsHtml = '<div class="space-y-2 mt-2">';
+                        qConfig.options.forEach(opt => {
+                            const optText = opt[lang] || opt.es || opt.de || opt.en || opt;
+                            const isSelected = answerVal !== undefined && answerVal !== null && answerVal !== '' && String(opt.val) === String(answerVal);
+                            const isCorrect = opt.correct === true;
+                            
+                            let borderClass = 'border-slate-200 bg-white';
+                            let iconHtml = '⚪';
+                            let badgeHtml = '';
+                            
+                            if (isSelected) {
+                                if (isCorrect) {
+                                    borderClass = 'border-green-300 bg-green-50 text-green-800';
+                                    iconHtml = '🟢';
+                                    badgeHtml = ' <span class="ml-2 text-[10px] bg-green-200 text-green-800 px-2 py-0.5 rounded font-bold">Seleccionado (Correcto)</span>';
+                                } else {
+                                    borderClass = 'border-red-300 bg-red-50 text-red-800';
+                                    iconHtml = '🔴';
+                                    badgeHtml = ' <span class="ml-2 text-[10px] bg-red-200 text-red-800 px-2 py-0.5 rounded font-bold">Seleccionado (Incorrecto)</span>';
+                                }
+                            } else if (isCorrect) {
+                                borderClass = 'border-green-100 bg-green-50/20 text-green-600/80';
+                                iconHtml = '⚪';
+                                badgeHtml = ' <span class="ml-2 text-[10px] text-green-600/60 font-semibold">(Correcto)</span>';
+                            }
+                            
+                            optionsHtml += `
+                                <div class="flex items-center gap-2.5 p-2 rounded-lg border ${borderClass} text-xs font-medium">
+                                    <span>${iconHtml}</span>
+                                    <span>${optText}</span>
+                                    ${badgeHtml}
+                                </div>
+                            `;
+                        });
+                        if (answerVal === undefined || answerVal === null || answerVal === '') {
+                            optionsHtml += '<div class="text-xs text-slate-400 italic mt-2">Sin respuesta registrada por el estudiante.</div>';
+                        }
+                        optionsHtml += '</div>';
+                        ans.innerHTML = optionsHtml;
+                    } else {
+                        if (answerVal !== undefined && answerVal !== null && answerVal !== '') {
+                            if (String(answerVal).startsWith('http://') || String(answerVal).startsWith('https://')) {
+                                ans.innerHTML = `<a href="${answerVal}" target="_blank" class="text-blue-600 hover:text-blue-800 underline font-medium inline-flex items-center gap-1"><span>🔗 Abrir enlace adjunto</span> <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg></a>`;
+                            } else {
+                                ans.innerText = answerVal;
+                            }
+                        } else {
+                            ans.innerHTML = '<span class="text-slate-400 italic font-light">Sin respuesta registrada por el estudiante.</span>';
+                        }
+                    }
+                    qDiv.appendChild(ans);
+                    contentBody.appendChild(qDiv);
+                    qNum++;
+                });
+            }
+
+            // Update Star Display in Footer
+            const starVal = answersData.star_rating ? parseInt(answersData.star_rating) : 0;
+            const starDisplay = document.getElementById('modalStarDisplay');
+            if (starVal > 0) {
+                starDisplay.className = 'inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl bg-amber-100 text-amber-800 border border-amber-200 shadow-sm';
+                starDisplay.innerText = `⭐ Autoevaluación en este reto: ${starVal} de 5 Estrellas`;
+            } else {
+                starDisplay.className = 'inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl bg-slate-100 text-slate-500 border border-slate-200';
+                starDisplay.innerText = '⭐ Sin autoevaluación en este reto';
+            }
+
+            // Show Modal
+            document.getElementById('answersModal').classList.remove('hidden');
+        }
+
+        function downloadBooklet() {
+            const grade = document.getElementById('gradeSelectBooklet').value;
+            const lang = '<%- (teacher?.subject || "").toLowerCase() === "aleman" ? "de" : (teacher?.subject || "").toLowerCase() === "ingles" ? "en" : "es" %>';
+            window.open(`/teacher/download-challenges?level=${grade}&lang=${lang}`, '_blank');
+        }
+
+        function closeModal() {
+            document.getElementById('answersModal').classList.add('hidden');
+        }
+
+        // Close modal on escape key or backdrop click
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+        document.getElementById('answersModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    </script>
+</body>
+</html>

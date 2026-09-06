@@ -1,0 +1,313 @@
+<!-- Sidebar EJS Partial -->
+<% 
+    // Determine active item based on current URL or a variable passed
+    // If not passed, we can try to guess it from the context
+    if (typeof activeItem === 'undefined') { activeItem = ''; }
+%>
+
+<!-- Mobile Nav Toggle Button -->
+<button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle Navigation">
+    <i class="fas fa-bars"></i>
+</button>
+
+<!-- Sidebar Overlay for Mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Sidebar Navigation -->
+<aside class="sidebar" id="sidebar">
+    <!-- Sidebar Header / Brand -->
+    <div class="sidebar-brand">
+        <a href="/" class="sidebar-logo">
+            <span class="logo-emoji"><%= context === 'admin' ? '🛡️' : '🏫' %></span>
+            <div class="logo-text">
+                <span class="logo-title notranslate" translate="no">MEDIENPASS</span>
+                <span class="logo-subtitle"><%= context === 'admin' ? 'Administración' : 'Portal Docente' %></span>
+            </div>
+        </a>
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Colapsar menú">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Menu -->
+    <nav class="sidebar-menu">
+        <% if (context === 'admin') { %>
+            <!-- 🛡️ Admin Menu -->
+            <div class="menu-label">Navegación</div>
+            
+            <div class="menu-item">
+                <a class="menu-link <%= activeItem === 'executive' ? 'active' : '' %>" id="menu-executive" onclick="switchMainTab('executive')">
+                    <div class="link-left">
+                        <i class="fas fa-chart-line"></i>
+                        <span class="link-text">Dashboard Ejecutivo</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- CONTENIDOS Accordion Group -->
+            <div class="menu-item">
+                <a class="menu-link <%= ['students', 'config', 'reports', 'mapping', 'i18n'].includes(activeItem) ? 'active' : '' %>" id="menu-group-contenidos" onclick="toggleSubmenu('submenu-contenidos')">
+                    <div class="link-left">
+                        <i class="fas fa-th-large"></i>
+                        <span class="link-text">Contenidos</span>
+                    </div>
+                    <i class="fas fa-chevron-down arrow-icon"></i>
+                </a>
+                <div class="submenu <%= ['students', 'config', 'reports', 'mapping', 'i18n'].includes(activeItem) ? 'open' : '' %>" id="submenu-contenidos">
+                    <a class="submenu-link <%= activeItem === 'students' ? 'active' : '' %>" id="submenu-students" onclick="switchMainTab('contenidos'); switchSub('students')">
+                        👥 Estudiantes
+                    </a>
+                    <a class="submenu-link <%= activeItem === 'config' ? 'active' : '' %>" id="submenu-config" onclick="switchMainTab('contenidos'); switchSub('config')">
+                        ⚙️ Configuración
+                    </a>
+                    <a class="submenu-link <%= activeItem === 'reports' ? 'active' : '' %>" id="submenu-reports" onclick="switchMainTab('contenidos'); switchSub('reports')">
+                        📄 Reportes & Diplomas
+                    </a>
+                    <a class="submenu-link <%= activeItem === 'mapping' ? 'active' : '' %>" id="submenu-mapping" onclick="switchMainTab('contenidos'); switchSub('mapping')">
+                        🔗 Mapeo Profesores
+                    </a>
+                    <a class="submenu-link <%= activeItem === 'i18n' ? 'active' : '' %>" id="submenu-i18n" onclick="switchMainTab('contenidos'); switchSub('i18n'); loadI18n();">
+                        🌐 Textos & BD
+                    </a>
+                </div>
+            </div>
+
+            <!-- MONITOREO Accordion Group -->
+            <div class="menu-item">
+                <a class="menu-link <%= ['monitoreo', 'kmk-stats', 'mm-stats', 'reto0-stats', 'teachers-status', 'psp-matrix', 'psp-indicators'].includes(activeItem) ? 'active' : '' %>" id="menu-group-monitoreo" onclick="toggleSubmenu('submenu-monitoreo')">
+                    <div class="link-left">
+                        <i class="fas fa-eye"></i>
+                        <span class="link-text">Monitoreo</span>
+                    </div>
+                    <i class="fas fa-chevron-down arrow-icon"></i>
+                </a>
+                <div class="submenu <%= ['monitoreo', 'kmk-stats', 'mm-stats', 'reto0-stats', 'teachers-status', 'psp-matrix', 'psp-indicators'].includes(activeItem) ? 'open' : '' %>" id="submenu-monitoreo">
+                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('kpi-goals-card')">
+                        🎯 KPIs Institucionales
+                    </a>
+                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('kmk-docente-card')">
+                        🎓 Capacitación KMK
+                    </a>
+                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('grupos-docente-card')">
+                        👨‍🏫 Grupos por Docente
+                    </a>
+                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('matriz-global-card')">
+                        📊 Matriz Global
+                    </a>
+                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('productos-multimedia-card')">
+                        📹 Productos Multimedia
+                    </a>
+                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('psp-estudiante-card')">
+                        📈 PSP por Estudiante
+                    </a>
+                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('reto0-diagnostico-card')">
+                        📋 Reto 0 Diagnóstico
+                    </a>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <a class="menu-link <%= activeItem === 'inventory' ? 'active' : '' %>" id="menu-inventory" onclick="switchMainTab('inventory')">
+                    <div class="link-left">
+                        <i class="fas fa-laptop"></i>
+                        <span class="link-text">Inventario</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="menu-label">Enlaces</div>
+            <div class="menu-item">
+                <a href="/docs/technical" target="_blank" class="menu-link">
+                    <div class="link-left">
+                        <i class="fas fa-code"></i>
+                        <span class="link-text">Manual Técnico</span>
+                    </div>
+                </a>
+            </div>
+            <div class="menu-item">
+                <a href="/" class="menu-link">
+                    <div class="link-left">
+                        <i class="fas fa-home"></i>
+                        <span class="link-text">Ir al App</span>
+                    </div>
+                </a>
+            </div>
+
+        <% } else if (context === 'teacher') { %>
+            <!-- 👨‍🏫 Teacher Menu -->
+            <div class="menu-label">Mi Portal</div>
+            
+            <div class="menu-item">
+                <a href="/teacher/training" class="menu-link <%= activeItem === 'training' ? 'active' : '' %>">
+                    <div class="link-left">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span class="link-text">Capacitación KMK</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="menu-item">
+                <a href="/teacher/progress" class="menu-link <%= activeItem === 'progress' ? 'active' : '' %>">
+                    <div class="link-left">
+                        <i class="fas fa-users-cog"></i>
+                        <span class="link-text">Monitoreo Alumnos</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="menu-item">
+                <a href="/teacher/student-preview" class="menu-link <%= activeItem === 'preview' ? 'active' : '' %>">
+                    <div class="link-left">
+                        <i class="fas fa-eye"></i>
+                        <span class="link-text">Modo Estudiante</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="menu-item">
+                <a href="/teacher/worksheets" class="menu-link <%= activeItem === 'worksheets' ? 'active' : '' %>">
+                    <div class="link-left">
+                        <i class="fas fa-file-invoice"></i>
+                        <span class="link-text">Fichas Interactivas</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="menu-item">
+                <a href="/teacher/bitacora" class="menu-link <%= activeItem === 'bitacora' ? 'active' : '' %>">
+                    <div class="link-left">
+                        <i class="fas fa-book"></i>
+                        <span class="link-text">Bitácora</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="menu-item">
+                <a href="/teacher/troubleshooting" class="menu-link <%= activeItem === 'troubleshooting' ? 'active' : '' %>">
+                    <div class="link-left">
+                        <i class="fas fa-tools"></i>
+                        <span class="link-text">Troubleshooting</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="menu-label">Documentación</div>
+            <div class="menu-item">
+                <a href="/docs" target="_blank" class="menu-link">
+                    <div class="link-left">
+                        <i class="fas fa-book-open"></i>
+                        <span class="link-text">Manual de Usuario</span>
+                    </div>
+                </a>
+            </div>
+            <div class="menu-item">
+                <a href="/" class="menu-link">
+                    <div class="link-left">
+                        <i class="fas fa-home"></i>
+                        <span class="link-text">Ir al App Estudiante</span>
+                    </div>
+                </a>
+            </div>
+        <% } %>
+    </nav>
+
+    <!-- Sidebar Footer / User Section -->
+    <div class="sidebar-footer">
+        <div class="user-profile">
+            <div class="user-avatar">
+                <% 
+                   let initials = 'A';
+                   let fullName = 'Admin';
+                   if (context === 'teacher' && typeof teacher !== 'undefined') {
+                       initials = ((teacher.first_name || '').charAt(0) + (teacher.last_name || '').charAt(0)).toUpperCase() || 'P';
+                       fullName = (teacher.first_name || '') + ' ' + (teacher.last_name || '');
+                   }
+                %>
+                <%= initials %>
+            </div>
+            <div class="user-info">
+                <span class="user-name"><%= fullName %></span>
+                <span class="user-role"><%= context === 'admin' ? 'Administrador' : 'Docente' %></span>
+            </div>
+        </div>
+        <a href="<%= context === 'admin' ? '/admin/logout' : '/teacher/logout' %>" class="menu-link" style="margin: 0; padding: 10px 8px; border: none; border-radius: 6px; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="link-text">Cerrar Sesión</span>
+        </a>
+    </div>
+</aside>
+
+<!-- Sidebar JS Scripts -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+        const mobileNavToggle = document.getElementById('mobileNavToggle');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const body = document.body;
+
+        // Add has-sidebar layout class
+        body.classList.add('has-sidebar');
+
+        // Toggle sidebar collapse state (Desktop)
+        if (sidebarToggleBtn) {
+            sidebarToggleBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                body.classList.toggle('sidebar-collapsed');
+                
+                // Update button icon
+                const icon = sidebarToggleBtn.querySelector('i');
+                if (sidebar.classList.contains('collapsed')) {
+                    icon.className = 'fas fa-chevron-right';
+                    sidebarToggleBtn.title = "Expandir menú";
+                } else {
+                    icon.className = 'fas fa-chevron-left';
+                    sidebarToggleBtn.title = "Colapsar menú";
+                }
+            });
+        }
+
+        // Toggle mobile open state
+        if (mobileNavToggle) {
+            mobileNavToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('mobile-open');
+            });
+        }
+
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', function() {
+                sidebar.classList.remove('mobile-open');
+            });
+        }
+    });
+
+    // Toggle Submenu Accordions
+    function toggleSubmenu(id) {
+        const submenu = document.getElementById(id);
+        const menuItem = submenu.parentElement;
+        
+        // Toggle open class
+        if (submenu.classList.contains('open')) {
+            submenu.classList.remove('open');
+            menuItem.classList.remove('open');
+        } else {
+            submenu.classList.add('open');
+            menuItem.classList.add('open');
+        }
+    }
+
+    // Helper for scrolling to card in large scrollable views
+    function scrollToCard(cardId) {
+        const card = document.getElementById(cardId);
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Highlight card briefly for emphasis
+            card.style.transition = 'outline 0.3s ease';
+            card.style.outline = '3px solid #818cf8';
+            setTimeout(() => {
+                card.style.outline = 'none';
+            }, 1500);
+        }
+    }
+</script>

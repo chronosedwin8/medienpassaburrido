@@ -1,0 +1,1687 @@
+require('dotenv').config();
+const express = require('express');
+const app = express();
+const path = require('path');
+const fs = require('fs');
+const cookieParser = require('cookie-parser');
+const supabase = require('./supabaseClient');
+const { allActivities, tecnologiaActivities, medienpassActivities, sharedProfile, klassenConfig, schoolYears, subjects, levels } = require('./data');
+const { kmkTrainingQuestions } = require('./kmk_training_questions');
+
+// Helper: detect level from student class_name (e.g. "4D" -> "4", default "1")
+function getStudentLevel(className) {
+    if (!className) return '1';
+    const match = className.match(/\d+/);
+    return match ? match[0] : '1';
+}
+
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+app.use(express.json({ limit: '5mb' }));
+app.use(cookieParser());
+
+// ─── Middleware: attach student info to every request ───
+app.use(async (req, res, next) => {
+    res.locals.student = null;
+    const studentId = req.cookies.student_id;
+    if (studentId && supabase) {
+        try {
+            const { data, error } = await supabase
+                .from('students')
+                .select('*')
+                .eq('id', studentId)
+                .single();
+            if (data && !error) {
+                res.locals.student = data;
+            }
+        } catch (e) { /* silently continue */ }
+    } else if (studentId) {
+        try {
+            const cookieData = JSON.parse(req.cookies.student_data || '{}');
+            if (cookieData.id) {
+                res.locals.student = cookieData;
+            }
+        } catch (e) { /* ignore */ }
+    }
+    next();
+});
+
+// ─── Auth guard middleware ───
+function requireLogin(req, res, next) {
+    if (!res.locals.student) return res.redirect('/login');
+    next();
+}
+
+// ─── Admin guard middleware ───
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'medienpass2526';
+function requireAdmin(req, res, next) {
+    if (req.cookies.admin_auth === 'true') return next();
+    return res.redirect('/admin/login');
+}
+
+
+// Helper: get unique class names from DB
+async function getUniqueClasses() {
+    if (!supabase) return [];
+    try {
+        const { data } = await supabase.from('students').select('class_name');
+        return [...new Set((data || []).map(s => s.class_name))].filter(Boolean).sort();
+    } catch (e) { return []; }
+}
+
+// ════════════════════════════════════════
+// LOGIN ROUTES
+// ════════════════════════════════════════
+app.get('/login', async (req, res) => {
+    if (res.locals.student) return res.redirect('/');
+    const uniqueClasses = await getUniqueClasses();
+    res.render('login', { error: null, klassenConfig, uniqueClasses });
+});
+
+app.get('/api/student/code/:className/:code', async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { data, error } = await supabase
+            .from('students')
+            .select('*')
+            .eq('class_name', req.params.className)
+            .eq('student_code', req.params.code)
+            .single();
+        if (error || !data) return res.json({ success: false });
+        return res.json({ success: true, student: data });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+app.post('/login', async (req, res) => {
+    const { username, class_name, student_code } = req.body;
+    const uniqueClasses = await getUniqueClasses();
+    if (!username || !username.trim()) {
+        return res.render('login', { error: 'Por favor ingresa tu nombre / Bitte gib deinen Namen ein.', klassenConfig, uniqueClasses });
+    }
+    
+    if (!student_code || !student_code.trim()) {
+        return res.render('login', { error: 'Por favor ingresa tu código / Bitte gib deinen Code ein.', klassenConfig, uniqueClasses });
+    }
+
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanClass = (class_name || '4D').trim();
+    const cleanCode = student_code.trim();
+
+    if (supabase) {
+        try {
+            let { data: student } = await supabase
+                .from('students')
+                .select('*')
+                .eq('username', cleanUsername)
+                .eq('class_name', cleanClass)
+                .eq('student_code', cleanCode)
+                .single();
+
+            if (!student) {
+                return res.render('login', { error: 'Datos incorrectos o código no válido.', klassenConfig, uniqueClasses });
+            }
+
+            res.cookie('student_id', student.id, {
+                maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax'
+            });
+            return res.redirect('/');
+        } catch (e) {
+            console.error('Login error:', e);
+            return res.render('login', { error: 'Error de conexión. Intenta de nuevo.', klassenConfig, uniqueClasses });
+        }
+    } else {
+        const localId = 'local_' + Date.now();
+        const student = { id: localId, username: cleanUsername, class_name: cleanClass, student_code: cleanCode };
+        res.cookie('student_id', localId, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+        res.cookie('student_data', JSON.stringify(student), { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+        return res.redirect('/');
+    }
+});
+
+app.get('/logout', (req, res) => {
+    res.clearCookie('student_id');
+    res.clearCookie('student_data');
+    res.redirect('/login');
+});
+
+// ════════════════════════════════════════
+// DASHBOARD ROUTE
+// ════════════════════════════════════════
+app.get('/', requireLogin, (req, res) => {
+    const year = req.query.year || '2526';
+    const studentLevel = getStudentLevel(res.locals.student.class_name);
+    const requestedLevel = req.query.level || studentLevel;
+    const activities = allActivities[requestedLevel] || [];
+    // Load subject config for this student's class
+    let subjectConfig = {};
+    const configPath = path.join(__dirname, 'subject_config.json');
+    try {
+        if (fs.existsSync(configPath)) {
+            subjectConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        }
+    } catch (e) { /* no config yet */ }
+    const studentClass = res.locals.student.class_name; // e.g. "4A"
+    const enabledSubjects = subjectConfig[studentClass] || {};
+
+    // Load level config for this student's class
+    let levelConfig = {};
+    const levelConfigPath = path.join(__dirname, 'level_config.json');
+    try {
+        if (fs.existsSync(levelConfigPath)) {
+            const allLevelConfig = JSON.parse(fs.readFileSync(levelConfigPath, 'utf8'));
+            levelConfig = allLevelConfig[studentClass] || {};
+        }
+    } catch (e) { /* no config yet */ }
+
+    // Enforce Level Lock: if the requested level is not enabled, hide activities
+    let activeActivities = activities;
+    let activeTechActivities = tecnologiaActivities.filter(a => a.level === requestedLevel);
+
+    if (levelConfig[requestedLevel] !== true) {
+        activeActivities = [];
+        activeTechActivities = [];
+    }
+
+    res.render('index', {
+        activities: activeActivities,
+        tecnologiaActivities: activeTechActivities,
+        student: res.locals.student,
+        sharedProfile,
+        klassenConfig,
+        schoolYears,
+        currentYear: year,
+        currentLevel: requestedLevel,
+        studentLevel,
+        subjects,
+        levels,
+        allActivities,
+        enabledSubjects,
+        levelConfig
+    });
+});
+
+// ════════════════════════════════════════
+// Helper: reduce full teacher name to "Primer Nombre Primer Apellido"
+function formatTeacherName(fullName) {
+    if (!fullName || fullName === 'NO APLICA') return fullName;
+    const parts = fullName.trim().split(/\s+/);
+    // Return first 2 words (first name + first last name)
+    return parts.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+}
+
+// ════════════════════════════════════════
+// PROFILE ROUTE (shared across all Retos)
+// ════════════════════════════════════════
+app.get('/profile', requireLogin, (req, res) => {
+    let teacherConfig = {};
+    let allTeachers = [];
+    try {
+        const configPath = require('path').join(__dirname, 'class_teacher_config.json');
+        if (require('fs').existsSync(configPath)) {
+            const allConfig = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+            const rawConfig = allConfig[res.locals.student.class_name] || {};
+            // Format each teacher name to "Primer Nombre Primer Apellido"
+            for (let subj in rawConfig) {
+                teacherConfig[subj] = formatTeacherName(rawConfig[subj]);
+            }
+            
+            const pSet = new Set();
+            for(let cls in allConfig) {
+                for(let subj in allConfig[cls]) {
+                    pSet.add(formatTeacherName(allConfig[cls][subj]));
+                }
+            }
+            allTeachers = Array.from(pSet).sort();
+        }
+    } catch (e) { }
+
+    res.render('activity', { 
+        activity: sharedProfile, 
+        student: res.locals.student, 
+        currentYear: '2526', 
+        section: 'profile',
+        teacherConfig,
+        allTeachers
+    });
+});
+
+// ════════════════════════════════════════
+// ACTIVITY ROUTES
+// ════════════════════════════════════════
+app.get('/activity/:year/:id', requireLogin, (req, res) => {
+    const year = req.params.year || '2526';
+    // Search across all levels for the activity
+    let activity = null;
+    let actLevel = null;
+    for (const [lvl, acts] of Object.entries(allActivities)) {
+        const found = acts.find(a => a.id === req.params.id);
+        if (found) { activity = found; actLevel = lvl; break; }
+    }
+    if (!activity) {
+        // Fallback to legacy
+        const legacyActs = medienpassActivities[year] || [];
+        activity = legacyActs.find(a => a.id === req.params.id);
+    }
+    if (!activity) return res.status(404).send('Activity not found');
+    res.render('activity', { activity, student: res.locals.student, currentYear: year, section: activity.subject || 'medienpass' });
+});
+
+app.get('/tecnologia/:id', requireLogin, (req, res) => {
+    const activity = tecnologiaActivities.find(a => a.id === req.params.id);
+    if (!activity) return res.status(404).send('Activity not found');
+    res.render('activity', { activity, student: res.locals.student, currentYear: '2526', section: 'tecnologia' });
+});
+
+app.get('/activity/:id', requireLogin, (req, res) => {
+    res.redirect(`/activity/2526/${req.params.id}`);
+});
+
+// ════════════════════════════════════════
+// API: SAVE / LOAD / PROGRESS
+// ════════════════════════════════════════
+app.post('/api/save/:activityId', requireLogin, async (req, res) => {
+    const { activityId } = req.params;
+    const studentId = res.locals.student.id;
+    const formData = req.body;
+    const period = req.body.period || 1;
+    const schoolYear = req.body.school_year || '2627';
+
+    if (!supabase) {
+        return res.json({ success: true, message: 'Solo se guarda localmente.', localOnly: true });
+    }
+
+    try {
+        const { error } = await supabase
+            .from('activity_responses')
+            .upsert({
+                student_id: studentId,
+                activity_id: activityId,
+                data: formData,
+                period: period,
+                school_year: schoolYear,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'student_id,activity_id' })
+            .select();
+
+        if (error) {
+            console.error('Save error:', error);
+            return res.status(500).json({ success: false, message: 'Error al guardar' });
+        }
+        return res.json({ success: true, message: 'Guardado correctamente' });
+    } catch (e) {
+        console.error('Save error:', e);
+        return res.status(500).json({ success: false, message: 'Error del servidor' });
+    }
+});
+
+app.get('/api/load/:activityId', requireLogin, async (req, res) => {
+    const { activityId } = req.params;
+    const studentId = res.locals.student.id;
+
+    if (!supabase) return res.json({ success: false, data: {} });
+
+    try {
+        const { data, error } = await supabase
+            .from('activity_responses')
+            .select('data')
+            .eq('student_id', studentId)
+            .eq('activity_id', activityId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            return res.status(500).json({ success: false, data: {} });
+        }
+        return res.json({ success: true, data: data?.data || {} });
+    } catch (e) {
+        return res.status(500).json({ success: false, data: {} });
+    }
+});
+
+app.get('/api/progress', requireLogin, async (req, res) => {
+    const studentId = res.locals.student.id;
+
+    if (!supabase) return res.json({ success: true, progress: {} });
+
+    try {
+        const { data, error } = await supabase
+            .from('activity_responses')
+            .select('activity_id, data, updated_at')
+            .eq('student_id', studentId);
+
+        if (error) return res.status(500).json({ success: false, progress: {} });
+
+        const progress = {};
+        (data || []).forEach(item => {
+            const fields = item.data ? Object.keys(item.data).filter(k => {
+                const val = item.data[k];
+                if (typeof val === 'boolean') return val;
+                if (typeof val === 'string') return val.trim().length > 0;
+                return false;
+            }) : [];
+            progress[item.activity_id] = {
+                fieldsCompleted: fields.length,
+                updatedAt: item.updated_at
+            };
+        });
+
+        return res.json({ success: true, progress });
+    } catch (e) {
+        return res.status(500).json({ success: false, progress: {} });
+    }
+});
+
+// ════════════════════════════════════════
+// ADMIN ROUTES
+// ════════════════════════════════════════
+app.get('/admin/login', (req, res) => {
+    res.render('admin/login', { error: null });
+});
+
+app.post('/admin/login', (req, res) => {
+    const { password } = req.body;
+    if (password === ADMIN_PASSWORD) {
+        res.cookie('admin_auth', 'true', { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+        res.redirect('/admin');
+    } else {
+        res.render('admin/login', { error: 'Contraseña incorrecta' });
+    }
+});
+
+app.get('/admin/logout', (req, res) => {
+    res.clearCookie('admin_auth');
+    res.redirect('/admin/login');
+});
+
+// Admin Dashboard
+app.get('/admin', requireAdmin, async (req, res) => {
+    let students = [];
+    if (supabase) {
+        try {
+            const { data } = await supabase.from('students').select('*');
+            students = data || [];
+            
+            function getSortName(name) {
+                if (!name) return '';
+                const parts = name.trim().toUpperCase().split(/\s+/);
+                if (parts.length > 2) {
+                    return parts.slice(-2).join(' ') + ' ' + parts.slice(0, -2).join(' ');
+                }
+                return name.toUpperCase();
+            }
+
+            students.sort((a, b) => {
+                if (a.class_name < b.class_name) return -1;
+                if (a.class_name > b.class_name) return 1;
+                
+                const nameA = getSortName(a.full_name || a.username);
+                const nameB = getSortName(b.full_name || b.username);
+                return nameA.localeCompare(nameB, 'es', { sensitivity: 'base' });
+            });
+
+            let currentClass = null;
+            let counter = 1;
+            students.forEach(s => {
+                if (s.class_name !== currentClass) {
+                    currentClass = s.class_name;
+                    counter = 1;
+                }
+                s.list_number = counter++;
+            });
+            
+        } catch (e) { /* ignore */ }
+    }
+    res.render('admin/dashboard', {
+        students,
+        klassenConfig,
+        medienpassActivities,
+        tecnologiaActivities,
+        subjects,
+        levels,
+        schoolYears
+    });
+});
+
+// API: Bulk add students
+app.post('/api/admin/students/bulk', requireAdmin, async (req, res) => {
+    const { students } = req.body; // Array of { username, class_name, full_name, code }
+    if (!supabase) return res.json({ success: false, message: 'Supabase no configurado' });
+
+    try {
+        const records = students.map(s => ({
+            username: s.username.trim().toLowerCase(),
+            class_name: s.class_name.trim(),
+            full_name: s.full_name?.trim() || null,
+            student_code: s.code?.trim() || null
+        }));
+
+        const { data, error } = await supabase
+            .from('students')
+            .upsert(records, { onConflict: 'username,class_name' })
+            .select();
+
+        if (error) {
+            console.error('Bulk insert error:', error);
+            return res.json({ success: false, message: error.message });
+        }
+
+        return res.json({ success: true, count: data?.length || 0 });
+    } catch (e) {
+        console.error('Bulk insert error:', e);
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Delete student
+app.delete('/api/admin/students/:id', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        await supabase.from('activity_responses').delete().eq('student_id', req.params.id);
+        await supabase.from('students').delete().eq('id', req.params.id);
+        return res.json({ success: true });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Get all students data for reports
+app.get('/api/admin/reports/:className', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { data: students } = await supabase
+            .from('students')
+            .select('*')
+            .eq('class_name', req.params.className)
+            .order('username');
+
+        if (!students || students.length === 0) {
+            return res.json({ success: true, students: [], activities: [] });
+        }
+
+        const studentIds = students.map(s => s.id);
+        const { data: responses } = await supabase
+            .from('activity_responses')
+            .select('*')
+            .in('student_id', studentIds);
+
+        // Combine all activities for lookup
+        const year = req.query.year || '2526';
+        const allActivities = [
+            ...(medienpassActivities[year] || []),
+            ...tecnologiaActivities
+        ];
+
+        return res.json({
+            success: true,
+            students,
+            responses: responses || [],
+            activities: allActivities.map(a => ({ id: a.id, title: a.title, stars: a.stars || 0, evidence: a.evidence?.length || 0 }))
+        });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Get PSP Indicators data per class
+app.get('/api/admin/psp-indicators/:className', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        // Fetch students in class
+        const { data: students } = await supabase
+            .from('students')
+            .select('*')
+            .eq('class_name', req.params.className)
+            .order('username');
+
+        if (!students || students.length === 0) {
+            return res.json({ success: true, students: [] });
+        }
+
+        const studentIds = students.map(s => s.id);
+        const { data: responses } = await supabase
+            .from('activity_responses')
+            .select('*')
+            .in('student_id', studentIds);
+
+        // Fetch registered teachers for eval status
+        const { data: teachers } = await supabase.from('teachers').select('*');
+        const registeredTeachers = teachers || [];
+
+        const results = students.map(st => {
+            const studentResp = (responses || []).filter(r => r.student_id === st.id);
+
+            // Extract Teacher Name from Profile
+            let teacherName = 'Sin asigar';
+            const profileResp = studentResp.find(r => r.activity_id === 'profile');
+            if (profileResp && profileResp.data) {
+                const teachersNames = [];
+                Object.keys(profileResp.data).forEach(key => {
+                    if (key.startsWith('teacher_') && profileResp.data[key]) {
+                        if (!teachersNames.includes(profileResp.data[key])) {
+                            teachersNames.push(profileResp.data[key]);
+                        }
+                    }
+                });
+                if (teachersNames.length > 0) teacherName = teachersNames.join(', ');
+            }
+
+            // Check if teacher passed evaluation
+            let evalStatus = false;
+            // Simplistic match: Check if any registered teacher's full name matches the name found in Profile
+            for (let tn of teacherName.split(', ')) {
+                const match = registeredTeachers.find(rt => (rt.first_name + ' ' + rt.last_name).toUpperCase() === tn.toUpperCase());
+                if (match && match.training_completed) { evalStatus = true; break; }
+            }
+
+            // Calculate Retos 1-6 progress 
+            // We check how many reto_* the student started.
+            let retosStarted = 0;
+            const uniqueRetos = new Set();
+            studentResp.forEach(r => {
+                if (r.activity_id && r.activity_id.startsWith('reto')) {
+                    // Extract the reto number (e.g., roto1_aleman -> reto1)
+                    const retoLevel = r.activity_id.split('_')[0];
+                    uniqueRetos.add(retoLevel);
+                }
+            });
+            retosStarted = uniqueRetos.size;
+
+            // Progress percentage (out of 6 max retos)
+            const progress = Math.min(100, Math.round((retosStarted / 6) * 100));
+
+            return {
+                id: st.id,
+                name: st.full_name || st.username,
+                teacher: teacherName,
+                evaluation_passed: evalStatus,
+                retosCompleted: retosStarted,
+                progress: progress
+            };
+        });
+
+        return res.json({
+            success: true,
+            students: results
+        });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Get PSP Matrix data (Klassen vs Matrices)
+app.get('/api/admin/psp-matrix', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { data: students } = await supabase.from('students').select('id, class_name');
+        if (!students) return res.json({ success: true, matrix: {} });
+
+        const { data: responses } = await supabase.from('activity_responses').select('student_id, activity_id');
+        if (!responses) return res.json({ success: true, matrix: {} });
+
+        const matrix = {};
+
+        // Pre-initialize structure
+        const uniqueClasses = [...new Set(students.map(s => s.class_name))].filter(Boolean).sort();
+        uniqueClasses.forEach(cName => {
+                matrix[cName] = {};
+                subjects.forEach(s => {
+                    matrix[cName][s.id] = { sumProgress: 0, studentCount: 0 };
+                });
+            });
+
+        // Group students by class
+        const classStudents = {};
+        students.forEach(st => {
+            if (!classStudents[st.class_name]) classStudents[st.class_name] = [];
+            classStudents[st.class_name].push(st.id);
+        });
+
+        // Calculate averages
+        Object.keys(classStudents).forEach(className => {
+            if (!matrix[className]) return;
+            const sIds = classStudents[className];
+
+            subjects.forEach(subj => {
+                let totalClassProgress = 0;
+
+                sIds.forEach(sId => {
+                    const subjResps = responses.filter(r => r.student_id === sId && r.activity_id.endsWith('_' + subj.id) && r.activity_id.startsWith('reto'));
+                    const uniqueRetos = new Set(subjResps.map(r => r.activity_id.split('_')[0]));
+                    const studentProgress = (uniqueRetos.size / 6) * 100;
+                    totalClassProgress += studentProgress;
+                });
+
+                const avg = sIds.length > 0 ? Math.round(totalClassProgress / sIds.length) : 0;
+                matrix[className][subj.id].avg = avg;
+                matrix[className][subj.id].studentCount = sIds.length;
+            });
+        });
+
+        return res.json({ success: true, matrix });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Get Teacher Reports
+app.get('/api/admin/teacher-reports', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        // Fetch all students to cross reference classes
+        const { data: students } = await supabase.from('students').select('id, class_name');
+        if (!students) return res.json({ success: true, teachers: [] });
+
+        // Fetch profile responses
+        const { data: profiles } = await supabase.from('activity_responses').select('student_id, data').eq('activity_id', 'profile');
+        if (!profiles) return res.json({ success: true, teachers: [] });
+
+        const teacherMap = {}; // { 'Teacher Name': Set(class_names) }
+
+        profiles.forEach(p => {
+            const st = students.find(s => s.id === p.student_id);
+            if (!st || !p.data) return;
+
+            Object.keys(p.data).forEach(key => {
+                if (key.startsWith('teacher_') && p.data[key]) {
+                    const tName = p.data[key].toUpperCase();
+                    if (!teacherMap[tName]) teacherMap[tName] = new Set();
+                    teacherMap[tName].add(st.class_name);
+                }
+            });
+        });
+
+        const teacherList = Object.keys(teacherMap).map(t => {
+            return {
+                name: t,
+                groupsCount: teacherMap[t].size,
+                groups: Array.from(teacherMap[t]).join(', ')
+            };
+        }).sort((a, b) => b.groupsCount - a.groupsCount);
+
+        return res.json({ success: true, teachers: teacherList });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Get subject configuration per Klasse
+app.get('/api/admin/subject-config', requireAdmin, (req, res) => {
+    const configPath = path.join(__dirname, 'subject_config.json');
+    try {
+        if (fs.existsSync(configPath)) {
+            const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            return res.json({ success: true, config: data });
+        }
+        return res.json({ success: true, config: {} });
+    } catch (e) {
+        return res.json({ success: true, config: {} });
+    }
+});
+
+// API: Save subject configuration
+app.post('/api/admin/subject-config', requireAdmin, (req, res) => {
+    const configData = req.body;
+    const configPath = path.join(__dirname, 'subject_config.json');
+    try {
+        fs.writeFileSync(configPath, JSON.stringify(configData, null, 2), 'utf8');
+        return res.json({ success: true, message: 'Configuración guardada' });
+    } catch (e) {
+        console.error('Save subject config error:', e);
+        return res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// API: Get level configuration per Klasse
+app.get('/api/admin/level-config', requireAdmin, (req, res) => {
+    const configPath = path.join(__dirname, 'level_config.json');
+    try {
+        if (fs.existsSync(configPath)) {
+            const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            return res.json({ success: true, config: data });
+        }
+        return res.json({ success: true, config: {} });
+    } catch (e) {
+        return res.json({ success: true, config: {} });
+    }
+});
+
+// API: Save level configuration
+app.post('/api/admin/level-config', requireAdmin, (req, res) => {
+    const configData = req.body;
+    const configPath = path.join(__dirname, 'level_config.json');
+    try {
+        fs.writeFileSync(configPath, JSON.stringify(configData, null, 2), 'utf8');
+        return res.json({ success: true, message: 'Configuración guardada' });
+    } catch (e) {
+        console.error('Save level config error:', e);
+        return res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// API: Get i18n configuration (runs file in safe vm sandbox)
+app.get('/api/admin/i18n', requireAdmin, (req, res) => {
+    const configPath = path.join(__dirname, 'public/js/i18n.js');
+    try {
+        if (!fs.existsSync(configPath)) {
+            return res.json({ success: false, message: 'Archivo i18n no encontrado' });
+        }
+        const content = fs.readFileSync(configPath, 'utf8');
+        
+        // Use VM to safely evaluate the file content and extract the i18n variable
+        const vm = require('vm');
+        const sandbox = { i18n: null, window: {}, module: { exports: {} } };
+        try {
+            // Evaluamos el archivo directamente. Al proveer 'window' y 'module' en el sandbox, 
+            // el código de i18n.js se ejecutará sin errores de referencia.
+            vm.runInNewContext(content + '\n; _result = i18n;', sandbox);
+            const i18nObj = sandbox._result || sandbox.i18n || sandbox.window.i18n;
+            if (i18nObj) {
+                return res.json({ success: true, i18n: i18nObj });
+            }
+        } catch (e) {
+            console.error('Error parsing i18n with VM:', e);
+        }
+        
+        return res.json({ success: false, message: 'No se pudo procesar el archivo de traducciones' });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Save i18n configuration
+app.post('/api/admin/i18n', requireAdmin, (req, res) => {
+    const payload = req.body;
+    const configPath = path.join(__dirname, 'public/js/i18n.js');
+    try {
+        const newScript = `/**\n * i18n.js - UI translations for MedienPass App\n * Contains all interface strings in German, English, and Spanish\n */\nconst i18n = ${JSON.stringify(payload, null, 4)};\n\n// Make available globally\nif (typeof window !== 'undefined') {\n    window.i18n = i18n;\n}\nif (typeof module !== 'undefined' && module.exports) {\n    module.exports = i18n;\n}\n`;
+        fs.writeFileSync(configPath, newScript, 'utf8');
+        return res.json({ success: true, message: 'Traducciones guardadas' });
+    } catch (e) {
+        console.error('Save i18n error:', e);
+        return res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// API: Get teacher mapping configuration
+app.get('/api/admin/teacher-mapping', requireAdmin, (req, res) => {
+    const configPath = path.join(__dirname, 'class_teacher_config.json');
+    try {
+        if (fs.existsSync(configPath)) {
+            const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            return res.json({ success: true, config: data });
+        }
+        return res.json({ success: true, config: {} });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Save teacher mapping configuration
+app.post('/api/admin/teacher-mapping', requireAdmin, (req, res) => {
+    const configData = req.body;
+    const configPath = path.join(__dirname, 'class_teacher_config.json');
+    try {
+        fs.writeFileSync(configPath, JSON.stringify(configData, null, 2), 'utf8');
+        return res.json({ success: true, message: 'Mapeo de profesores guardado' });
+    } catch (e) {
+        console.error('Save teacher mapping error:', e);
+        return res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// API: Get database records (students or teachers table)
+app.get('/api/admin/db-records/:table', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false, message: 'No hay conexión a Supabase' });
+    const allowedTables = ['students', 'teachers'];
+    const table = req.params.table;
+    if (!allowedTables.includes(table)) {
+        return res.status(400).json({ success: false, message: 'Tabla no permitida' });
+    }
+    try {
+        const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false }).limit(200);
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true, records: data });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Update a single record by id in a DB table
+app.post('/api/admin/db-records/:table/:id', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false, message: 'No Supabase' });
+    const allowedTables = ['students', 'teachers'];
+    const { table, id } = req.params;
+    if (!allowedTables.includes(table)) {
+        return res.status(400).json({ success: false, message: 'Tabla no permitida' });
+    }
+    try {
+        // Remove read-only fields
+        const updates = { ...req.body };
+        delete updates.id;
+        delete updates.created_at;
+        const { error } = await supabase.from(table).update(updates).eq('id', id);
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// ════════════════════════════════════════
+// EXECUTIVE DASHBOARD ROUTES
+// ════════════════════════════════════════
+app.get('/admin/executive', requireAdmin, (req, res) => {
+    res.render('admin/executive-dashboard');
+});
+
+// API: KPIs for Executive Dashboard
+app.get('/api/admin/kpis', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { data: students } = await supabase.from('students').select('id, class_name');
+        const { data: teachers } = await supabase.from('teachers').select('*');
+        const { data: responses } = await supabase.from('activity_responses').select('*');
+        const { data: incidents } = await supabase.from('incidents').select('*');
+        const { data: devices } = await supabase.from('devices').select('*');
+
+        const totalStudents = students?.length || 0;
+        const totalTeachers = teachers?.length || 0;
+        const certifiedTeachers = teachers?.filter(t => t.training_completed)?.length || 0;
+        const totalDevices = devices?.length || 0;
+        const openIncidents = incidents?.filter(i => i.status === 'open')?.length || 0;
+
+        // Calculate students with progress
+        const studentsWithProgress = new Set(responses?.map(r => r.student_id) || []).size;
+        const progressRate = totalStudents > 0 ? Math.round((studentsWithProgress / totalStudents) * 100) : 0;
+        const teachersCertified = totalTeachers > 0 ? Math.round((certifiedTeachers / totalTeachers) * 100) : 0;
+
+        return res.json({
+            success: true,
+            kpis: {
+                totalStudents,
+                progressRate,
+                teachersCertified,
+                totalDevices,
+                openIncidents
+            }
+        });
+    } catch (e) {
+        console.error('KPIs error:', e);
+        return res.json({ success: false });
+    }
+});
+
+// API: Progress by Klasse
+app.get('/api/admin/progress-by-klasse', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const year = req.query.year || '2627';
+        const { data: students } = await supabase.from('students').select('id, class_name');
+        const { data: responses } = await supabase.from('activity_responses').select('*').eq('school_year', year);
+
+        const klasseStats = {};
+        klassenConfig.klassen.forEach(k => {
+            klassenConfig.kurse.forEach(kurs => {
+                const className = k + kurs;
+                const classStudents = students?.filter(s => s.class_name === className) || [];
+                const studentIds = classStudents.map(s => s.id);
+                const activeStudents = new Set(
+                    responses?.filter(r => studentIds.includes(r.student_id)).map(r => r.student_id) || []
+                ).size;
+                const progress = classStudents.length > 0 
+                    ? Math.round((activeStudents / classStudents.length) * 100) 
+                    : 0;
+                klasseStats[className] = progress;
+            });
+        });
+
+        const data = Object.entries(klasseStats).map(([klasse, progress]) => ({ klasse, progress }));
+        return res.json({ success: true, data });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+// API: Progress by Subject
+app.get('/api/admin/progress-by-subject', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const year = req.query.year || '2627';
+        const { data: responses } = await supabase.from('activity_responses').select('*').eq('school_year', year);
+
+        const subjectCounts = {};
+        subjects.forEach(s => subjectCounts[s.id] = 0);
+        
+        responses?.forEach(r => {
+            subjects.forEach(s => {
+                if (r.activity_id?.includes('_' + s.id)) {
+                    subjectCounts[s.id]++;
+                }
+            });
+        });
+
+        const data = subjects.map(s => ({
+            subject: s.name.es,
+            count: subjectCounts[s.id]
+        }));
+        return res.json({ success: true, data });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+// API: Students without progress
+app.get('/api/admin/students-without-progress', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const year = req.query.year || '2627';
+        const { data: students } = await supabase.from('students').select('*');
+        const { data: responses } = await supabase.from('activity_responses').select('student_id').eq('school_year', year);
+
+        const activeStudentIds = new Set(responses?.map(r => r.student_id) || []);
+        const noProgress = students?.filter(s => !activeStudentIds.has(s.id)) || [];
+
+        return res.json({
+            success: true,
+            students: noProgress.map(s => ({
+                id: s.id,
+                name: s.full_name || s.username,
+                class: s.class_name
+            }))
+        });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+// ════════════════════════════════════════
+// INVENTORY ROUTES
+// ════════════════════════════════════════
+app.get('/admin/inventory', requireAdmin, (req, res) => {
+    res.render('admin/inventory');
+});
+
+app.get('/api/devices', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { location, status } = req.query;
+        let query = supabase.from('devices').select('*').order('serial_number');
+        
+        if (location) query = query.eq('location', location);
+        return res.status(400).json({ success: false, message: 'Tabla no permitida' });
+    }
+    try {
+        const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false }).limit(200);
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true, records: data });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Update a single record by id in a DB table
+app.post('/api/admin/db-records/:table/:id', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false, message: 'No Supabase' });
+    const allowedTables = ['students', 'teachers'];
+    const { table, id } = req.params;
+    if (!allowedTables.includes(table)) {
+        return res.status(400).json({ success: false, message: 'Tabla no permitida' });
+    }
+    try {
+        // Remove read-only fields
+        const updates = { ...req.body };
+        delete updates.id;
+        delete updates.created_at;
+        const { error } = await supabase.from(table).update(updates).eq('id', id);
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// ════════════════════════════════════════
+// EXECUTIVE DASHBOARD ROUTES
+// ════════════════════════════════════════
+app.get('/admin/executive', requireAdmin, (req, res) => {
+    res.render('admin/executive-dashboard');
+});
+
+// API: KPIs for Executive Dashboard
+app.get('/api/admin/kpis', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { data: students } = await supabase.from('students').select('id, class_name');
+        const { data: teachers } = await supabase.from('teachers').select('*');
+        const { data: responses } = await supabase.from('activity_responses').select('*');
+        const { data: incidents } = await supabase.from('incidents').select('*');
+        const { data: devices } = await supabase.from('devices').select('*');
+
+        const totalStudents = students?.length || 0;
+        const totalTeachers = teachers?.length || 0;
+        const certifiedTeachers = teachers?.filter(t => t.training_completed)?.length || 0;
+        const totalDevices = devices?.length || 0;
+        const openIncidents = incidents?.filter(i => i.status === 'open')?.length || 0;
+
+        // Calculate students with progress
+        const studentsWithProgress = new Set(responses?.map(r => r.student_id) || []).size;
+        const progressRate = totalStudents > 0 ? Math.round((studentsWithProgress / totalStudents) * 100) : 0;
+        const teachersCertified = totalTeachers > 0 ? Math.round((certifiedTeachers / totalTeachers) * 100) : 0;
+
+        return res.json({
+            success: true,
+            kpis: {
+                totalStudents,
+                progressRate,
+                teachersCertified,
+                totalDevices,
+                openIncidents
+            }
+        });
+    } catch (e) {
+        console.error('KPIs error:', e);
+        return res.json({ success: false });
+    }
+});
+
+// API: Progress by Klasse
+app.get('/api/admin/progress-by-klasse', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const year = req.query.year || '2627';
+        const { data: students } = await supabase.from('students').select('id, class_name');
+        const { data: responses } = await supabase.from('activity_responses').select('*').eq('school_year', year);
+
+        const klasseStats = {};
+        klassenConfig.klassen.forEach(k => {
+            klassenConfig.kurse.forEach(kurs => {
+                const className = k + kurs;
+                const classStudents = students?.filter(s => s.class_name === className) || [];
+                const studentIds = classStudents.map(s => s.id);
+                const activeStudents = new Set(
+                    responses?.filter(r => studentIds.includes(r.student_id)).map(r => r.student_id) || []
+                ).size;
+                const progress = classStudents.length > 0 
+                    ? Math.round((activeStudents / classStudents.length) * 100) 
+                    : 0;
+                klasseStats[className] = progress;
+            });
+        });
+
+        const data = Object.entries(klasseStats).map(([klasse, progress]) => ({ klasse, progress }));
+        return res.json({ success: true, data });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+// API: Progress by Subject
+app.get('/api/admin/progress-by-subject', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const year = req.query.year || '2627';
+        const { data: responses } = await supabase.from('activity_responses').select('*').eq('school_year', year);
+
+        const subjectCounts = {};
+        subjects.forEach(s => subjectCounts[s.id] = 0);
+        
+        responses?.forEach(r => {
+            subjects.forEach(s => {
+                if (r.activity_id?.includes('_' + s.id)) {
+                    subjectCounts[s.id]++;
+                }
+            });
+        });
+
+        const data = subjects.map(s => ({
+            subject: s.name.es,
+            count: subjectCounts[s.id]
+        }));
+        return res.json({ success: true, data });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+// API: Students without progress
+app.get('/api/admin/students-without-progress', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const year = req.query.year || '2627';
+        const { data: students } = await supabase.from('students').select('*');
+        const { data: responses } = await supabase.from('activity_responses').select('student_id').eq('school_year', year);
+
+        const activeStudentIds = new Set(responses?.map(r => r.student_id) || []);
+        const noProgress = students?.filter(s => !activeStudentIds.has(s.id)) || [];
+
+        return res.json({
+            success: true,
+            students: noProgress.map(s => ({
+                id: s.id,
+                name: s.full_name || s.username,
+                class: s.class_name
+            }))
+        });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+// API: Teachers status
+app.get('/api/admin/teachers-status', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { data: teachers } = await supabase.from('teachers').select('*');
+        const pending = teachers?.filter(t => !t.training_completed) || [];
+        
+        return res.json({
+            success: true,
+            total: teachers?.length || 0,
+            certified: teachers?.filter(t => t.training_completed)?.length || 0,
+            pending: pending.map(t => ({
+                name: t.first_name + ' ' + t.last_name,
+                subject: t.subject,
+                score: t.training_score
+            }))
+        });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+// ════════════════════════════════════════
+// INVENTORY ROUTES
+// ════════════════════════════════════════
+app.get('/admin/inventory', requireAdmin, (req, res) => {
+    res.render('admin/inventory');
+});
+
+app.get('/api/devices', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { location, status } = req.query;
+        let query = supabase.from('devices').select('*').order('serial_number');
+        
+        if (location) query = query.eq('location', location);
+        if (status) query = query.eq('status', status);
+        
+        const { data, error } = await query;
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true, devices: data || [] });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+app.post('/api/devices', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { serial_number, type, brand, model, location, status, notes } = req.body;
+        
+        const { data, error } = await supabase
+            .from('devices')
+            .insert({ serial_number, type, brand, model, location, status: status || 'available', notes })
+            .select();
+
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true, device: data?.[0] });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+app.put('/api/devices/:id', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { serial_number, type, brand, model, location, status, notes } = req.body;
+        
+        const { error } = await supabase
+            .from('devices')
+            .update({ serial_number, type, brand, model, location, status, notes })
+            .eq('id', req.params.id);
+
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+// ════════════════════════════════════════
+// TEACHER ROUTES (PORTAL DOCENTE - CAPACITACIÓN)
+// ════════════════════════════════════════
+app.get('/teacher/login', (req, res) => {
+    if (req.cookies.teacher_auth === 'true') return res.redirect('/teacher/training');
+    res.render('teacher/login', { error: null, subjects });
+});
+
+app.post('/teacher/login', async (req, res) => {
+    console.log('--- TEACHER LOGIN ATTEMPT ---');
+    console.log('req.body:', req.body);
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.render('teacher/login', { error: 'Por favor ingresa tu correo y contraseña.', subjects });
+    }
+
+    if (supabase) {
+        try {
+            let cleanEmail = email.trim().toLowerCase();
+            if (!cleanEmail.includes('@')) {
+                cleanEmail += '@colegioaleman.edu.co';
+            }
+            const cleanPassword = password.trim();
+            const { data: teacher, error } = await supabase
+                .from('teachers')
+                .select('*')
+                .eq('email', cleanEmail)
+                .eq('doc_number', cleanPassword)
+                .single();
+
+            if (teacher) {
+                const teacherData = {
+                    last_name: teacher.last_name,
+                    subject: teacher.subject,
+                    email: teacher.email,
+                    doc_number: teacher.doc_number,
+                    id: teacher.id
+                };
+                res.cookie('teacher_auth', 'true', { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+                res.cookie('teacher_data', JSON.stringify(teacherData), { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+                return res.redirect('/teacher/training');
+            } else {
+                return res.render('teacher/login', { error: 'Correo institucional o contraseña incorrectos.', subjects });
+            }
+        } catch (e) {
+            console.error('Teacher login error:', e);
+            return res.render('teacher/login', { error: 'Error al iniciar sesión.', subjects });
+        }
+    } else {
+        return res.render('teacher/login', { error: 'Supabase no configurado.', subjects });
+    }
+});
+
+// Middleware for teacher auth
+function requireTeacher(req, res, next) {
+    if (req.cookies.teacher_auth === 'true' && req.cookies.teacher_data) {
+        try {
+            res.locals.teacher = JSON.parse(req.cookies.teacher_data);
+            return next();
+        } catch (e) { }
+    }
+    return res.redirect('/teacher/login');
+}
+
+app.get('/teacher/logout', (req, res) => {
+    res.clearCookie('teacher_auth');
+    res.clearCookie('teacher_data');
+    res.redirect('/teacher/login');
+});
+
+app.get('/teacher/training', requireTeacher, (req, res) => {
+    res.render('teacher/training');
+});
+
+app.get('/teacher/worksheets', requireTeacher, (req, res) => {
+    res.render('teacher/worksheets');
+});
+
+app.get('/teacher/evaluation', requireTeacher, (req, res) => {
+    res.render('teacher/evaluation');
+});
+
+app.post('/teacher/evaluation', requireTeacher, async (req, res) => {
+    // Basic validation of answers
+    const { q1, q2, q3, q4, q5 } = req.body;
+    let correct = 0;
+    if (q1 === 'B') correct++; // Evaluar y analizar = Área 1
+    if (q2 === 'D') correct++; // Proteger medio ambiente = Área 4.4
+    if (q3 === 'A') correct++; // Interactuar, compartir = Área 2
+    if (q4 === 'C') correct++; // Resolver problemas tcs = Área 5.1
+    if (q5 === 'B') correct++; // Objetivo: Empoderar
+
+    const score = (correct / 5) * 100;
+
+    // Save score to DB
+    if (supabase && res.locals.teacher) {
+        try {
+            await supabase.from('teachers').update({ 
+                training_score: score, 
+                training_completed: score >= 75,
+                training_date: new Date().toISOString()
+            }).eq('doc_number', res.locals.teacher.doc_number);
+        } catch (e) { }
+    }
+
+    res.render('teacher/evaluation', { success: true, score: score });
+});
+
+app.get('/teacher/klasse2-activity', requireTeacher, (req, res) => {
+    res.render('teacher/klasse2-activity');
+});
+
+app.get('/teacher/knowledge-test', requireTeacher, (req, res) => {
+    res.render('teacher/knowledge_test', { score: null });
+});
+
+app.post('/teacher/knowledge-test', requireTeacher, async (req, res) => {
+    const { q1, q2, q3, q4, q5, q6 } = req.body;
+    let correct = 0;
+    if (q1 === 'C') correct++; 
+    if (q2 === 'B') correct++; 
+    if (q3 === 'B') correct++; 
+    if (q4 === 'C') correct++; 
+    if (q5 === 'B') correct++; 
+    if (q6 === 'B') correct++; 
+    
+    const score = Math.round((correct / 6) * 100);
+    const passed = score >= 75;
+
+    if (supabase && res.locals.teacher) {
+        try {
+            await supabase.from('teacher_kmk_tests').insert({
+                teacher_id: res.locals.teacher.id,
+                score: score,
+                passed: passed
+            });
+            await supabase.from('teachers').update({ 
+                training_score: score,
+                training_completed: passed
+            }).eq('id', res.locals.teacher.id);
+        } catch (e) {
+            console.error('Error saving kmk test:', e);
+        }
+    }
+
+    res.render('teacher/knowledge_test', { score: score, passed: passed });
+});
+
+app.get('/teacher/logout', (req, res) => {
+    res.clearCookie('teacher_auth');
+    res.clearCookie('teacher_data');
+    res.redirect('/teacher/login');
+});
+
+// ════════════════════════════════════════
+// TROUBLESHOOTING & BITACORA ROUTES
+// ════════════════════════════════════════
+app.get('/teacher/troubleshooting', requireTeacher, (req, res) => {
+    res.render('teacher/troubleshooting');
+});
+
+app.get('/teacher/bitacora', requireTeacher, (req, res) => {
+    res.render('teacher/bitacora', { teacher: res.locals.teacher });
+});
+
+// API: Incidents (CRUD)
+app.get('/api/incidents', requireTeacher, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { status, classroom } = req.query;
+        let query = supabase.from('incidents').select('*').order('created_at', { ascending: false }).limit(100);
+        
+        if (status) query = query.eq('status', status);
+        if (classroom) query = query.eq('classroom', classroom);
+        
+        const { data, error } = await query;
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true, incidents: data || [] });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+app.post('/api/incidents', requireTeacher, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { classroom, device_type, priority, description, reporter_id } = req.body;
+        
+        const { data, error } = await supabase
+            .from('incidents')
+            .insert({
+                classroom,
+                device_type,
+                priority: priority || 'media',
+                description,
+                reporter_id: reporter_id || res.locals.teacher?.id,
+                status: 'open'
+            })
+            .select();
+
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true, incident: data?.[0] });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+app.put('/api/incidents/:id', requireTeacher, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { status } = req.body;
+        const { error } = await supabase
+            .from('incidents')
+            .update({ status, updated_at: new Date().toISOString() })
+            .eq('id', req.params.id);
+
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+// ════════════════════════════════════════
+// KMK TRAINING ROUTES
+// ════════════════════════════════════════
+
+// API: Get KMK training questions (for quiz)
+app.get('/api/kmk-training/questions', (req, res) => {
+    return res.json({ success: true, questions: kmkTrainingQuestions });
+});
+
+// API: Submit completed KMK training (teacher marks themselves as trained)
+app.post('/api/kmk-training/complete', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false, message: 'Sin Supabase' });
+    const { teacher_id, score, total, subject_assigned } = req.body;
+    if (!teacher_id) return res.status(400).json({ success: false, message: 'teacher_id requerido' });
+    try {
+        const { error } = await supabase.from('teachers')
+            .update({
+                training_completed: true,
+                training_date: new Date().toISOString().split('T')[0],
+                training_score: score,
+                subject_assigned: subject_assigned || null,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', teacher_id);
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true, message: 'Capacitación registrada correctamente' });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Get KMK training stats by subject (for monitoring charts)
+app.get('/api/admin/kmk-training-stats', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { data: teachers } = await supabase.from('teachers').select('*');
+        if (!teachers) return res.json({ success: true, stats: [], total: 0, trained: 0 });
+
+        const total = teachers.length;
+        const trainedTeachers = teachers.filter(t => t.training_completed);
+        const trained = trainedTeachers.length;
+        const coveragePct = total > 0 ? Math.round((trained / total) * 100) : 0;
+
+        // Group by subject_assigned
+        const subjectMap = {};
+        subjects.forEach(s => {
+            subjectMap[s.id] = { subjectId: s.id, subjectName: s.name.es, icon: s.icon, total: 0, trained: 0, teachers: [] };
+        });
+        // Add a catch-all for unassigned
+        subjectMap['_otros'] = { subjectId: '_otros', subjectName: 'Sin asignatura', icon: '📋', total: 0, trained: 0, teachers: [] };
+
+        teachers.forEach(t => {
+            const subj = t.subject_assigned || t.subject || '_otros';
+            // Try to match to known subject IDs
+            const matchKey = subjects.find(s => s.id === subj || s.name.es.toLowerCase() === (subj || '').toLowerCase())
+                ? (subjects.find(s => s.id === subj || s.name.es.toLowerCase() === (subj || '').toLowerCase())).id
+                : '_otros';
+            if (!subjectMap[matchKey]) subjectMap['_otros'].total++;
+            else {
+                subjectMap[matchKey].total++;
+                if (t.training_completed) {
+                    subjectMap[matchKey].trained++;
+                    subjectMap[matchKey].teachers.push({
+                        id: t.id,
+                        name: ((t.first_name || '') + ' ' + t.last_name).trim(),
+                        date: t.training_date,
+                        score: t.training_score
+                    });
+                }
+            }
+        });
+
+        const stats = Object.values(subjectMap).filter(s => s.total > 0).map(s => ({
+            ...s,
+            pct: s.total > 0 ? Math.round((s.trained / s.total) * 100) : 0
+        }));
+
+        return res.json({ success: true, stats, total, trained, coveragePct });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Get trained teachers list with details
+app.get('/api/admin/kmk-trained-teachers', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { data: teachers } = await supabase
+            .from('teachers')
+            .select('id, first_name, last_name, subject, subject_assigned, training_completed, training_date, training_score')
+            .order('last_name');
+        return res.json({ success: true, teachers: teachers || [] });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// ════════════════════════════════════════
+// MULTIMEDIA PRODUCTS ROUTES
+// ════════════════════════════════════════
+
+// API: Student saves a multimedia product
+app.post('/api/student/multimedia-product', requireLogin, async (req, res) => {
+    if (!supabase) return res.json({ success: true, localOnly: true });
+    const studentId = res.locals.student.id;
+    const { activity_id, subject, product_type, description, link, image_url } = req.body;
+    if (!activity_id || !subject || !product_type) {
+        return res.status(400).json({ success: false, message: 'Campos requeridos: activity_id, subject, product_type' });
+    }
+    try {
+        // Upsert by student_id + activity_id
+        const { data: existing } = await supabase
+            .from('multimedia_products')
+            .select('id')
+            .eq('student_id', studentId)
+            .eq('activity_id', activity_id)
+            .single();
+
+        let error;
+        if (existing) {
+            ({ error } = await supabase.from('multimedia_products')
+                .update({ subject, product_type, description, link, image_url, updated_at: new Date().toISOString() })
+                .eq('id', existing.id));
+        } else {
+            ({ error } = await supabase.from('multimedia_products')
+                .insert({ student_id: studentId, activity_id, subject, product_type, description, link, image_url }));
+        }
+        if (error) return res.json({ success: false, message: error.message });
+        return res.json({ success: true });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Load student multimedia product for an activity
+app.get('/api/student/multimedia-product/:activityId', requireLogin, async (req, res) => {
+    if (!supabase) return res.json({ success: false, data: null });
+    try {
+        const { data } = await supabase
+            .from('multimedia_products')
+            .select('*')
+            .eq('student_id', res.locals.student.id)
+            .eq('activity_id', req.params.activityId)
+            .single();
+        return res.json({ success: true, data: data || null });
+    } catch (e) {
+        return res.json({ success: true, data: null });
+    }
+});
+
+// API: Admin — multimedia stats per subject
+app.get('/api/admin/multimedia-stats', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { data: students } = await supabase.from('students').select('id');
+        const { data: products } = await supabase.from('multimedia_products').select('*');
+        const totalStudents = students ? students.length : 0;
+
+        const subjectStats = {};
+        subjects.forEach(s => {
+            subjectStats[s.id] = { subjectId: s.id, subjectName: s.name.es, icon: s.icon, color: s.color, count: 0, studentSet: new Set(), products: [] };
+        });
+
+        (products || []).forEach(p => {
+            const key = p.subject;
+            if (!subjectStats[key]) return;
+            subjectStats[key].count++;
+            subjectStats[key].studentSet.add(p.student_id);
+            subjectStats[key].products.push(p);
+        });
+
+        const stats = Object.values(subjectStats).map(s => ({
+            subjectId: s.subjectId,
+            subjectName: s.subjectName,
+            icon: s.icon,
+            color: s.color,
+            totalProducts: s.count,
+            uniqueStudents: s.studentSet.size,
+            pct: totalStudents > 0 ? Math.round((s.studentSet.size / totalStudents) * 100) : 0,
+            products: s.products.slice(0, 50) // limit for response size
+        }));
+
+        return res.json({ success: true, stats, totalStudents });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Admin — list all multimedia products with details
+app.get('/api/admin/multimedia-products', requireAdmin, async (req, res) => {
+    if (!supabase) return res.json({ success: false });
+    try {
+        const { data: products } = await supabase
+            .from('multimedia_products')
+            .select('*, students(full_name, username, class_name)')
+            .order('created_at', { ascending: false })
+            .limit(500);
+        return res.json({ success: true, products: products || [] });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// ─── Start Server ───
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    if (!supabase) {
+        console.log('📌 Running in LOCAL mode. Configure .env for Supabase cloud storage.');
+    }
+});

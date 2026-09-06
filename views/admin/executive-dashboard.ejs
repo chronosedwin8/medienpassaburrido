@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Ejecutivo — MedienPass</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #0ea5e9;
+        }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; margin: 0; padding: 0; }
+        .exec-header {
+            background: linear-gradient(135deg, #1e1b4b, #4338ca);
+            color: white; padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .hero-title {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hero-icon {
+            font-size: 1.8em;
+        }
+
+        .hero-title-text {
+            font-size: 2.2em; /* Grande */
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            background: linear-gradient(90deg, #fbbf24, #f9a8d4, #a78bfa, #67e8f9, #fbbf24);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle-custom {
+            font-size: 1.1em; /* Más grande */
+            font-weight: 900;
+            color: #fbbf24; /* highlight */
+            margin: 0;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-subtitle {
+            font-size: 0.7em;
+            opacity: 0.85;
+            margin: 0;
+        }
+        .exec-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+        
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px; margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: white; border-radius: 16px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .kpi-card .icon { font-size: 2em; margin-bottom: 10px; }
+        .kpi-card .value { font-size: 2.5em; font-weight: 800; color: var(--primary); }
+        .kpi-card .label { color: #64748b; font-size: 0.9em; }
+        .kpi-card.success .value { color: var(--success); }
+        .kpi-card.warning .value { color: var(--warning); }
+        .kpi-card.danger .value { color: var(--danger); }
+        
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px; margin-bottom: 24px;
+        }
+        .chart-card {
+            background: white; border-radius: 16px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .chart-card h3 { margin: 0 0 16px; color: #1e1b4b; }
+        
+        /* Tables */
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        .table-card {
+            background: white; border-radius: 16px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .table-card h3 { margin: 0 0 16px; color: #1e1b4b; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 10px 12px; text-align: left; font-size: 0.8em; text-transform: uppercase; color: #64748b; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; }
+        
+        /* Filters */
+        .filters { background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .filters select, .filters button {
+            padding: 8px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.9em;
+        }
+        .filters button { background: var(--primary); color: white; border: none; cursor: pointer; }
+        .filters button:hover { background: #4338ca; }
+        
+        /* Status badges */
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: 600; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        
+        .back-link { color: rgba(255,255,255,0.8); text-decoration: none; }
+        .back-link:hover { color: white; }
+        
+        @media print {
+            .exec-header, .filters, button { display: none !important; }
+            .exec-container { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="exec-header">
+        <div class="header-left">
+            <h1 class="hero-title">
+                <span class="hero-icon">📊</span>
+                <span class="hero-title-text notranslate" translate="no">DASHBOARD EJECUTIVO</span>
+            </h1>
+            <p class="subtitle-custom">PSP - EDUCACIÓN EN MEDIOS - DEUTSCHE SCHULE</p>
+            <p class="header-subtitle">Deutsche Schule Barranquilla — Colegio Alemán</p>
+        </div>
+        <div>
+            <a href="/admin" class="back-link"><i class="fas fa-arrow-left"></i> Volver al Admin</a>
+            <a href="/admin/logout" class="back-link" style="margin-left: 20px;"><i class="fas fa-sign-out-alt"></i> Salir</a>
+        </div>
+    </div>
+
+    <div class="exec-container">
+        <!-- Filters -->
+        <div class="filters">
+            <label><strong>Periodo:</strong></label>
+            <select id="filterPeriod">
+                <option value="all">Todos</option>
+                <option value="1">Periodo 1</option>
+                <option value="2">Periodo 2</option>
+                <option value="3">Periodo 3</option>
+                <option value="4">Periodo 4</option>
+            </select>
+            <label><strong>Año:</strong></label>
+            <select id="filterYear">
+                <option value="2627">2026/2027</option>
+                <option value="2526">2025/2026</option>
+            </select>
+            <button onclick="refreshData()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+            <button onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="icon">👥</div>
+                <div class="value" id="kpiStudents">0</div>
+                <div class="label">Estudiantes Registrados</div>
+            </div>
+            <div class="kpi-card success">
+                <div class="icon">✅</div>
+                <div class="value" id="kpiProgress">0%</div>
+                <div class="label">Con productos/periodo (Meta: 100%)</div>
+            </div>
+            <div class="kpi-card success">
+                <div class="icon">🎓</div>
+                <div class="value" id="kpiTeachers">0%</div>
+                <div class="label">Docentes Certificados (Meta: 100%)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="icon">💻</div>
+                <div class="value" id="kpiDevices">0</div>
+                <div class="label">Equipos Registrados</div>
+            </div>
+            <div class="kpi-card warning">
+                <div class="icon">⚠️</div>
+                <div class="value" id="kpiIncidents">0</div>
+                <div class="label">Novedades Abiertas</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-bar"></i> Progreso por Klasse (K3-K9)</h3>
+                <canvas id="chartKlasse" height="200"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-bar"></i> Progreso por Materia</h3>
+                <canvas id="chartSubject" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Tables -->
+        <div class="tables-grid">
+            <div class="table-card">
+                <h3><i class="fas fa-exclamation-triangle"></i> Estudiantes sin Progreso</h3>
+                <div id="noProgressList">
+                    <p style="color:#64748b;">Cargando...</p>
+                </div>
+            </div>
+            <div class="table-card">
+                <h3><i class="fas fa-chalkboard-teacher"></i> Docentes Pendientes de Certificación</h3>
+                <div id="pendingTeachersList">
+                    <p style="color:#64748b;">Cargando...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartKlasse, chartSubject;
+
+        async function refreshData() {
+            const period = document.getElementById('filterPeriod').value;
+            const year = document.getElementById('filterYear').value;
+            
+            // Load KPIs
+            try {
+                const resp = await fetch('/api/admin/kpis');
+                const data = await resp.json();
+                if (data.success) {
+                    document.getElementById('kpiStudents').textContent = data.kpis.totalStudents;
+                    document.getElementById('kpiProgress').textContent = data.kpis.progressRate + '%';
+                    document.getElementById('kpiTeachers').textContent = data.kpis.teachersCertified + '%';
+                    document.getElementById('kpiDevices').textContent = data.kpis.totalDevices;
+                    document.getElementById('kpiIncidents').textContent = data.kpis.openIncidents;
+                }
+            } catch (e) { console.error('Error loading KPIs:', e); }
+
+            // Load charts
+            try {
+                const resp = await fetch('/api/admin/progress-by-klasse?year=' + year);
+                const data = await resp.json();
+                if (data.success) {
+                    updateKlasseChart(data.data);
+                }
+            } catch (e) { console.error('Error loading Klasse chart:', e); }
+
+            try {
+                const resp = await fetch('/api/admin/progress-by-subject?year=' + year);
+                const data = await resp.json();
+                if (data.success) {
+                    updateSubjectChart(data.data);
+                }
+            } catch (e) { console.error('Error loading Subject chart:', e); }
+
+            // Load no progress students
+            try {
+                const resp = await fetch('/api/admin/students-without-progress?year=' + year);
+                const data = await resp.json();
+                if (data.success) {
+                    renderNoProgressList(data.students);
+                }
+            } catch (e) { console.error('Error loading no progress:', e); }
+
+            // Load pending teachers
+            try {
+                const resp = await fetch('/api/admin/teachers-status');
+                const data = await resp.json();
+                if (data.success) {
+                    renderPendingTeachers(data.pending);
+                }
+            } catch (e) { console.error('Error loading teachers:', e); }
+        }
+
+        function updateKlasseChart(data) {
+            const ctx = document.getElementById('chartKlasse').getContext('2d');
+            if (chartKlasse) chartKlasse.destroy();
+            chartKlasse = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.klasse),
+                    datasets: [{
+                        label: '% Progreso',
+                        data: data.map(d => d.progress),
+                        backgroundColor: data.map(d => d.progress >= 100 ? '#10b981' : d.progress >= 50 ? '#f59e0b' : '#ef4444')
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+        }
+
+        function updateSubjectChart(data) {
+            const ctx = document.getElementById('chartSubject').getContext('2d');
+            if (chartSubject) chartSubject.destroy();
+            chartSubject = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.subject),
+                    datasets: [{
+                        label: 'Estudiantes Activos',
+                        data: data.map(d => d.count),
+                        backgroundColor: ['#dc2626', '#0ea5e9', '#ea580c', '#059669', '#8b5cf6']
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+        }
+
+        function renderNoProgressList(students) {
+            const el = document.getElementById('noProgressList');
+            if (!students || students.length === 0) {
+                el.innerHTML = '<p style="color:#10b981;"><i class="fas fa-check-circle"></i> ¡Todos los estudiantes tienen progreso!</p>';
+                return;
+            }
+            let html = '<table><thead><tr><th>Estudiante</th><th>Clase</th></tr></thead><tbody>';
+            students.slice(0, 10).forEach(s => {
+                html += `<tr><td>${s.name}</td><td>${s.class}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            if (students.length > 10) html += `<p style="color:#64748b;">...y ${students.length - 10} más</p>`;
+            el.innerHTML = html;
+        }
+
+        function renderPendingTeachers(teachers) {
+            const el = document.getElementById('pendingTeachersList');
+            if (!teachers || teachers.length === 0) {
+                el.innerHTML = '<p style="color:#10b981;"><i class="fas fa-check-circle"></i> ¡Todos los docentes están certificados!</p>';
+                return;
+            }
+            let html = '<table><thead><tr><th>Docente</th><th>Materia</th><th>Estado y Sugerencia</th></tr></thead><tbody>';
+            teachers.forEach(t => {
+                let statusHtml = '<span class="badge badge-warning">Sin iniciar</span>';
+                if (t.score !== undefined && t.score !== null && t.score < 75) {
+                    statusHtml = `<span class="badge badge-danger">Falló (${t.score}%) - Revisar contenidos KMK</span>`;
+                } else if (t.score !== undefined && t.score !== null) {
+                    statusHtml = `<span class="badge badge-warning">Pendiente (${t.score}%)</span>`;
+                }
+                html += `<tr><td>${t.name}</td><td>${t.subject || 'N/A'}</td><td>${statusHtml}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            el.innerHTML = html;
+        }
+
+        // Initial load
+        refreshData();
+    </script>
+</body>
+</html>

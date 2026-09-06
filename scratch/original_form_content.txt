@@ -1,0 +1,487 @@
+    <form id="activityForm">
+
+        <% if (activity.competencies && activity.competencies.length> 0) { %>
+            <div class="section">
+                <h2><i class="fas fa-star"></i> <span data-i18n="competenciesTitle">Kompetenzen & Erfolge</span></h2>
+                <p class="instruction" data-i18n="competenciesInstruction">Markiere die Fähigkeiten, die du beherrscht:
+                </p>
+                <div class="competency-list">
+                    <% activity.competencies.forEach((comp, index)=> { %>
+                        <div class="competency-item">
+                            <div class="comp-text" data-lang-content="<%- JSON.stringify(comp).replace(/"/g, '&quot;') %>">
+                                <span class="lang-line lang-primary">
+                                    <%= typeof comp==='object' ? comp.de : comp %>
+                                </span>
+                            </div>
+                            <div class="comp-achievement">
+                                <span class="achievement-icon">
+                                    <%= activity.icon %>
+                                </span>
+                                <label class="custom-checkbox">
+                                    <input type="checkbox" id="comp_<%= index %>" name="competency_<%= index %>">
+                                    <span class="checkmark"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <% }) %>
+                </div>
+            </div>
+            <% } %>
+
+                <% if (activity.competencyGroups && activity.competencyGroups.length> 0) { %>
+                    <div class="section competency-groups-section">
+                        <div class="comp-group-table">
+                            <div class="comp-group-header">
+                                <div class="cg-col-comp" data-i18n="competenciaCol">Competencia</div>
+                                <div class="cg-col-evidence" data-i18n="evidenciaCol">Evidencia</div>
+                                <div class="cg-col-logro" data-i18n="logroCol">Logro</div>
+                            </div>
+                            <% activity.competencyGroups.forEach((group, gIdx)=> { %>
+                                <div class="comp-group-row">
+                                    <div class="cg-col-comp">
+                                        <div class="cg-comp-text"
+                                            data-lang-content="<%- JSON.stringify(group.competency).replace(/"/g, '&quot;') %>">
+                                            <span class="lang-line lang-primary">
+                                                <%= group.competency.de %>
+                                            </span>
+                                            <span class="lang-line lang-secondary">
+                                                <%= group.competency.es %>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="cg-col-evidence">
+                                        <% group.evidence.forEach(item=> { %>
+                                            <% if (item.type==='label' ) { %>
+                                                <div class="cg-evidence-label"
+                                                    data-lang-content="<%- JSON.stringify(item.label).replace(/"/g, '&quot;') %>">
+                                                    <span class="lang-line lang-primary">
+                                                        <%= item.label.de %>
+                                                    </span>
+                                                </div>
+                                                <% } else if (item.type==='textarea' ) { %>
+                                                    <div class="cg-evidence-field">
+                                                        <label data-lang-content="<%- JSON.stringify(item.label).replace(/"/g, '&quot;') %>">
+                                                            <span class="lang-line lang-primary">
+                                                                <%= item.label.de %>
+                                                            </span>
+                                                        </label>
+                                                        <textarea id="<%= item.id %>" name="<%= item.id %>" rows="2"
+                                                            data-i18n-placeholder="answerPlaceholder"
+                                                            placeholder="Deine Antwort hier..."></textarea>
+                                                    </div>
+                                                    <% } else { %>
+                                                        <div class="cg-evidence-field">
+                                                            <label
+                                                                data-lang-content="<%- JSON.stringify(item.label).replace(/"/g, '&quot;') %>">
+                                                                <span class="lang-line lang-primary">
+                                                                    <%= item.label.de %>
+                                                                </span>
+                                                            </label>
+                                                            <input type="text" id="<%= item.id %>" name="<%= item.id %>"
+                                                                data-i18n-placeholder="answerPlaceholder"
+                                                                placeholder="Deine Antwort hier...">
+                                                        </div>
+                                                        <% } %>
+                                                            <% }) %>
+                                    </div>
+                                    <div class="cg-col-logro">
+                                        <% for (let s=1; s <=group.stars; s++) { %>
+                                            <div class="cg-star-row">
+                                                <span class="cg-star" data-group="<%= gIdx %>" data-star="<%= s %>"
+                                                    onclick="setCgStar(<%= gIdx %>, <%= s %>)">☆</span>
+                                                <label class="cg-checkbox">
+                                                    <input type="checkbox" id="cg_check_<%= gIdx %>_<%= s %>"
+                                                        name="cg_check_<%= gIdx %>_<%= s %>">
+                                                    <span class="checkmark"></span>
+                                                </label>
+                                            </div>
+                                            <% } %>
+                                                <input type="hidden" id="cg_stars_<%= gIdx %>"
+                                                    name="cg_stars_<%= gIdx %>" value="0">
+                                    </div>
+                                </div>
+                                <% }) %>
+                        </div>
+
+                        <!-- Total Stars Summary -->
+                        <div class="cg-total-summary">
+                            <span class="cg-total-label">
+                                <i class="fas fa-star" style="color: #f59e0b;"></i>
+                                <span data-i18n="totalStarsCollected">Ich habe insgesamt gesammelt:</span>
+                            </span>
+                            <span class="cg-total-value" id="cgTotalValue">0</span>
+                            <span class="cg-total-of">/ <%= activity.stars %></span>
+                            <span data-lang-content="<%- JSON.stringify(activity.achievement).replace(/"/g, '&quot;') %>">
+                                <%= activity.achievement.de %>
+                            </span>
+                        </div>
+                    </div>
+                    <% } %>
+
+                        <% if (activity.id==='profile' ) { %>
+                            <div class="section" style="text-align: center;">
+                                <h2><i class="fas fa-camera"></i> <span data-i18n="profilePictureTitle">Mein
+                                        Profilbild</span>
+                                </h2>
+
+                                <div class="avatar-selector-container" id="avatarSelectorContainer">
+                                    <p style="margin-bottom: 15px; color: #64748b; font-weight: 600;" data-i18n="avatarInstruction">Selecciona tu avatar / Wähle deinen Avatar:</p>
+                                    <div class="avatar-grid" id="avatarGrid">
+                                        <!-- Avatares: Animales, Dino, Emojis, Tecnología, Deportes, Números, Ciencia, Arte y Materias -->
+                                        <% const avatars = [
+                                            '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🦄','🐝','🐛','🦋','🐢','🐙','🐠','🐳','🐊','🐅','🐆','🦓','🦍','🐘','🦛','🦏','🐪','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔',
+                                            '🦖','🦕',
+                                            '0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟',
+                                            '🤖','👽','👾','🦸‍♂️','🦸‍♀️','🧙‍♂️','🧙‍♀️','🧛‍♂️','🧛‍♀️','🧚‍♂️','🧚‍♀️','🧜‍♂️','🧜‍♀️','🧝‍♂️','🧝‍♀️','🧞‍♂️','🧞‍♀️','🧟‍♂️','🧟‍♀️',
+                                            '💻','📱','🎧','🎮','🖥️','⌨️','🖱️','🔋','📡','🛰️','🚀','🛸',
+                                            '🧪','⚗️','🔬','⚛️','🔭','🧬','🧫',
+                                            '🎨','🖌️','🖍️','🖼️','🎭','🎻','🎸','🎹','🎷','🎺','🎵','🎬',
+                                            '⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🥋','🤺','🏊','🚴','🏆',
+                                            '📚','📓','📔','📒','📕','📗','📘','📙','📜','📄','📰','🌎','🗺️','🧭','📐','📏','🕰️','💡','🧮','♟️','🎲','🧩','🪁',
+                                            '🍎','🍔','🍕','🍦','🍩','✈️','🏎️','🚲','🌈','⭐','🔥','⚡','❄️',
+                                            'α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'
+                                        ]; %>
+                                        <% avatars.forEach((av, idx) => { %>
+                                            <div class="avatar-option" data-avatar="<%= av %>" onclick="selectAvatar('<%= av %>')"><%= av %></div>
+                                        <% }); %>
+                                    </div>
+                                    
+                                    <div class="selected-avatar-display" style="margin-top: 20px; text-align: center;">
+                                        <p style="font-weight: 600; color: #4338ca;">Tu selección:</p>
+                                        <div id="currentAvatarDisplay" style="font-size: 4em; margin: 10px auto; width: 80px; height: 80px; line-height: 80px; background: #e0e7ff; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 3px solid #4f46e5; color: #1e1b4b;">❓</div>
+                                    </div>
+
+                                    <input type="hidden" id="profile_photo" name="profile_photo" value="">
+                                    
+                                    <div style="text-align: center; margin-top: 25px;">
+                                        <button type="button" class="save-btn" onclick="saveAvatarAndContinue(this)" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);">
+                                            <i class="fas fa-save"></i> Guardar mi Avatar y Continuar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <style>
+                                    .avatar-grid {
+                                        display: flex;
+                                        flex-wrap: wrap;
+                                        gap: 8px;
+                                        justify-content: center;
+                                        max-width: 600px;
+                                        margin: 0 auto;
+                                        max-height: 250px;
+                                        overflow-y: auto;
+                                        padding: 10px;
+                                        border: 2px solid #e2e8f0;
+                                        border-radius: 12px;
+                                        background: #f8fafc;
+                                    }
+                                    .avatar-option {
+                                        font-size: 1.6em;
+                                        cursor: pointer;
+                                        width: 40px;
+                                        height: 40px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        background: white;
+                                        border-radius: 10px;
+                                        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                                        transition: transform 0.2s, background 0.2s;
+                                        border: 2px solid transparent;
+                                        color: #1e293b;
+                                    }
+                                    .avatar-option:hover {
+                                        transform: scale(1.15);
+                                        background: #eef2ff;
+                                    }
+                                    .avatar-option.selected {
+                                        border-color: #4f46e5;
+                                        background: #e0e7ff;
+                                        transform: scale(1.15);
+                                        box-shadow: 0 4px 10px rgba(79,70,229,0.3);
+                                    }
+                                    
+                                    /* Custom scrollbar */
+                                    .avatar-grid::-webkit-scrollbar { width: 8px; }
+                                    .avatar-grid::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+                                    .avatar-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+                                    .avatar-grid::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+                                </style>
+                            </div>
+                            <% } %>
+
+                                <% if (activity.evidence && activity.evidence.length> 0) { %>
+                                    <div class="section">
+                                        <h2><i class="fas fa-file-alt"></i> <span data-i18n="evidenceTitle">Nachweise / Evidenz</span></h2>
+                                        <% activity.evidence.forEach(item=> { %>
+                                            <div class="form-group">
+                                                <label for="<%= item.id %>" data-lang-content="<%- JSON.stringify(item.label).replace(/"/g, '&quot;') %>">
+                                                    <span class="lang-line lang-primary">
+                                                        <%= (item.label && item.label.de) || (item.label && item.label.es) || '' %>
+                                                    </span>
+                                                </label>
+
+                                                <% if (item.practice_explanation) { %>
+                                                    <div class="practice-explanation-box" style="display:none;" data-lang-content="<%- JSON.stringify(item.practice_explanation).replace(/"/g, '&quot;') %>">
+                                                        <p><%= item.practice_explanation.es %></p>
+                                                    </div>
+                                                <% } %>
+
+                                                <% if (item.type === 'text') { %>
+                                                    <input type="text" id="<%= item.id %>" name="<%= item.id %>" data-i18n-placeholder="answerPlaceholder" placeholder="Deine Antwort hier...">
+                                                <% } else if (item.type === 'textarea') { %>
+                                                    <textarea id="<%= item.id %>" name="<%= item.id %>" rows="<%= item.rows || 3 %>" data-i18n-placeholder="answerPlaceholder" placeholder="Deine Antwort hier..."></textarea>
+                                                <% } else if (item.type === 'radio_group') { %>
+                                                    <div class="radio-group" id="group_<%= item.id %>">
+                                                        <% item.options.forEach((opt, optIdx) => {
+                                                            const safeId = item.id + '_' + optIdx;
+                                                            const optLabel = (typeof opt === 'object') ? (opt.label || opt) : opt;
+                                                            %>
+                                                            <div class="radio-item" style="margin-bottom:8px; display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="document.getElementById('<%= safeId %>').checked = true; if(typeof updateStarSummary === 'function') updateStarSummary();">
+                                                                <input type="radio" id="<%= safeId %>" name="<%= item.id %>" value="<%= opt.val !== undefined ? opt.val : optIdx %>" data-correct="<%= opt.correct ? 'true' : 'false' %>" onchange="if(typeof updateStarSummary === 'function') updateStarSummary()" style="cursor:pointer; width:18px; height:18px;">
+                                                                <label for="<%= safeId %>" style="display:inline; font-weight:normal; cursor:pointer; margin:0;" <% if (typeof opt === 'object') { %> data-lang-content="<%- JSON.stringify(optLabel).replace(/"/g, '&quot;') %>" <% } %>>
+                                                                    <% if (typeof opt === 'object') { %>
+                                                                        <span class="lang-line lang-primary">
+                                                                            <%= optLabel.de || optLabel.es || '' %>
+                                                                        </span>
+                                                                    <% } else { %>
+                                                                        <%= opt %>
+                                                                    <% } %>
+                                                                </label>
+                                                            </div>
+                                                        <% }) %>
+                                                    </div>
+                                                <% } %>
+
+                                                <% if (item.hint) { %>
+                                                    <div class="question-hint-box" style="margin-top: 8px; font-size: 0.85em; color: #475569; display: flex; align-items: start; gap: 6px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                                                        <span style="font-size: 1.15em; line-height: 1.2;">💡</span>
+                                                        <span class="lang-line lang-primary" data-lang-content="<%- JSON.stringify(item.hint).replace(/"/g, '&quot;') %>"><%= item.hint.de || item.hint.es || '' %></span>
+                                                    </div>
+                                                <% } %>
+
+                                                <% if (activity.id !== 'profile' && activity.id !== 'notes' && item.type !== 'checkbox_group') { %>
+                                                    <% if (!item.id.endsWith('_explain')) { %>
+                                                        <div class="field-star-rating" data-field-id="<%= item.id %>">
+                                                            <span class="field-star-label">⭐</span>
+                                                            <span class="mini-star" data-val="1">☆</span>
+                                                            <span class="mini-star" data-val="2">☆</span>
+                                                            <span class="mini-star" data-val="3">☆</span>
+                                                            <span class="mini-star" data-val="4">☆</span>
+                                                            <span class="mini-star" data-val="5">☆</span>
+                                                            <span class="sad-face-indicator" id="sad_<%= item.id %>" style="display: none; margin-left: 10px; font-size: 1.2em; cursor: default;" title="Respuesta incorrecta sin argumentación">😢</span>
+                                                            <input type="hidden" id="star_<%= item.id %>" name="star_<%= item.id %>" value="0">
+                                                        </div>
+                                                    <% } %>
+                                                <% } %>
+                                            </div>
+                                        <% }) %>
+                                    </div>
+
+                                    <% if (activity.id === 'profile') { %>
+                                        <!-- Edilim Game Container -->
+                                        <div id="edilim-game-container" style="display: none; margin-bottom: 30px; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); padding: 25px; overflow: hidden; position: relative;">
+                                            <div class="edilim-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569;">
+                                                    <span class="edilim-stat-icon">🏆</span>
+                                                    <span class="edilim-stat-label">Aciertos</span>: <span id="edilim-hits" style="color: #10b981;">0</span> / <%= activity.evidence.filter(item => item.id.startsWith('eval_q')).length %>
+                                                </div>
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569;">
+                                                    <span class="edilim-stat-icon">⚠️</span>
+                                                    <span class="edilim-stat-label">Errores</span>: <span id="edilim-errors" style="color: #ef4444;">0</span>
+                                                </div>
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569; background: #f1f5f9; padding: 6px 14px; border-radius: 9999px;">
+                                                    <span class="edilim-stat-icon">⏱️</span>
+                                                    <span id="edilim-timer" style="font-family: monospace;">00:00</span>
+                                                </div>
+                                            </div>
+                                            <div class="edilim-progress-container" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; margin-bottom: 25px;">
+                                                <div id="edilim-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4f46e5, #8b5cf6); border-radius: 9999px; transition: width 0.4s ease;"></div>
+                                            </div>
+                                            <div id="edilim-question-body" style="min-height: 250px; display: flex; flex-direction: column; justify-content: center;">
+                                                <!-- Populated by JS -->
+                                            </div>
+                                            <div id="edilim-feedback-box" class="edilim-feedback" style="display: none; align-items: center; gap: 10px; justify-content: center; padding: 12px; border-radius: 12px; margin-top: 20px; font-weight: 700; font-size: 1.1em;">
+                                                <!-- Feedback message -->
+                                            </div>
+                                        </div>
+
+                                        <div id="reto0-practice-footer" style="text-align: center; margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px;">
+                                            <button type="button" id="start-reto0-eval-btn" class="btn btn-primary btn-lg" style="padding: 15px 30px; font-weight: bold; font-size: 1.2em; animation: pulse 2s infinite;" data-i18n="readyForEvalBtn">
+                                                ¡ESTÁS LISTO PARA LA EVALUACIÓN DEL RETO CERO!
+                                            </button>
+                                        </div>
+                                        <div id="reto0-eval-save-footer" class="save-actions" style="display: none; text-align: center; margin-top: 20px; margin-bottom: 20px;">
+                                            <button type="button" class="save-btn" id="saveBtnQuiz" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; display: inline-block;">
+                                                <i class="fas fa-cloud-upload-alt"></i> <span data-i18n="save">Speichern</span>
+                                            </button>
+                                            <div class="save-status" id="saveStatusQuiz" style="margin-top: 8px;"></div>
+                                        </div>
+                                    <% } %>
+                                <% } %>
+
+                                        <% if (activity.teachersBySubject && activity.teachersBySubject.length> 0) { %>
+                                            <div class="section teachers-by-subject-section">
+                                                <h2><i class="fas fa-chalkboard-teacher"></i>
+                                                    <span data-i18n="myTeachers">Meine Lehrer*innen / Mis
+                                                        Profesores</span>
+                                                </h2>
+                                                <div class="teachers-grid">
+                                                    <% activity.teachersBySubject.forEach(t=> { %>
+                                                        <div class="teacher-card"
+                                                            style="border-color: <%= t.subjectColor %>">
+                                                            <div class="teacher-card-header"
+                                                                style="background: <%= t.subjectColor %>15">
+                                                                <span class="teacher-subject-icon">
+                                                                    <%= t.subjectIcon %>
+                                                                </span>
+                                                                <span class="teacher-subject-name"
+                                                                    data-lang-content="<%- JSON.stringify(t.subjectName).replace(/"/g, '&quot;') %>">
+                                                                    <span class="lang-line lang-primary">
+                                                                        <%= t.subjectName.de %>
+                                                                    </span>
+                                                                </span>
+                                                            </div>
+                                                            <div class="teacher-card-input">
+                                                                <input type="text" id="<%= t.fieldId %>"
+                                                                    name="<%= t.fieldId %>"
+                                                                    list="teacher_datalist"
+                                                                    data-lang-content="<%- JSON.stringify(t.label).replace(/"/g, '&quot;') %>"
+                                                                    placeholder="Name / Nombre"
+                                                                    value="<%= (typeof teacherConfig !== 'undefined' && teacherConfig[t.subjectId]) ? teacherConfig[t.subjectId] : 'NO APLICA' %>">
+                                                            </div>
+                                                        </div>
+                                                        <% }) %>
+                                                </div>
+                                                <datalist id="teacher_datalist">
+                                                    <option value="NO APLICA">
+                                                    <% if(typeof allTeachers !== 'undefined') { allTeachers.forEach(function(teacher) { %>
+                                                        <option value="<%= teacher %>">
+                                                    <% }); } %>
+                                                </datalist>
+                                            </div>
+                                            <% } %>
+
+                                                <% if (activity.achievement) { %>
+                                                    <div class="section">
+                                                        <div class="achievement-section">
+                                                            <label for="achievement_count"
+                                                                style="margin: 0; font-size: 1.2em;">
+                                                                <i class="fas fa-trophy"></i> <span
+                                                                    data-i18n="totalCollected">Ich habe
+                                                                    insgesamt gesammelt:</span>
+                                                            </label>
+                                                            <div class="achievement-input">
+                                                                <input type="number" id="achievement_count"
+                                                                    name="achievement_count" min="0" max="10">
+                                                                <span class="achievement-label"
+                                                                    data-lang-content="<%- JSON.stringify(activity.achievement).replace(/"/g, '&quot;') %>">
+                                                                    <%= typeof activity.achievement==='object' ?
+                                                                        activity.achievement.de : activity.achievement
+                                                                        %>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <% } %>
+
+                                                        <% if (activity.id !=='profile' && activity.id !=='notes' ) { %>
+                                                            <div class="section star-summary-section">
+                                                                <div class="star-summary-card" id="starSummaryCard">
+                                                                    <i class="fas fa-star"
+                                                                        style="color: #f59e0b; font-size: 1.8em;"></i>
+                                                                    <div class="star-summary-text">
+                                                                        <span class="star-summary-label"
+                                                                            data-i18n="starSummaryLabel">Resultado:</span>
+                                                                        <span class="star-summary-value"
+                                                                            id="starSummaryValue">0
+                                                                            / 0
+                                                                            ⭐</span>
+                                                                    </div>
+                                                                    <div class="star-summary-bar">
+                                                                        <div class="star-summary-fill"
+                                                                            id="starSummaryFill" style="width: 0%;">
+                                                                        </div>
+                                                                    </div>
+                                                                    <p class="star-summary-message"
+                                                                        id="starSummaryMessage"></p>
+                                                                </div>
+                                                            </div>
+                                                            <% } %>
+
+                                                                <!-- ═══ BLOQUE MULTIMEDIA ═══ -->
+                                                                <% if (activity.id !== 'profile' && activity.id !== 'notes') { %>
+                                                                <div class="multimedia-block" id="multimediaBlock">
+                                                                    <h3><span style="font-size:1.3em;">📱</span>
+                                                                        Evidencia Digital / Producto Multimedia
+                                                                        <span style="font-size:0.75em; font-weight:400; color:#059669; margin-left:8px;">(Mínimo 1 enlace)</span>
+                                                                    </h3>
+                                                                    <p style="color:#6b7280; font-size:0.9em; margin:0 0 16px;">
+                                                                        Agrega al menos <strong>un vínculo</strong> a un producto digital que hayas creado para este reto
+                                                                        (<strong>ClassNotebook</strong>, YouTube, Canva, SharePoint, etc.).
+                                                                        Esto puede ser un video, presentación, infografía, Canvas u otro medio.
+                                                                    </p>
+
+                                                                    <!-- ¿Sí o No? -->
+                                                                    <div style="display:flex; gap:12px; margin-bottom:16px;">
+                                                                        <button type="button" class="multimedia-type-btn" id="mmYesBtn" onclick="toggleMultimediaForm(true)" style="flex:1; max-width:120px;">
+                                                                            <span class="mt-icon">✅</span> Sí
+                                                                        </button>
+                                                                        <button type="button" class="multimedia-type-btn" id="mmNoBtn" onclick="toggleMultimediaForm(false)" style="flex:1; max-width:120px;">
+                                                                            <span class="mt-icon">❌</span> No
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <!-- Formulario del producto (se muestra si dice Sí) -->
+                                                                    <div id="mmProductForm" style="display:none;">
+                                                                        <p style="font-size:0.9em; font-weight:600; color:#5b21b6; margin-bottom:10px;">Tipo de producto:</p>
+                                                                        <div class="multimedia-type-grid">
+                                                                            <button type="button" class="multimedia-type-btn" data-type="video" onclick="selectMmType('video')">
+                                                                                <span class="mt-icon">🎬</span> Video
+                                                                            </button>
+                                                                            <button type="button" class="multimedia-type-btn" data-type="presentacion" onclick="selectMmType('presentacion')">
+                                                                                <span class="mt-icon">📊</span> Presentación
+                                                                            </button>
+                                                                            <button type="button" class="multimedia-type-btn" data-type="canvas" onclick="selectMmType('canvas')">
+                                                                                <span class="mt-icon">🎨</span> Canvas
+                                                                            </button>
+                                                                            <button type="button" class="multimedia-type-btn" data-type="otro" onclick="selectMmType('otro')">
+                                                                                <span class="mt-icon">📁</span> Otro
+                                                                            </button>
+                                                                        </div>
+                                                                        <input type="hidden" id="mm_product_type" name="mm_product_type" value="">
+
+                                                                        <label class="mm-label">📝 Descripción breve del producto:</label>
+                                                                        <textarea id="mm_description" name="mm_description" class="mm-input" rows="2"
+                                                                            placeholder="Ej: Video explicando los ecosistemas para la clase de Naturales..."></textarea>
+
+                                                                        <label class="mm-label">🔗 Link del producto (URL de ClassNotebook, YouTube, Canva, SharePoint, etc.):</label>
+                                                                        <input type="url" id="mm_link" name="mm_link" class="mm-input"
+                                                                            placeholder="https://...">
+
+                                                                        <label class="mm-label">🖼️ Link de imagen de captura de pantalla / evidencia (URL):</label>
+                                                                        <input type="url" id="mm_image_url" name="mm_image_url" class="mm-input"
+                                                                            placeholder="https://... (imagen, captura de pantalla, etc.)">
+
+                                                                        <div id="mm_image_preview" style="margin-top:12px; display:none;">
+                                                                            <img id="mm_preview_img" src="" alt="Vista previa" style="max-width:200px; max-height:120px; border-radius:8px; border:2px solid #a78bfa;" onerror="this.parentElement.style.display='none'">
+                                                                        </div>
+
+                                                                        <button type="button" class="save-btn" id="mmSaveBtn"
+                                                                            style="background:linear-gradient(135deg,#7c3aed,#a855f7); margin-top:18px; font-size:0.95em;"
+                                                                            onclick="saveMultimediaProduct()">
+                                                                            <i class="fas fa-cloud-upload-alt"></i> Guardar Producto Multimedia
+                                                                        </button>
+                                                                        <div id="mmSaveStatus" style="margin-top:8px; font-size:0.85em; color:#059669;"></div>
+                                                                    </div>
+                                                                </div>
+                                                                <% } %>
+
+                                                                <div class="save-actions">
+                                                                    <button type="button" class="save-btn" id="saveBtn">
+                                                                        <i class="fas fa-cloud-upload-alt"></i> <span
+                                                                            data-i18n="save">Speichern</span>
+                                                                    </button>
+                                                                    <div class="save-status" id="saveStatus"></div>
+                                                                </div>
+    </form>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — MedienPass</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .admin-login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 48px 40px;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .admin-login-card h1 {
+            font-size: 1.8em;
+            color: #1e1b4b;
+            margin-bottom: 8px;
+        }
+
+        .admin-login-card p {
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .admin-login-card .icon {
+            font-size: 3em;
+            margin-bottom: 16px;
+        }
+
+        .admin-login-card input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1em;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+        }
+
+        .admin-login-card input:focus {
+            border-color: #4f46e5;
+            outline: none;
+        }
+
+        .admin-login-card button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .admin-login-card button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+        }
+
+        .admin-error {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.9em;
+        }
+
+        .back-link {
+            display: block;
+            margin-top: 20px;
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .back-link:hover {
+            color: #6366f1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-login-card">
+        <div class="icon">🔐</div>
+        <h1>Administración</h1>
+        <p>MedienPass — Panel de Control</p>
+
+        <% if (error) { %>
+            <div class="admin-error"><i class="fas fa-exclamation-circle"></i>
+                <%= error %>
+            </div>
+            <% } %>
+
+                <form method="POST" action="/admin/login">
+                    <div style="text-align: left; margin-bottom: 15px;">
+                        <label style="display: block; font-weight: 600; color: #1e1b4b; font-size: 0.9em; margin-bottom: 6px;"><i class="fas fa-envelope"></i> Correo Institucional o Usuario</label>
+                        <input type="text" name="email" placeholder="nombre@colegioaleman.edu.co o admin" autofocus required style="margin-bottom: 0;">
+                    </div>
+                    <div style="text-align: left; margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; color: #1e1b4b; font-size: 0.9em; margin-bottom: 6px;"><i class="fas fa-lock"></i> Contraseña o Clave Maestra</label>
+                        <input type="password" name="password" placeholder="Contraseña o clave maestra..." required style="margin-bottom: 0;">
+                    </div>
+                    <button type="submit"><i class="fas fa-sign-in-alt"></i> Ingresar al Panel</button>
+                </form>
+
+                <a href="/login" class="back-link"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
+    </div>
+</body>
+
+</html>

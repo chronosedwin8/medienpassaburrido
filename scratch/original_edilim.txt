@@ -1,0 +1,38 @@
+                                        <div id="edilim-game-container" style="display: none; margin-bottom: 30px; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); padding: 25px; overflow: hidden; position: relative;">
+                                            <div class="edilim-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569;">
+                                                    <span class="edilim-stat-icon">🏆</span>
+                                                    <span class="edilim-stat-label">Aciertos</span>: <span id="edilim-hits" style="color: #10b981;">0</span> / <%= activity.evidence.filter(item => item.id.startsWith('eval_q')).length %>
+                                                </div>
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569;">
+                                                    <span class="edilim-stat-icon">⚠️</span>
+                                                    <span class="edilim-stat-label">Errores</span>: <span id="edilim-errors" style="color: #ef4444;">0</span>
+                                                </div>
+                                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569; background: #f1f5f9; padding: 6px 14px; border-radius: 9999px;">
+                                                    <span class="edilim-stat-icon">⏱️</span>
+                                                    <span id="edilim-timer" style="font-family: monospace;">00:00</span>
+                                                </div>
+                                            </div>
+                                            <div class="edilim-progress-container" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; margin-bottom: 25px;">
+                                                <div id="edilim-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4f46e5, #8b5cf6); border-radius: 9999px; transition: width 0.4s ease;"></div>
+                                            </div>
+                                            <div id="edilim-question-body" style="min-height: 250px; display: flex; flex-direction: column; justify-content: center;">
+                                                <!-- Populated by JS -->
+                                            </div>
+                                            <div id="edilim-feedback-box" class="edilim-feedback" style="display: none; align-items: center; gap: 10px; justify-content: center; padding: 12px; border-radius: 12px; margin-top: 20px; font-weight: 700; font-size: 1.1em;">
+                                                <!-- Feedback message -->
+                                            </div>
+                                        </div>
+
+                                        <div id="reto0-practice-footer" style="text-align: center; margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px;">
+                                            <button type="button" id="start-reto0-eval-btn" class="btn btn-primary btn-lg" style="padding: 15px 30px; font-weight: bold; font-size: 1.2em; animation: pulse 2s infinite;" data-i18n="readyForEvalBtn">
+                                                ¡ESTÁS LISTO PARA LA EVALUACIÓN DEL RETO CERO!
+                                            </button>
+                                        </div>
+                                        <div id="reto0-eval-save-footer" class="save-actions" style="display: none; text-align: center; margin-top: 20px; margin-bottom: 20px;">
+                                            <button type="button" class="save-btn" id="saveBtnQuiz" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; display: inline-block;">
+                                                <i class="fas fa-cloud-upload-alt"></i> <span data-i18n="save">Speichern</span>
+                                            </button>
+                                            <div class="save-status" id="saveStatusQuiz" style="margin-top: 8px;"></div>
+                                        </div>
+                                    <% } %>

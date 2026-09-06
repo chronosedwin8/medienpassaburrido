@@ -1,0 +1,357 @@
+<%- include('../partials/teacher-header', { activeItem: 'worksheets' }) %>
+<%
+const subj = (teacher.subject || '').toLowerCase();
+const lang = subj === 'aleman' ? 'de' : subj === 'ingles' ? 'en' : 'es';
+
+const encodeContent = (obj) => {
+    if (!obj) return '{}';
+    return JSON.stringify(obj).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+};
+
+const w = {
+    title: { de: 'Interaktive Arbeitsblätter Bank', en: 'Interactive Worksheets Bank', es: 'Banco de Fichas Interactivas' },
+    printBtn: { de: 'Dieses Blatt drucken', en: 'Print this sheet', es: 'Imprimir esta ficha' },
+    nameField: { de: 'Name: ______________________', en: 'Name: ______________________', es: 'Nombre: ______________________' },
+    classField: { de: 'Klasse: _______', en: 'Class: _______', es: 'Grado: _______' },
+    dateField: { de: 'Datum: ____________', en: 'Date: ____________', es: 'Fecha: ____________' },
+    
+    // Worksheet 1
+    w1_title: { de: 'Mein Medientagebuch', en: 'My Media Diary', es: 'Mi Diario de Medios' },
+    w1_desc: { de: 'Notiere eine Woche lang, welche Medien du nutzt.', en: 'Write down what media you use for a week.', es: 'Anota durante una semana qué medios utilizas.' },
+    w1_days: { de: ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'], en: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], es: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] },
+    w1_col1: { de: 'Was? (App/TV/Game)', en: 'What? (App/TV/Game)', es: '¿Qué? (App/TV/Juego)' },
+    w1_col2: { de: 'Wie lange?', en: 'How long?', es: '¿Cuánto tiempo?' },
+    w1_col3: { de: 'Mit wem?', en: 'With whom?', es: '¿Con quién?' },
+    w1_reflect: { de: 'Mein Fazit: War das zu viel, zu wenig oder genau richtig?', en: 'My conclusion: Was it too much, too little, or just right?', es: 'Mi conclusión: ¿Fue demasiado, muy poco, o estuvo bien?' },
+
+    // Worksheet 2
+    w2_title: { de: 'Fake News Detektor', en: 'Fake News Detector', es: 'Detector de Fake News' },
+    w2_desc: { de: 'Untersuche eine Nachricht mit der SIFT-Methode.', en: 'Investigate a news story using the SIFT method.', es: 'Investiga una noticia usando el método SIFT.' },
+    w2_q1: { de: 'S - Stop (Stoppen): Kenne ich die Quelle?', en: 'S - Stop: Do I know the source?', es: 'S - Stop (Detente): ¿Conozco la fuente confiable?' },
+    w2_q2: { de: 'I - Investigate (Untersuchen): Wer hat das geschrieben?', en: 'I - Investigate: Who wrote this?', es: 'I - Investigar: ¿Quién escribió esto y por qué?' },
+    w2_q3: { de: 'F - Find (Bessere Quellen finden): Was sagen andere dazu?', en: 'F - Find better coverage: What do others say?', es: 'F - Buscar mejores fuentes: ¿Qué dicen otros periódicos?' },
+    w2_q4: { de: 'T - Trace (Rückverfolgen): Ist das Bild echt or alt?', en: 'T - Trace claims: Is the image real or old?', es: 'T - Trazar origen: ¿Es la foto de ahora o es vieja/editada?' },
+    w2_headline: { de: 'Schlagzeile:', en: 'Headline:', es: 'Titular de la noticia:' },
+    w2_verdict: { de: 'Urteil: [  ] Echt  [  ] Fake  [  ] Ungenau', en: 'Verdict: [  ] Real  [  ] Fake  [  ] Unsure', es: 'Veredicto: [  ] Real  [  ] Fake  [  ] Impreciso' },
+
+    // Worksheet 3
+    w3_title: { de: 'Digitaler Sicherheitsvertrag', en: 'Digital Safety Contract', es: 'Contrato de Seguridad Digital' },
+    w3_desc: { de: 'Regeln für ein gutes Miteinander im Netz.', en: 'Rules for getting along well online.', es: 'Reglas para convivir bien en línea (Netiqueta).' },
+    w3_rules: {
+        de: ['Ich teile keine Passwörter mit anderen.', 'Ich frage, bevor ich Fotos von anderen poste.', 'Ich bin online genauso höflich wie im echten Leben.', 'Ich glaube nicht alles, was ich lese.', 'Wenn mir etwas online Angst macht, spreche ich mit einem Erwachsenen.'],
+        en: ['I do not share my passwords with others.', 'I ask before posting photos of others.', 'I am as polite online as I am in real life.', 'I do not believe everything I read.', 'If something online scares me, I tell an adult.'],
+        es: ['No comparto mis contraseñas con otros.', 'Pido permiso antes de publicar fotos de otras personas.', 'Soy tan educado en internet como en la vida real.', 'No creo todo lo que leo sin dudar y verificar.', 'Si algo en la red me asusta o incomoda, hablo con un adulto.']
+    },
+    w3_sign: { de: 'Unterschrift Schüler/in:', en: 'Student Signature:', es: 'Firma del Estudiante:' }
+};
+%>
+
+<style>
+/* Base Styles */
+.ws-container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 0 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.ws-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+.ws-header h1 { margin: 0; color: #1e1b4b; }
+.ws-back {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #e2e8f0;
+    color: #475569;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+}
+.ws-nav-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+.ws-tab {
+    padding: 12px 24px;
+    background: #fff;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #475569;
+    transition: all 0.2s;
+}
+.ws-tab.active {
+    background: #3b82f6;
+    color: #fff;
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Worksheet Paper Style */
+.worksheet-paper {
+    background: #fff;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    border-radius: 4px;
+    padding: 50px;
+    min-height: 800px;
+    display: none;
+    position: relative;
+    color: #000;
+}
+.worksheet-paper.active {
+    display: block;
+}
+.ws-print-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.ws-paper-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 1.1em;
+}
+.ws-paper-title {
+    text-align: center;
+    font-size: 2.5em;
+    font-weight: 800;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+.ws-paper-desc {
+    text-align: center;
+    font-size: 1.2em;
+    color: #555;
+    margin-bottom: 40px;
+}
+
+/* W1: Diary Table */
+.diary-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+.diary-table th, .diary-table td { border: 2px solid #cbd5e1; padding: 15px; text-align: left; }
+.diary-table th { background: #f8fafc; font-weight: bold; }
+.diary-table td { height: 60px; }
+.diary-reflect {
+    width: 100%;
+    height: 100px;
+    border: 2px dashed #cbd5e1;
+    padding: 15px;
+    box-sizing: border-box;
+    font-family: inherit;
+    resize: none;
+}
+
+/* W2: SIFT Detector */
+.sift-box {
+    border: 3px solid #000;
+    padding: 30px;
+    margin-bottom: 20px;
+    background: #fdfdfd;
+}
+.sift-headline {
+    width: 100%;
+    border-bottom: 2px solid #000;
+    margin-bottom: 30px;
+    padding-bottom: 5px;
+    font-size: 1.2em;
+    font-style: italic;
+}
+.sift-row {
+    margin-bottom: 30px;
+}
+.sift-row strong { font-size: 1.3em; display: block; margin-bottom: 10px; }
+.sift-line { border-bottom: 1px dotted #999; height: 30px; width: 100%; margin-top: 10px;}
+.sift-verdict {
+    text-align: center; font-size: 1.5em; font-weight: bold; margin-top: 40px; letter-spacing: 1px;
+}
+
+/* W3: Contract */
+.contract-box {
+    border: 5px double #000;
+    padding: 40px;
+    background: #fffaeb;
+}
+.contract-item {
+    font-size: 1.3em;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+.contract-checkbox {
+    width: 30px; height: 30px; border: 2px solid #000; display: inline-block; flex-shrink: 0; background: #fff;
+}
+.contract-sign {
+    margin-top: 60px;
+    display: flex;
+    justify-content: flex-end;
+    font-size: 1.2em;
+}
+
+/* ════ PRINT STYLES ════ */
+@media print {
+    body * { visibility: hidden; }
+    .worksheet-paper.active, .worksheet-paper.active * {
+        visibility: visible;
+    }
+    .worksheet-paper.active {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+    }
+    .ws-print-btn, .ws-nav-tabs, .ws-header, header, footer { display: none !important; }
+    .contract-box { background: transparent !important; }
+}
+</style>
+
+<div class="ws-container">
+    <div class="ws-header">
+        <h1><i class="fas fa-print"></i> <span data-lang-content="<%- encodeContent(w.title) %>"><%= w.title[lang] %></span></h1>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="ws-nav-tabs">
+        <button class="ws-tab active" onclick="showWs(1)"><i class="fas fa-book"></i> <span data-lang-content="<%- encodeContent(w.w1_title) %>"><%= w.w1_title[lang] %></span></button>
+        <button class="ws-tab" onclick="showWs(2)"><i class="fas fa-search"></i> <span data-lang-content="<%- encodeContent(w.w2_title) %>"><%= w.w2_title[lang] %></span></button>
+        <button class="ws-tab" onclick="showWs(3)"><i class="fas fa-file-contract"></i> <span data-lang-content="<%- encodeContent(w.w3_title) %>"><%= w.w3_title[lang] %></span></button>
+    </div>
+
+    <!-- ════ WORKSHEET 1 ════ -->
+    <div id="ws1" class="worksheet-paper active">
+        <button class="ws-print-btn" onclick="window.print()"><i class="fas fa-print"></i> <span data-lang-content="<%- encodeContent(w.printBtn) %>"><%= w.printBtn[lang] %></span></button>
+        
+        <div class="ws-paper-top">
+            <span data-lang-content="<%- encodeContent(w.nameField) %>"><%= w.nameField[lang] %></span>
+            <span data-lang-content="<%- encodeContent(w.classField) %>"><%= w.classField[lang] %></span>
+            <span data-lang-content="<%- encodeContent(w.dateField) %>"><%= w.dateField[lang] %></span>
+        </div>
+        
+        <div class="ws-paper-title" data-lang-content="<%- encodeContent(w.w1_title) %>"><%= w.w1_title[lang] %></div>
+        <div class="ws-paper-desc" data-lang-content="<%- encodeContent(w.w1_desc) %>"><%= w.w1_desc[lang] %></div>
+
+        <table class="diary-table">
+            <thead>
+                <tr>
+                    <th>Tag / Day / Día</th>
+                    <th data-lang-content="<%- encodeContent(w.w1_col1) %>"><%= w.w1_col1[lang] %></th>
+                    <th data-lang-content="<%- encodeContent(w.w1_col2) %>"><%= w.w1_col2[lang] %></th>
+                    <th data-lang-content="<%- encodeContent(w.w1_col3) %>"><%= w.w1_col3[lang] %></th>
+                </tr>
+            </thead>
+            <tbody data-lang-content="<%- encodeContent({ de: w.w1_days.de.map(d=>`<tr><td><strong>${d}</strong></td><td></td><td></td><td></td></tr>`).join(''), en: w.w1_days.en.map(d=>`<tr><td><strong>${d}</strong></td><td></td><td></td><td></td></tr>`).join(''), es: w.w1_days.es.map(d=>`<tr><td><strong>${d}</strong></td><td></td><td></td><td></td></tr>`).join('') }) %>">
+                <% w.w1_days[lang].forEach(d => { %>
+                <tr>
+                    <td><strong><%= d %></strong></td>
+                    <td></td><td></td><td></td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+
+        <div style="font-weight:bold;margin-bottom:10px" data-lang-content="<%- encodeContent(w.w1_reflect) %>"><%= w.w1_reflect[lang] %></div>
+        <textarea class="diary-reflect"></textarea>
+    </div>
+
+    <!-- ════ WORKSHEET 2 ════ -->
+    <div id="ws2" class="worksheet-paper">
+        <button class="ws-print-btn" onclick="window.print()"><i class="fas fa-print"></i> <span data-lang-content="<%- encodeContent(w.printBtn) %>"><%= w.printBtn[lang] %></span></button>
+        
+        <div class="ws-paper-top">
+            <span data-lang-content="<%- encodeContent(w.nameField) %>"><%= w.nameField[lang] %></span>
+            <span data-lang-content="<%- encodeContent(w.dateField) %>"><%= w.dateField[lang] %></span>
+        </div>
+        
+        <div class="ws-paper-title" data-lang-content="<%- encodeContent(w.w2_title) %>"><%= w.w2_title[lang] %></div>
+        <div class="ws-paper-desc" data-lang-content="<%- encodeContent(w.w2_desc) %>"><%= w.w2_desc[lang] %></div>
+
+        <div class="sift-box">
+            <div style="display:flex;gap:10px;align-items:flex-end">
+                <strong data-lang-content="<%- encodeContent(w.w2_headline) %>"><%= w.w2_headline[lang] %></strong>
+                <div class="sift-headline"></div>
+            </div>
+
+            <div class="sift-row">
+                <strong data-lang-content="<%- encodeContent(w.w2_q1) %>"><%= w.w2_q1[lang] %></strong>
+                <div class="sift-line"></div>
+                <div class="sift-line"></div>
+            </div>
+            <div class="sift-row">
+                <strong data-lang-content="<%- encodeContent(w.w2_q2) %>"><%= w.w2_q2[lang] %></strong>
+                <div class="sift-line"></div>
+                <div class="sift-line"></div>
+            </div>
+            <div class="sift-row">
+                <strong data-lang-content="<%- encodeContent(w.w2_q3) %>"><%= w.w2_q3[lang] %></strong>
+                <div class="sift-line"></div>
+                <div class="sift-line"></div>
+            </div>
+            <div class="sift-row">
+                <strong data-lang-content="<%- encodeContent(w.w2_q4) %>"><%= w.w2_q4[lang] %></strong>
+                <div class="sift-line"></div>
+            </div>
+
+            <div class="sift-verdict" data-lang-content="<%- encodeContent(w.w2_verdict) %>"><%= w.w2_verdict[lang] %></div>
+        </div>
+    </div>
+
+    <!-- ════ WORKSHEET 3 ════ -->
+    <div id="ws3" class="worksheet-paper">
+        <button class="ws-print-btn" onclick="window.print()"><i class="fas fa-print"></i> <span data-lang-content="<%- encodeContent(w.printBtn) %>"><%= w.printBtn[lang] %></span></button>
+        
+        <div class="ws-paper-top">
+            <span data-lang-content="<%- encodeContent(w.nameField) %>"><%= w.nameField[lang] %></span>
+            <span data-lang-content="<%- encodeContent(w.classField) %>"><%= w.classField[lang] %></span>
+        </div>
+        
+        <div class="ws-paper-title" data-lang-content="<%- encodeContent(w.w3_title) %>"><%= w.w3_title[lang] %></div>
+        <div class="ws-paper-desc" data-lang-content="<%- encodeContent(w.w3_desc) %>"><%= w.w3_desc[lang] %></div>
+
+        <div class="contract-box">
+            <div data-lang-content="<%- encodeContent({ de: w.w3_rules.de.map(r=>`<div class='contract-item'><div class='contract-checkbox'></div><div>${r}</div></div>`).join(''), en: w.w3_rules.en.map(r=>`<div class='contract-item'><div class='contract-checkbox'></div><div>${r}</div></div>`).join(''), es: w.w3_rules.es.map(r=>`<div class='contract-item'><div class='contract-checkbox'></div><div>${r}</div></div>`).join('') }) %>">
+                <% w.w3_rules[lang].forEach(r => { %>
+                <div class="contract-item">
+                    <div class="contract-checkbox"></div>
+                    <div><%= r %></div>
+                </div>
+                <% }) %>
+            </div>
+
+            <div class="contract-sign">
+                <span data-lang-content="<%- encodeContent(w.w3_sign) %>"><%= w.w3_sign[lang] %></span>
+                <span style="border-bottom:2px solid #000; width: 300px; margin-left: 10px; display:inline-block"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showWs(num) {
+    document.querySelectorAll('.ws-tab').forEach((t, i) => {
+        t.classList.toggle('active', i + 1 === num);
+    });
+    document.querySelectorAll('.worksheet-paper').forEach((p, i) => {
+        p.classList.toggle('active', i + 1 === num);
+    });
+}
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,8 @@
+node_modules
+despliegue
+.git
+.gitignore
+.env
+*.log
+*.broken
+scratch

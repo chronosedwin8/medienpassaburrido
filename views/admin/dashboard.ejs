@@ -1,0 +1,3857 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — MedienPass</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --admin-bg: #f1f5f9;
+            --admin-card: #ffffff;
+            --admin-primary: #4f46e5;
+            --admin-dark: #1e1b4b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: var(--admin-bg);
+            margin: 0;
+            padding: 0;
+            color: #1e293b;
+        }
+
+        /* ── Admin Header ── */
+        .admin-header {
+            background: linear-gradient(135deg, #1e1b4b, #4338ca);
+            color: white;
+            padding: 24px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .hero-title {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hero-icon {
+            font-size: 1.8em;
+        }
+
+        .hero-title-text {
+            font-size: 2.2em; /* Grande */
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            background: linear-gradient(90deg, #fbbf24, #f9a8d4, #a78bfa, #67e8f9, #fbbf24);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle-custom {
+            font-size: 1.1em; /* Más grande */
+            font-weight: 900;
+            color: #fbbf24; /* highlight */
+            margin: 0;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-subtitle {
+            font-size: 0.7em;
+            opacity: 0.85;
+            margin: 0;
+        }
+
+        .admin-header a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            margin-left: 20px;
+        }
+
+        .admin-header a:hover {
+            color: white;
+        }
+
+        /* ── Layout ── */
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* ── Tabs ── */
+        .admin-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: white;
+            border-radius: 12px;
+            padding: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            background: none;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: 0.3s;
+            color: #64748b;
+        }
+
+        .tab-btn.active {
+            background: var(--admin-primary);
+            color: white;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: #f1f5f9;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ── Cards ── */
+        .admin-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            margin-bottom: 20px;
+        }
+
+        .admin-card h2 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--admin-dark);
+            font-size: 1.2em;
+        }
+
+        .admin-card h3 {
+            color: var(--admin-primary);
+            margin-top: 20px;
+        }
+
+        /* ── Tables ── */
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .admin-table th {
+            background: #f8fafc;
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .admin-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.9em;
+        }
+
+        .admin-table tr:hover {
+            background: #fafbfe;
+        }
+
+        .admin-table .count-badge {
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+
+        /* ── Forms ── */
+        .bulk-form {
+            display: grid;
+            gap: 12px;
+        }
+
+        .bulk-form label {
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.9em;
+        }
+
+        .bulk-form textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9em;
+            resize: vertical;
+        }
+
+        .bulk-form textarea:focus {
+            border-color: var(--admin-primary);
+            outline: none;
+        }
+
+        .bulk-form select {
+            padding: 10px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1em;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.95em;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--admin-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-success {
+            background: #059669;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #047857;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8em;
+        }
+
+        /* ── Filter ── */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .filter-bar select {
+            padding: 8px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        /* ── Toast ── */
+        .admin-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #059669;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+            font-weight: 600;
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ── KMK Levels ── */
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .level-card {
+            background: white;
+            border-radius: 14px;
+            padding: 20px;
+            border-left: 5px solid;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .level-card h3 {
+            margin-top: 0;
+            font-size: 1.1em;
+        }
+
+        .level-card ul {
+            padding-left: 18px;
+            color: #475569;
+            font-size: 0.9em;
+        }
+
+        .level-card .level-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8em;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        /* ── Reports ── */
+        .report-preview {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 16px;
+        }
+
+        .diploma-preview {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #fefce8 0%, #fef9c3 50%, #fde68a 100%);
+            border: 3px double #b45309;
+            border-radius: 16px;
+            margin-top: 20px;
+        }
+
+        .diploma-preview h2 {
+            color: #92400e;
+            font-size: 1.8em;
+            margin-bottom: 4px;
+        }
+
+        .diploma-preview .school {
+            color: #a16207;
+            font-size: 0.9em;
+        }
+
+        .diploma-preview .student-name {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #1e1b4b;
+            margin: 16px 0;
+        }
+
+        .diploma-preview .level-text {
+            color: #4338ca;
+            font-weight: 600;
+        }
+
+        .diploma-preview .stars-total {
+            font-size: 1.3em;
+            color: #b45309;
+            font-weight: 700;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-card .num {
+            font-size: 2em;
+            font-weight: 800;
+            color: var(--admin-primary);
+        }
+
+        .stat-card .label {
+            font-size: 0.85em;
+            color: #64748b;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .admin-header,
+            .admin-tabs,
+            .filter-bar,
+            .btn,
+            .admin-toast,
+            .no-print {
+                display: none !important;
+            }
+
+            .admin-card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                page-break-inside: avoid;
+            }
+
+            .diploma-preview {
+                page-break-after: always;
+            }
+        }
+
+        /* ── Subject Config Toggles ── */
+        .sc-toggle {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .sc-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .sc-slider {
+            position: absolute;
+            inset: 0;
+            background: #cbd5e1;
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+
+        .sc-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .sc-toggle input:checked+.sc-slider {
+            background: var(--sc-color, #4f46e5);
+        }
+
+        .sc-toggle input:checked+.sc-slider::before {
+            transform: translateX(20px);
+        }
+
+        #subjectConfigTable th { padding: 8px 6px; }
+        #subjectConfigTable td { padding: 8px 6px; }
+
+        /* ── Sub-navigation inside tabs ── */
+        .sub-nav {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .sub-nav-btn {
+            padding: 7px 14px;
+            border: 1.5px solid #e2e8f0;
+            background: white;
+            font-size: 0.82em;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 7px;
+            transition: 0.2s;
+            color: #475569;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .sub-nav-btn.active {
+            background: var(--admin-primary);
+            color: white;
+            border-color: var(--admin-primary);
+        }
+        .sub-nav-btn:hover:not(.active) {
+            background: #eef2ff;
+            border-color: #a5b4fc;
+            color: var(--admin-primary);
+        }
+        .sub-section { display: none; }
+        .sub-section.active { display: block; }
+
+        /* ── KPI goal cards ── */
+        .kpi-goal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px,1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-goal-card {
+            border-radius: 14px;
+            padding: 22px 20px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-goal-card::before {
+            content: '';
+            position: absolute;
+            top: -20px; right: -20px;
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.12);
+        }
+        .kpi-goal-card .kpi-pct {
+            font-size: 2.8em;
+            font-weight: 900;
+            line-height: 1;
+        }
+        .kpi-goal-card .kpi-label {
+            font-size: 0.88em;
+            opacity: 0.9;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+        .kpi-goal-card .kpi-icon {
+            font-size: 1.6em;
+            margin-bottom: 6px;
+        }
+        /* ── KMK Quiz ── */
+        .kmk-quiz-container { max-width: 860px; margin: 0 auto; }
+        .kmk-category-header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white; border-radius: 12px; padding: 14px 20px;
+            margin: 24px 0 16px; display: flex; align-items: center; gap: 10px;
+            font-size: 1.05em; font-weight: 700;
+        }
+        .kmk-question-card {
+            background: white; border-radius: 12px; padding: 20px 24px;
+            margin-bottom: 14px; border: 2px solid #e2e8f0;
+            transition: border-color 0.2s;
+        }
+        .kmk-question-card.answered-correct { border-color: #10b981; background: #f0fdf4; }
+        .kmk-question-card.answered-wrong { border-color: #ef4444; background: #fef2f2; }
+        .kmk-question-num { font-size: 0.75em; font-weight: 600; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kmk-question-text { font-size: 0.97em; font-weight: 600; color: #1e293b; margin-bottom: 14px; line-height: 1.5; }
+        .kmk-options { display: flex; flex-direction: column; gap: 8px; }
+        .kmk-option {
+            padding: 10px 16px; border-radius: 8px; border: 1.5px solid #e2e8f0;
+            cursor: pointer; transition: 0.2s; font-size: 0.9em; color: #334155;
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+        .kmk-option:hover { border-color: #a5b4fc; background: #eef2ff; }
+        .kmk-option.selected { border-color: #4f46e5; background: #eef2ff; color: #4f46e5; font-weight: 600; }
+        .kmk-option.correct { border-color: #10b981 !important; background: #d1fae5 !important; color: #065f46 !important; font-weight: 600; }
+        .kmk-option.wrong { border-color: #ef4444 !important; background: #fee2e2 !important; color: #991b1b !important; }
+        .kmk-explanation {
+            margin-top: 12px; padding: 12px 16px; background: #f8fafc;
+            border-radius: 8px; border-left: 4px solid #4f46e5;
+            font-size: 0.85em; color: #475569; display: none; line-height: 1.6;
+        }
+        .kmk-difficulty { font-size: 0.7em; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 8px; }
+        .diff-basico { background: #dcfce7; color: #166534; }
+        .diff-intermedio { background: #fef3c7; color: #92400e; }
+        .diff-avanzado { background: #fee2e2; color: #991b1b; }
+        .kmk-progress-bar-wrap { background: #e2e8f0; border-radius: 20px; height: 8px; margin: 16px 0; overflow: hidden; }
+        .kmk-progress-bar { height: 100%; background: linear-gradient(90deg, #4f46e5, #7c3aed); border-radius: 20px; transition: width 0.5s; }
+        .kmk-result-card {
+            text-align: center; padding: 32px; background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            border-radius: 16px; border: 2px solid #10b981; margin-top: 20px;
+        }
+        .kmk-result-pct { font-size: 4em; font-weight: 900; color: #059669; line-height: 1; }
+        /* ── Chart containers ── */
+        .chart-container { position: relative; height: 320px; margin: 16px 0; }
+        .chart-container-sm { position: relative; height: 240px; margin: 16px 0; }
+        .goal-line-label { font-size: 0.8em; color: #6b7280; font-style: italic; }
+        /* ── Training coverage cards ── */
+        .training-subject-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 14px; margin-top: 20px; }
+        .training-subject-card {
+            background: white; border-radius: 12px; padding: 18px;
+            border-left: 5px solid #4f46e5; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .training-subject-card .tsc-header { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #1e293b; margin-bottom: 10px; }
+        .training-subject-card .tsc-pct { font-size: 1.8em; font-weight: 900; }
+        .training-subject-card .tsc-bar { background: #e2e8f0; border-radius: 10px; height: 10px; margin: 8px 0; overflow: hidden; }
+        .training-subject-card .tsc-bar-fill { height: 100%; border-radius: 10px; transition: width 0.6s; }
+        .training-subject-card .tsc-teachers { margin-top: 10px; }
+        .training-teacher-item { font-size: 0.82em; color: #475569; padding: 4px 0; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 6px; }
+        /* ── Multimedia product block in activity ── */
+        .multimedia-block {
+            background: linear-gradient(135deg, #f8f4ff, #ede9ff);
+            border: 2px solid #a78bfa; border-radius: 16px; padding: 24px;
+            margin-top: 30px;
+        }
+        .multimedia-block h3 { margin: 0 0 16px; color: #5b21b6; display: flex; align-items: center; gap: 8px; font-size: 1.1em; }
+        .multimedia-type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); gap: 10px; margin: 14px 0; }
+        .multimedia-type-btn {
+            padding: 12px 8px; border-radius: 10px; border: 2px solid #e2e8f0;
+            background: white; cursor: pointer; text-align: center; font-size: 0.85em;
+            font-weight: 600; color: #475569; transition: 0.2s;
+        }
+        .multimedia-type-btn.active { border-color: #7c3aed; background: #7c3aed; color: white; }
+        .multimedia-type-btn:hover:not(.active) { border-color: #a78bfa; color: #7c3aed; }
+        .multimedia-type-btn .mt-icon { font-size: 1.6em; display: block; margin-bottom: 4px; }
+        .mm-input {
+            width: 100%; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 10px;
+            font-size: 0.95em; margin-top: 8px; box-sizing: border-box; font-family: inherit;
+        }
+        .mm-input:focus { border-color: #7c3aed; outline: none; }
+        .mm-label { font-weight: 600; color: #475569; font-size: 0.9em; margin-top: 14px; display: block; }
+        /* ── Multimedia monitoring table ── */
+        .mm-product-card {
+            background: white; border-radius: 12px; padding: 16px;
+            border: 1px solid #e2e8f0; margin-bottom: 10px;
+            display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: start;
+        }
+        .mm-product-type-badge {
+            padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .mm-type-video { background: #fee2e2; color: #991b1b; }
+        .mm-type-presentacion { background: #dbeafe; color: #1e40af; }
+        .mm-type-canvas { background: #d1fae5; color: #065f46; }
+        .mm-type-otro { background: #f3f4f6; color: #374151; }
+        /* ── Sub-nav tabs ── */
+        .sub-nav-btn {
+            padding: 8px 16px; border-radius: 8px; border: 1.5px solid #e2e8f0;
+            background: white; cursor: pointer; font-size: 0.88em; font-weight: 600;
+            color: #64748b; transition: 0.2s; display: flex; align-items: center; gap: 6px;
+        }
+        .sub-nav-btn:hover { border-color: #a5b4fc; color: #4f46e5; background: #eef2ff; }
+        .sub-nav-btn.active { background: linear-gradient(135deg,#4f46e5,#6d28d9); color: white; border-color: #4f46e5; }
+        .btn-success { background: linear-gradient(135deg,#059669,#047857) !important; }
+
+        /* ── Executive Dashboard Styles ── */
+        .exec-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px; margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: white; border-radius: 16px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .kpi-card .icon { font-size: 2em; margin-bottom: 10px; }
+        .kpi-card .value { font-size: 2.5em; font-weight: 800; color: var(--admin-primary); }
+        .kpi-card .label { color: #64748b; font-size: 0.9em; }
+        .kpi-card.success .value { color: #10b981; }
+        .kpi-card.warning .value { color: #f59e0b; }
+        .kpi-card.danger .value { color: #ef4444; }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px; margin-bottom: 24px;
+        }
+        .chart-card {
+            background: white; border-radius: 16px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .chart-card h3 { margin: 0 0 16px; color: #1e1b4b; }
+        
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        .table-card {
+            background: white; border-radius: 16px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .table-card h3 { margin: 0 0 16px; color: #1e1b4b; }
+        .exec-container table { width: 100%; border-collapse: collapse; }
+        .exec-container th { background: #f8fafc; padding: 10px 12px; text-align: left; font-size: 0.8em; text-transform: uppercase; color: #64748b; }
+        .exec-container td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; }
+        
+        .filters { background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .filters select, .filters button {
+            padding: 8px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.9em;
+        }
+        .filters button { background: var(--admin-primary); color: white; border: none; cursor: pointer; }
+        .filters button:hover { background: #4338ca; }
+        
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: 600; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+
+        /* ── Inventory Styles ── */
+        .inv-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+        .card { background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .card h2 { margin: 0 0 16px; color: #1e1b4b; display: flex; align-items: center; gap: 10px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .stat-card .num { font-size: 2em; font-weight: 800; }
+        .stat-card .label { color: #64748b; font-size: 0.85em; }
+        .stat-card.total { border-left: 4px solid #4f46e5; }
+        .stat-card.available { border-left: 4px solid #10b981; }
+        .stat-card.assigned { border-left: 4px solid #f59e0b; }
+        .stat-card.maintenance { border-left: 4px solid #ef4444; }
+        
+        .filter-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+        .filter-bar select, .filter-bar input { padding: 8px 14px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9em; }
+        .filter-bar button { padding: 8px 16px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        
+        .inv-container table { width: 100%; border-collapse: collapse; }
+        .inv-container th { background: #f8fafc; padding: 12px; text-align: left; font-size: 0.8em; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+        .inv-container td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+        .inv-container tr:hover { background: #fafbfe; }
+        
+        .badge-available { background: #d1fae5; color: #065f46; }
+        .badge-assigned { background: #fef3c7; color: #92400e; }
+        .badge-maintenance { background: #fee2e2; color: #991b1b; }
+        .badge-broken { background: #991b1b; color: white; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 16px; padding: 24px; max-width: 500px; width: 90%; }
+        .modal h3 { margin: 0 0 16px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-weight: 600; color: #475569; margin-bottom: 6px; font-size: 0.9em; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    </style>
+</head>
+
+<body>
+    <%- include('../partials/sidebar', { context: 'admin', activeItem: 'executive' }) %>
+
+    <div class="admin-container">
+        <!-- ═══════════ MAIN TAB: CONTENIDOS GLOBALES ═══════════ -->
+        <div class="tab-content active" id="maintab-contenidos">
+            <div class="sub-nav no-print" style="display: none !important;">
+                <button class="sub-nav-btn active" id="sub-btn-students" onclick="switchSub('students')">Estudiantes</button>
+            </div>
+    
+
+            <!-- ── SUB: ESTUDIANTES ── -->
+            <div class="sub-section active" id="sub-students">
+                <div class="admin-card">
+                    <h2><i class="fas fa-user-plus"></i> Agregar Estudiantes en Bloque</h2>
+                    <p style="color: #6b7280; font-size: 0.9em;">Ingresa un estudiante por línea en formato: <strong>Código,
+                            Nombre Completo, Clase</strong> (ej: 2401, Juan Pérez García, 4A)</p>
+
+                    <div class="bulk-form">
+                        <textarea id="bulkInput" placeholder="2401, Juan Pérez García, 4A
+2402, María López Martínez, 4A
+2403, Carlos Rodríguez Díaz, 4B
+2501, Ana Schmidt Mueller, 5A"></textarea>
+                        <div>
+                            <button class="btn btn-primary" onclick="bulkAddStudents()"><i class="fas fa-upload"></i>
+                                Importar Estudiantes</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-card">
+                    <h2><i class="fas fa-list"></i> Estudiantes Registrados</h2>
+                    <div class="filter-bar">
+                        <select id="filterClass" onchange="filterStudents()">
+                            <option value="">Todas las clases</option>
+                            <% 
+                               const uniqueClasses = [...new Set(students.map(s => s.class_name))].filter(Boolean).sort();
+                               uniqueClasses.forEach(cls => { 
+                            %>
+                                <option value="<%= cls %>"><%= cls %></option>
+                            <% }) %>
+                        </select>
+                        <span id="studentCount" style="color: #6b7280; font-size: 0.9em;"></span>
+                    </div>
+
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Nº</th>
+                                <th>Código</th>
+                                <th>Nombre</th>
+                                <th>Clase</th>
+                                <th>Creado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody">
+                            <% students.forEach(s=> { %>
+                                <tr data-class="<%= s.class_name %>" data-id="<%= s.id %>">
+                                    <td><strong><%= s.list_number || '—' %></strong></td>
+                                    <td>
+                                        <%= s.student_code || '—' %>
+                                    </td>
+                                    <td><strong>
+                                            <%= s.full_name || s.username %>
+                                        </strong></td>
+                                    <td><span class="count-badge">
+                                            <%= s.class_name %>
+                                        </span></td>
+                                    <td>
+                                        <%= s.created_at ? new Date(s.created_at).toLocaleDateString('es') : '—' %>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm" style="background:#8b5cf6;color:white;margin-right:4px;" onclick="viewStudentProfile('<%= s.id %>')" title="Ver Perfil"><i class="fas fa-eye"></i></button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteStudent('<%= s.id %>')"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                    <div id="paginationControls"
+                        style="display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 10px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── SUB: CONFIGURACIÓN ── -->
+            <div class="sub-section" id="sub-config">
+                <div class="admin-card">
+                    <h2><i class="fas fa-book"></i> Configuración de Asignaturas por Klasse</h2>
+                    <p style="color: #6b7280; font-size: 0.9em;">Selecciona las asignaturas que se trabajarán en cada
+                        Klasse. Los estudiantes solo verán las asignaturas habilitadas para su clase.</p>
+
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table" id="subjectConfigTable">
+                            <thead>
+                                <tr>
+                                    <th style="min-width:90px; position:sticky; left:0; background:#f8fafc; z-index:1">
+                                        Klasse</th>
+                                    <% subjects.forEach(s=> { %>
+                                        <th style="text-align:center; min-width:80px;">
+                                            <span style="font-size:1.3em">
+                                                <%= s.icon %>
+                                            </span><br>
+                                            <span style="font-size:0.7em; color:#475569">
+                                                <%= s.name.es %>
+                                            </span><br>
+                                            <button class="btn btn-sm" onclick="toggleAllForSubject('<%= s.id %>')"
+                                                style="margin-top:4px; font-size:0.6em; padding:2px 5px; background:<%= s.color %>; color:white; border:none; border-radius:5px; cursor:pointer; opacity:0.85;"
+                                                title="Activar/desactivar <%= s.name.es %> en todas las Klassen (K1-K6)">
+                                                ✓ K1-K6
+                                            </button>
+                                        </th>
+                                        <% }) %>
+                                            <th style="text-align:center">Klasse</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% uniqueClasses.forEach(cls => { %>
+                                        <tr>
+                                            <td style="position:sticky; left:0; background:#fff; z-index:1;">
+                                                <strong style="color:#4338ca" translate="no" class="notranslate">Klasse <%= cls %></strong>
+                                            </td>
+                                            <% subjects.forEach(s=> { %>
+                                                <td style="text-align:center">
+                                                    <label class="sc-toggle">
+                                                        <input type="checkbox" class="sc-cb"
+                                                            data-klasse="<%= cls %>" data-subject="<%= s.id %>">
+                                                        <span class="sc-slider" style="--sc-color: <%= s.color %>"></span>
+                                                    </label>
+                                                </td>
+                                                <% }) %>
+                                                    <td style="text-align:center">
+                                                        <button class="btn btn-sm btn-primary"
+                                                            onclick="toggleAllForKlasse('<%= cls %>')">
+                                                            ✓ All
+                                                        </button>
+                                                    </td>
+                                        </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn btn-success" onclick="saveSubjectConfig()">
+                            <i class="fas fa-save"></i> Guardar Configuración
+                        </button>
+                        <button class="btn btn-primary" onclick="selectAllGlobal()">
+                            <i class="fas fa-check-double"></i> Seleccionar Todo
+                        </button>
+                        <button class="btn btn-danger" onclick="deselectAllGlobal()">
+                            <i class="fas fa-times"></i> Deseleccionar Todo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KMK Levels / Retos Config -->
+                <div class="admin-card">
+                    <h2><i class="fas fa-layer-group"></i> Configuración de Retos (Niveles KMK) por Klasse</h2>
+                    <p style="color: #6b7280; font-size: 0.9em;">Selecciona los Retos/Niveles KMK activos por clase.</p>
+
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table" id="levelConfigTable">
+                            <thead>
+                                <tr>
+                                    <th style="min-width:90px; position:sticky; left:0; background:#f8fafc; z-index:1">
+                                        Klasse</th>
+                                    <% levels.forEach(lvl=> { %>
+                                        <th style="text-align:center; min-width:80px;">
+                                            <span style="font-size:1.3em">
+                                                <%= lvl.icon %>
+                                            </span><br>
+                                            <span style="font-size:0.7em; color:#475569">Reto <%= lvl.id %></span><br>
+                                            <button class="btn btn-sm" onclick="toggleAllForLevel('<%= lvl.id %>')"
+                                                style="margin-top:4px; font-size:0.6em; padding:2px 5px; background:<%= lvl.color %>; color:white; border:none; border-radius:5px; cursor:pointer; opacity:0.85;"
+                                                title="Activar/desactivar Reto <%= lvl.id %> en todas las Klassen">
+                                                ✓ K1-K6
+                                            </button>
+                                        </th>
+                                        <% }) %>
+                                            <th style="text-align:center">Klasse</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% uniqueClasses.forEach(cls => { %>
+                                        <tr>
+                                            <td style="position:sticky; left:0; background:#fff; z-index:1;">
+                                                <strong style="color:#4338ca" translate="no" class="notranslate">Klasse <%= cls %></strong>
+                                            </td>
+                                            <% levels.forEach(lvl=> { %>
+                                                <td style="text-align:center">
+                                                    <label class="sc-toggle">
+                                                        <input type="checkbox" class="lc-cb" data-klasse="<%= cls %>"
+                                                            data-level="<%= lvl.id %>">
+                                                        <span class="sc-slider" style="--sc-color: <%= lvl.color %>"></span>
+                                                    </label>
+                                                </td>
+                                                <% }) %>
+                                                    <td style="text-align:center">
+                                                        <button class="btn btn-sm btn-primary"
+                                                            onclick="toggleAllLevelsForKlasse('<%= cls %>')">
+                                                            ✓ All
+                                                        </button>
+                                                    </td>
+                                        </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn btn-success" onclick="saveLevelConfig()">
+                            <i class="fas fa-save"></i> Guardar Configuración de Niveles
+                        </button>
+                        <button class="btn btn-primary" onclick="selectAllLevels()">
+                            <i class="fas fa-check-double"></i> Seleccionar Todo
+                        </button>
+                        <button class="btn btn-danger" onclick="deselectAllLevels()">
+                            <i class="fas fa-times"></i> Deseleccionar Todo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── SUB: REPORTES & DIPLOMAS ── -->
+            <div class="sub-section" id="sub-reports">
+                <div class="admin-card">
+                    <h2><i class="fas fa-file-pdf"></i> Reportes por Clase</h2>
+                    <div class="filter-bar">
+                        <select id="reportClass">
+                            <option value="">Seleccionar Clase...</option>
+                            <% uniqueClasses.forEach(cls => { %>
+                                <option value="<%= cls %>"><%= cls %></option>
+                            <% }) %>
+                        </select>
+                        <button class="btn btn-primary" onclick="loadReport()"><i class="fas fa-search"></i> Generar
+                            Reporte</button>
+                        <button class="btn btn-success" onclick="printReport()" id="printBtn" style="display:none;"><i
+                                class="fas fa-print"></i> Imprimir / PDF</button>
+                    </div>
+                    <div id="reportOutput"></div>
+                </div>
+            </div>
+
+            <!-- ── SUB: MAPEO PROFESORES ── -->
+            <div class="sub-section" id="sub-mapping">
+                <div class="admin-card">
+                    <h2><i class="fas fa-project-diagram"></i> Mapeo de Profesores-Materias por Clase</h2>
+                    <p style="color: #6b7280; font-size: 0.9em;">Edita la configuración maestra que asigna profesores a cada materia según la clase.</p>
+                    <div style="margin-top: 12px; display:flex; gap:10px;">
+                        <button class="btn btn-primary" onclick="loadTeacherMapping()"><i class="fas fa-sync-alt"></i> Cargar Mapeo</button>
+                        <button class="btn btn-success" id="tmSaveBtn" style="display:none;" onclick="saveTeacherMapping()"><i class="fas fa-save"></i> Guardar Mapeo</button>
+                    </div>
+                    <div id="tmLoading" style="text-align:center; padding:20px; display:none;"><i class="fas fa-spinner fa-spin"></i> Cargando mapeo...</div>
+                    <textarea id="tmEditor" spellcheck="false" style="width: 100%; height: 500px; font-family: monospace; display: none; margin-top:20px; padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; line-height: 1.5;"></textarea>
+                </div>
+            </div>
+
+            <!-- ── SUB: TEXTOS & BD ── -->
+            <div class="sub-section" id="sub-i18n">
+                <div class="admin-card">
+                    <h2><i class="fas fa-language"></i> Editor de Textos y Traducciones</h2>
+                    <p style="color: #6b7280; font-size: 0.9em;">Modifica los textos visualizados en la interfaz (Alemán, Inglés, Español).</p>
+                    <div style="display:flex; gap:10px; flex-wrap: wrap; margin-top: 12px;">
+                        <button class="btn btn-primary" onclick="loadI18n()"><i class="fas fa-sync-alt"></i> Cargar / Refrescar</button>
+                        <button class="btn btn-success" id="i18nSaveBtn" style="display:none;" onclick="saveI18n()"><i class="fas fa-save"></i> Guardar Cambios</button>
+                        <select id="i18nLangFilter" style="border:1px solid #cbd5e1; border-radius:6px; padding:6px 12px;">
+                            <option value="all">— Todos los idiomas —</option>
+                            <option value="de">🇩🇪 Alemán (de)</option>
+                            <option value="en">🇬🇧 Inglés (en)</option>
+                            <option value="es">🇪🇸 Español (es)</option>
+                        </select>
+                        <input type="text" id="i18nSearch" placeholder="Buscar clave o valor..." style="border:1px solid #cbd5e1; border-radius:6px; padding:6px 12px; flex:1; min-width:180px;" oninput="filterI18nRows()">
+                    </div>
+                    <div id="i18nLoading" style="text-align:center; padding:20px; display:none;"><i class="fas fa-spinner fa-spin"></i> Cargando traducciones...</div>
+                    <div id="i18nEditorGrid" style="display:none; margin-top:20px; max-height: 600px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <table class="admin-table" id="i18nTable" style="width:100%;">
+                            <thead style="position:sticky; top:0; z-index:2;">
+                                <tr>
+                                    <th style="min-width:180px;">Clave (key)</th>
+                                    <th>🇩🇪 Alemán</th>
+                                    <th>🇬🇧 Inglés</th>
+                                    <th>🇪🇸 Español</th>
+                                </tr>
+                            </thead>
+                            <tbody id="i18nTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="admin-card">
+                    <h2><i class="fas fa-database"></i> Editor de Base de Datos</h2>
+                    <p style="color: #6b7280; font-size: 0.9em;">Consulta y edita registros directamente desde Supabase.</p>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin: 12px 0;">
+                        <button class="btn btn-primary" onclick="loadDbTable('students')"><i class="fas fa-users"></i> Estudiantes</button>
+                        <button class="btn btn-primary" onclick="loadDbTable('teachers')"><i class="fas fa-chalkboard-teacher"></i> Docentes</button>
+                        <button class="btn" style="background:#fbbf24; color:#fff;" onclick="loadPendingTeachers()"><i class="fas fa-user-clock"></i> Solicitudes Registro</button>
+                        <button class="btn btn-primary" onclick="loadDbTable('devices')"><i class="fas fa-laptop"></i> Inventario</button>
+                        <button class="btn btn-primary" onclick="loadDbTable('incidents')"><i class="fas fa-exclamation-triangle"></i> Incidentes</button>
+                        <button class="btn btn-primary" onclick="loadDbTable('multimedia_products')"><i class="fas fa-icons"></i> Productos</button>
+                        <button class="btn btn-success" id="dbAddBtn" style="display:none;" onclick="openDbAdd()"><i class="fas fa-plus"></i> Agregar Nuevo</button>
+                        <button class="btn btn-danger btn-sm" id="dbCancelEdit" style="display:none;" onclick="cancelDbEdit()"><i class="fas fa-times"></i> Cancelar edición/creación</button>
+                    </div>
+                    <div id="dbLoadingMsg" style="display:none; text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Cargando tabla...</div>
+                    <div id="dbEditorArea" style="display:none;">
+                        <div style="margin-bottom:10px; font-weight:bold; color: var(--admin-primary);" id="dbTableTitle"></div>
+                        <div style="overflow-x:auto;">
+                            <table class="admin-table" id="dbTable" style="min-width:600px;">
+                                <thead id="dbTableHead"></thead>
+                                <tbody id="dbTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div id="dbEditForm" style="display:none; margin-top:20px; padding:20px; background:#f8fafc; border-radius:10px; border:1px solid #cbd5e1;">
+                            <h3 id="dbEditTitle" style="margin:0 0 16px;"><i class="fas fa-edit"></i> Editar Registro</h3>
+                            <div id="dbEditFields" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:14px;"></div>
+                            <div style="margin-top:16px; display:flex; gap:10px;">
+                                <button class="btn btn-success" onclick="saveDbRecord()"><i class="fas fa-save"></i> Guardar en BD</button>
+                                <button class="btn btn-danger btn-sm" onclick="cancelDbEdit()"><i class="fas fa-times"></i> Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Solicitudes de Registro (Oculto por defecto) -->
+                <div class="admin-card" id="pendingTeachersPanel" style="display:none; border-left: 4px solid #fbbf24;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2><i class="fas fa-user-clock" style="color: #fbbf24;"></i> Solicitudes de Registro (Docentes)</h2>
+                        <button class="btn btn-danger btn-sm" onclick="document.getElementById('pendingTeachersPanel').style.display='none'"><i class="fas fa-times"></i> Cerrar</button>
+                    </div>
+                    <p style="color: #6b7280; font-size: 0.9em;">Estos docentes se han registrado en el portal porque no pudieron acceder. Revísalos y aprueba su ingreso.</p>
+                    <div id="pendingLoading" style="text-align:center; padding:15px; display:none;"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Documento</th>
+                                    <th>Nombres</th>
+                                    <th>Apellidos</th>
+                                    <th>Email</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pendingTeachersBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!-- END CONTENIDOS GLOBALES -->
+
+        <!-- ═══════════ MAIN TAB: MONITOREO INDICADORES ═══════════ -->
+        <div class="tab-content" id="maintab-monitoreo">
+            <!-- Chart.js -->
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+            <!-- KPI Metas Institucionales -->
+            <div class="admin-card" id="kpi-goals-card">
+                <h2><i class="fas fa-bullseye"></i> Indicadores de Meta Institucional — MedienPass</h2>
+                <p style="color:#6b7280; font-size:0.9em;">Objetivos estratégicos del programa para el año escolar en curso.</p>
+
+                <!-- FILA 1: METAS A ALCANZAR (etiquetas fijas) -->
+                <h3 style="margin:20px 0 12px; color:#1e1b4b; font-size:1em;"><i class="fas fa-flag-checkered"></i> METAS INSTITUCIONALES</h3>
+                <div class="kpi-goal-grid">
+                    <div class="kpi-goal-card" style="background: linear-gradient(135deg,#312e81,#4338ca); opacity:0.9;">
+                        <div class="kpi-icon">💻</div>
+                        <div class="kpi-pct">85%</div>
+                        <div class="kpi-label">Integración Digital: estudiantes con al menos 1 evidencia multimedia en Retos 1-6.</div>
+                    </div>
+
+                    <div class="kpi-goal-card" style="background: linear-gradient(135deg,#064e3b,#047857); opacity:0.9;">
+                        <div class="kpi-icon">🎓</div>
+                        <div class="kpi-pct">70%</div>
+                        <div class="kpi-label">Capacitación KMK: docentes formados en competencias digitales.</div>
+                    </div>
+                    <div class="kpi-goal-card" style="background: linear-gradient(135deg,#581c87,#7e22ce); opacity:0.9;">
+                        <div class="kpi-icon">📝</div>
+                        <div class="kpi-pct">100%</div>
+                        <div class="kpi-label">Reto 0 Diagnóstico: estudiantes que aprobaron (≥80% aciertos).</div>
+                    </div>
+                </div>
+
+                <!-- FILA 2: AVANCE REAL (calculado dinámicamente) -->
+                <h3 style="margin:28px 0 12px; color:#059669; font-size:1em;"><i class="fas fa-chart-line"></i> AVANCE REAL (Datos en Tiempo Real)</h3>
+                <div class="kpi-goal-grid">
+                    <div class="kpi-goal-card" style="background: linear-gradient(135deg,#4f46e5,#6d28d9);">
+                        <div class="kpi-icon">💻</div>
+                        <div id="kpi-integration-pct" class="kpi-pct"><i class="fas fa-spinner fa-spin"></i></div>
+                        <div class="kpi-label">Evidencias digitales registradas por estudiantes.</div>
+                    </div>
+
+                    <div class="kpi-goal-card" style="background: linear-gradient(135deg,#059669,#047857);">
+                        <div class="kpi-icon">🎓</div>
+                        <div id="kpi-kmk-pct" class="kpi-pct"><i class="fas fa-spinner fa-spin"></i></div>
+                        <div class="kpi-label">Docentes capacitados y certificados KMK.</div>
+                    </div>
+                    <div class="kpi-goal-card" style="background: linear-gradient(135deg,#8b5cf6,#d946ef);">
+                        <div class="kpi-icon">📝</div>
+                        <div id="kpi-reto0-pct" class="kpi-pct">0%</div>
+                        <div class="kpi-label">Estudiantes que aprobaron Reto 0.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ BLOQUE A: CAPACITACIÓN KMK x DOCENTE ═══ -->
+            <div class="admin-card" id="kmk-docente-card">
+                <h2><i class="fas fa-graduation-cap"></i> Capacitación KMK x Docente — Monitoreo de Cobertura</h2>
+                <p style="color:#6b7280; font-size:0.9em;">Seguimiento de la formación en competencias KMK por asignatura. Meta institucional: <strong style="color:#059669">70%</strong> de docentes capacitados.</p>
+
+                <!-- Sub-nav dentro del bloque KMK -->
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin:16px 0; border-bottom:2px solid #e2e8f0; padding-bottom:12px;">
+                    <button class="sub-nav-btn active" id="kmk-btn-stats" onclick="showKmkPanel('stats')">
+                        <i class="fas fa-chart-bar"></i> Cobertura por Asignatura
+                    </button>
+                    <button class="sub-nav-btn" id="kmk-btn-teachers" onclick="showKmkPanel('teachers')">
+                        <i class="fas fa-users"></i> Docentes Capacitados
+                    </button>
+                    <button class="sub-nav-btn" id="kmk-btn-quiz" onclick="showKmkPanel('quiz')">
+                        <i class="fas fa-question-circle"></i> Quiz KMK (Admin)
+                    </button>
+                </div>
+
+                <!-- Panel: Gráficas de cobertura por asignatura -->
+                <div id="kmk-panel-stats">
+                    <button class="btn btn-primary" onclick="loadKmkStats()" style="margin-bottom:16px;">
+                        <i class="fas fa-sync-alt"></i> Actualizar datos
+                    </button>
+                    <div id="kmk-stats-loading" style="text-align:center;padding:30px;display:none;">
+                        <i class="fas fa-spinner fa-spin fa-2x" style="color:#4f46e5;"></i>
+                        <p style="color:#6b7280;margin-top:10px;">Cargando estadísticas...</p>
+                    </div>
+                    <!-- Global KPI card -->
+                    <div id="kmk-global-kpi" style="display:none; margin-bottom:24px;">
+                        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; padding:20px; background:linear-gradient(135deg,#1e1b4b,#4338ca); border-radius:14px; color:white;">
+                            <div style="text-align:center; min-width:100px;">
+                                <div id="kmk-global-pct" style="font-size:3em; font-weight:900; line-height:1;">—</div>
+                                <div style="font-size:0.8em; opacity:0.85;">Cobertura Global</div>
+                            </div>
+                            <div style="flex:1; min-width:200px;">
+                                <div style="background:rgba(255,255,255,0.2); border-radius:20px; height:12px; overflow:hidden;">
+                                    <div id="kmk-global-bar" style="height:100%; background:linear-gradient(90deg,#34d399,#10b981); border-radius:20px; width:0%; transition:1s;"></div>
+                                </div>
+                                <div style="margin-top:8px; font-size:0.82em; opacity:0.85;">
+                                    <span id="kmk-trained-count">—</span> / <span id="kmk-total-count">—</span> docentes capacitados
+                                </div>
+                                <div style="margin-top:4px; font-size:0.78em; opacity:0.7;">Meta: 70% — Línea de referencia trazada en los gráficos</div>
+                            </div>
+                            <div id="kmk-global-status" style="font-size:2em;">⏳</div>
+                        </div>
+                    </div>
+                    <!-- Chart -->
+                    <div id="kmk-chart-area" style="display:none;">
+                        <div class="chart-container">
+                            <canvas id="kmkSubjectChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Subject cards -->
+                    <div class="training-subject-grid" id="kmk-subject-cards"></div>
+                </div>
+
+                <!-- Panel: Lista de docentes capacitados -->
+                <div id="kmk-panel-teachers" style="display:none;">
+                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="loadKmkTeachers()"><i class="fas fa-sync-alt"></i> Cargar lista</button>
+                        <input type="text" id="kmkTeacherSearch" placeholder="Buscar docente..." oninput="filterKmkTeachers()" style="border:1.5px solid #e2e8f0; border-radius:8px; padding:8px 14px; font-size:0.9em; flex:1; min-width:180px;">
+                        <select id="kmkSubjectFilter" onchange="filterKmkTeachers()" style="border:1.5px solid #e2e8f0; border-radius:8px; padding:8px 14px;">
+                            <option value="">Todas las asignaturas</option>
+                            <% subjects.forEach(s => { %>
+                                <option value="<%= s.id %>"><%= s.icon %> <%= s.name.es %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                    <div id="kmk-teachers-table-wrap">
+                        <p style="color:#94a3b8; text-align:center; padding:20px;">Haz clic en "Cargar lista" para ver los docentes.</p>
+                    </div>
+                </div>
+
+                <!-- Panel: Quiz KMK (solo admin puede registrar) -->
+                <div id="kmk-panel-quiz" style="display:none;">
+                    <div class="admin-card" style="background:#f8fafc; border:1px solid #e2e8f0; margin-bottom:0;">
+                        <p style="color:#6b7280; font-size:0.9em;">Este quiz puede usarse para registrar que un docente completó la capacitación KMK. Selecciona el docente y completa el quiz.</p>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:20px;">
+                            <select id="kmkQuizTeacherSelect" style="border:1.5px solid #e2e8f0; border-radius:8px; padding:9px 14px; flex:1; min-width:220px;">
+                                <option value="">— Seleccionar docente —</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="initKmkQuiz()">
+                                <i class="fas fa-play-circle"></i> Iniciar Quiz
+                            </button>
+                        </div>
+                        <div id="kmk-quiz-area"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reporte de Grupos por Docente -->
+            <div class="admin-card" id="grupos-docente-card">
+                <h2><i class="fas fa-chalkboard-teacher"></i> Reporte de Grupos por Docente Registrado</h2>
+                <p style="color: #6b7280; font-size: 0.9em;">Cuántos grupos gestiona cada profesor (extraídos de ESTE SOY YO). Paginado de 15 en 15.</p>
+                <div id="teacherReportOutput">
+                    <p>Cargando reporte de docentes...</p>
+                </div>
+                <div id="teacherPaginationControls"
+                    style="display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 10px;"></div>
+            </div>
+
+            <!-- Matriz Global Klassen vs Materias -->
+            <div class="admin-card" id="matriz-global-card">
+                <h2><i class="fas fa-th"></i> Matriz Global de Progresos KMK (Klassen vs Materias)</h2>
+                <p style="color: #6b7280; font-size: 0.9em;">Promedio de avance (%) de todas las evidencias de cada asignatura cruzado por clase.</p>
+                <button class="btn btn-primary" onclick="loadPspMatrix()"><i class="fas fa-sync-alt"></i> Actualizar Matriz</button>
+                <div style="overflow-x: auto; margin-top: 20px;">
+                    <table class="admin-table" id="pspMatrixTable" style="display: none; min-width: 1000px;">
+                        <thead>
+                            <tr id="pspMatrixHeader"></tr>
+                        </thead>
+                        <tbody id="pspMatrixBody"></tbody>
+                    </table>
+                </div>
+                <div id="pspMatrixLoading" style="display:none; text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Cargando matriz global...</div>
+            </div>
+
+            <!-- ═══ BLOQUE B: PRODUCTOS MULTIMEDIA ═══ -->
+            <div class="admin-card" id="productos-multimedia-card">
+                <h2><i class="fas fa-photo-video"></i> Productos Multimedia en ClassNotebook — Monitoreo</h2>
+                <p style="color:#6b7280; font-size:0.9em;">Seguimiento de publicaciones de estudiantes (video, presentación, Canvas u otro medio). Meta institucional: <strong style="color:#0284c7">85%</strong> de estudiantes con al menos 1 producto por asignatura.</p>
+
+                <button class="btn btn-primary" onclick="loadMultimediaStats()" style="margin-bottom:16px;">
+                    <i class="fas fa-sync-alt"></i> Actualizar Estadísticas
+                </button>
+
+                <div id="mm-loading" style="display:none; text-align:center; padding:30px;">
+                    <i class="fas fa-spinner fa-spin fa-2x" style="color:#0284c7;"></i>
+                    <p style="color:#6b7280; margin-top:10px;">Cargando datos multimedia...</p>
+                </div>
+
+                <!-- Chart -->
+                <div id="mm-chart-area" style="display:none;">
+                    <div class="chart-container">
+                        <canvas id="mmSubjectChart"></canvas>
+                    </div>
+                    <p class="goal-line-label" style="text-align:center;">📍 Línea roja = Meta 85% de cobertura por asignatura</p>
+                </div>
+
+                <!-- Subject product cards -->
+                <div class="training-subject-grid" id="mm-subject-cards" style="display:none;"></div>
+
+                <!-- Products detail table -->
+                <div id="mm-products-detail" style="display:none; margin-top:24px;">
+                    <h3 style="color:#0284c7; display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-list"></i> Detalle de Productos Registrados
+                    </h3>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                        <select id="mmProductSubjectFilter" onchange="filterMmProducts()" style="border:1.5px solid #e2e8f0; border-radius:8px; padding:8px 14px;">
+                            <option value="">Todas las asignaturas</option>
+                            <% subjects.forEach(s => { %>
+                                <option value="<%= s.id %>"><%= s.icon %> <%= s.name.es %></option>
+                            <% }) %>
+                        </select>
+                        <select id="mmProductTypeFilter" onchange="filterMmProducts()" style="border:1.5px solid #e2e8f0; border-radius:8px; padding:8px 14px;">
+                            <option value="">Todos los tipos</option>
+                            <option value="video">🎬 Video</option>
+                            <option value="presentacion">📊 Presentación</option>
+                            <option value="canvas">🎨 Canvas</option>
+                            <option value="otro">📁 Otro</option>
+                        </select>
+                    </div>
+                    <div id="mm-products-list"></div>
+                </div>
+            </div>
+
+            <!-- Indicadores PSP por Estudiante -->
+            <div class="admin-card" id="psp-estudiante-card">
+                <h2><i class="fas fa-chart-line"></i> Indicadores PSP por Estudiante</h2>
+                <div class="filter-bar">
+                    <select id="pspClassFilter">
+                        <option value="">Seleccionar Clase...</option>
+                        <% uniqueClasses.forEach(cls => { %>
+                            <option value="<%= cls %>"><%= cls %></option>
+                        <% }) %>
+                    </select>
+                    <button class="btn btn-primary" onclick="loadPspIndicators()"><i class="fas fa-search"></i> Ver
+                        Indicadores</button>
+                </div>
+
+                <div id="pspClassAvg"
+                    style="margin-top: 20px; font-weight: bold; font-size: 1.1em; color: var(--admin-primary);"></div>
+
+                <table class="admin-table" id="pspTable" style="display: none; margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            <th>Estudiante</th>
+                            <th>Profesor(es) Asignado(s)</th>
+                            <th>Eval. Docente</th>
+                            <th>Retos (1-6)</th>
+                            <th>Progreso</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pspTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <!-- ═══ BLOQUE C: RETO 0 - DIAGNÓSTICO ESTUDIANTIL ═══ -->
+            <div class="admin-card" id="reto0-diagnostico-card">
+                <h2><i class="fas fa-clipboard-check"></i> Reto 0: Diagnóstico Inicial de Competencias (Estudiantes)</h2>
+                <p style="color:#6b7280; font-size:0.9em;">Monitoreo de la evaluación de 20 preguntas realizada por los estudiantes en su perfil. Meta: 100% participación.</p>
+                
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin:16px 0;">
+                    <button class="btn btn-primary" onclick="loadReto0Stats()">
+                        <i class="fas fa-sync-alt"></i> Cargar / Actualizar Datos
+                    </button>
+                </div>
+
+                <div id="reto0-loading" style="text-align:center;padding:30px;display:none;">
+                    <i class="fas fa-spinner fa-spin fa-2x" style="color:#4f46e5;"></i>
+                    <p style="color:#6b7280;margin-top:10px;">Analizando 20 preguntas por estudiante...</p>
+                </div>
+
+                <div id="reto0-stats-content" style="display:none;">
+                    <!-- Global Stats -->
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;">
+                        <div style="padding:15px; background:#eff6ff; border-radius:12px; border:1px solid #bfdbfe; text-align:center;">
+                            <div style="font-size:0.8em; color:#1e40af; font-weight:700; text-transform:uppercase;">Participación</div>
+                            <div id="reto0-global-pct" style="font-size:2.2em; font-weight:900; color:#1e40af;">0%</div>
+                            <div style="font-size:0.85em; color:#1e40af; opacity:0.8;"><span id="reto0-completed-count">0</span> de <span id="reto0-total-students">0</span></div>
+                        </div>
+                        <div style="padding:15px; background:#ecfdf5; border-radius:12px; border:1px solid #a7f3d0; text-align:center;">
+                            <div style="font-size:0.8em; color:#065f46; font-weight:700; text-transform:uppercase;">Calidad Datos</div>
+                            <div style="font-size:2.2em; font-weight:900; color:#065f46;">20 Q</div>
+                            <div style="font-size:0.85em; color:#065f46; opacity:0.8;">Preguntas evaluadas</div>
+                        </div>
+                    </div>
+
+                    <!-- Class table -->
+                    <div style="margin-bottom:24px;">
+                        <h3>Cumplimiento por Clase</h3>
+                        <div style="overflow-x:auto; border:1px solid #e2e8f0; border-radius:10px;">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Clase</th>
+                                        <th>Estudiantes</th>
+                                        <th>Completado</th>
+                                        <th>% Avance</th>
+                                        <th>Visual</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reto0-class-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Question heat map -->
+                    <div>
+                        <h3>Análisis de Preguntas (Nivel de Respuesta)</h3>
+                        <p style="font-size:0.85em; color:#6b7280; margin-bottom:12px;">Muestra qué preguntas están siendo contestadas con mayor frecuencia.</p>
+                        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px;" id="reto0-questions-grid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- END MONITOREO INDICADORES -->
+
+    
+        <!-- ═══════════ MAIN TAB: DASHBOARD EJECUTIVO ═══════════ -->
+        <div class="tab-content" id="maintab-executive">
+            <div class="exec-container">
+                <!-- Filters -->
+                <div class="filters">
+                    <label><strong>Periodo:</strong></label>
+                    <select id="filterPeriod">
+                        <option value="all">Todos</option>
+                        <option value="1">Periodo 1</option>
+                        <option value="2">Periodo 2</option>
+                        <option value="3">Periodo 3</option>
+                        <option value="4">Periodo 4</option>
+                    </select>
+                    <label><strong>Año:</strong></label>
+                    <select id="filterYear">
+                        <option value="2627">2026/2027</option>
+                        <option value="2526">2025/2026</option>
+                    </select>
+                    <button onclick="refreshExecutiveData()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+                    <button onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="icon">👥</div>
+                        <div class="value" id="kpiStudents">0</div>
+                        <div class="label">Estudiantes Registrados</div>
+                    </div>
+                    <div class="kpi-card success">
+                        <div class="icon">✅</div>
+                        <div class="value" id="kpiProgress">0%</div>
+                        <div class="label">Con productos/periodo (Meta: 100%)</div>
+                    </div>
+                    <div class="kpi-card success">
+                        <div class="icon">🎓</div>
+                        <div class="value" id="kpiTeachers">0%</div>
+                        <div class="label">Docentes Certificados (Meta: 100%)</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="icon">💻</div>
+                        <div class="value" id="kpiDevices">0</div>
+                        <div class="label">Equipos Registrados</div>
+                    </div>
+                    <div class="kpi-card warning">
+                        <div class="icon">⚠️</div>
+                        <div class="value" id="kpiIncidents">0</div>
+                        <div class="label">Novedades Abiertas</div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3><i class="fas fa-chart-bar"></i> Progreso por Klasse (K3-K9)</h3>
+                        <canvas id="chartKlasse" height="200"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3><i class="fas fa-chart-bar"></i> Progreso por Materia</h3>
+                        <canvas id="chartSubject" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tables -->
+                <div class="tables-grid">
+                    <div class="table-card">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Estudiantes sin Progreso</h3>
+                        <div id="noProgressList">
+                            <p style="color:#64748b;">Cargando...</p>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <h3><i class="fas fa-chalkboard-teacher"></i> Docentes Pendientes de Certificación</h3>
+                        <div id="pendingTeachersList">
+                            <p style="color:#64748b;">Cargando...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ MAIN TAB: INVENTARIO ═══════════ -->
+        <div class="tab-content" id="maintab-inventory">
+            <div class="inv-container">
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card total">
+                        <div class="num" id="statTotal">0</div>
+                        <div class="label">Total Equipos</div>
+                    </div>
+                    <div class="stat-card available">
+                        <div class="num" id="statAvailable">0</div>
+                        <div class="label">Disponibles</div>
+                    </div>
+                    <div class="stat-card assigned">
+                        <div class="num" id="statAssigned">0</div>
+                        <div class="label">Asignados</div>
+                    </div>
+                    <div class="stat-card maintenance">
+                        <div class="num" id="statMaintenance">0</div>
+                        <div class="label">En Mantenimiento</div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="card">
+                    <div class="filter-bar">
+                        <select id="filterLocation" onchange="loadInventoryDevices()">
+                            <option value="">Todos los salones</option>
+                            <option value="AM1">Aula Móvil 1</option>
+                            <option value="AM2">Aula Móvil 2</option>
+                            <option value="C11">C11</option>
+                            <option value="C12">C12</option>
+                            <option value="Chomsky">Chomsky</option>
+                            <option value="Biblioteca">Biblioteca</option>
+                        </select>
+                        <select id="filterStatus" onchange="loadInventoryDevices()">
+                            <option value="">Todos los estados</option>
+                            <option value="available">Disponible</option>
+                            <option value="assigned">Asignado</option>
+                            <option value="maintenance">En Mantenimiento</option>
+                            <option value="broken">Dañado</option>
+                        </select>
+                        <button onclick="openInventoryAddModal()"><i class="fas fa-plus"></i> Agregar Equipo</button>
+                        <button onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+                    </div>
+
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Serial</th>
+                                <th>Tipo</th>
+                                <th>Marca/Modelo</th>
+                                <th>Ubicación</th>
+                                <th>Estado</th>
+                                <th>Notas</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devicesTableBody">
+                            <tr><td colspan="7" style="text-align:center; color:#64748b;">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Modal Agregar/Editar Equipos -->
+            <div class="modal" id="deviceModal">
+                <div class="modal-content">
+                    <h3 id="modalTitle"><i class="fas fa-plus"></i> Agregar Equipo</h3>
+                    <form id="deviceForm">
+                        <input type="hidden" id="deviceId">
+                        <div class="form-group">
+                            <label>Serial Number *</label>
+                            <input type="text" id="serial_number" required placeholder="Ej: DSB-STU-001">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo *</label>
+                            <select id="type" required>
+                                <option value="laptop">Laptop</option>
+                                <option value="tablet">Tablet</option>
+                                <option value="proyector">Proyector</option>
+                                <option value="audifonos">Audífonos</option>
+                                <option value="teclado">Teclado</option>
+                                <option value="mouse">Mouse</option>
+                                <option value="cargador">Cargador</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Marca</label>
+                            <input type="text" id="brand" placeholder="Ej: Dell">
+                        </div>
+                        <div class="form-group">
+                            <label>Modelo</label>
+                            <input type="text" id="model" placeholder="Ej: Latitude 3320">
+                        </div>
+                        <div class="form-group">
+                            <label>Ubicación *</label>
+                            <select id="location" required>
+                                <option value="AM1">Aula Móvil 1</option>
+                                <option value="AM2">Aula Móvil 2</option>
+                                <option value="C11">C11</option>
+                                <option value="C12">C12</option>
+                                <option value="Chomsky">Chomsky</option>
+                                <option value="Biblioteca">Biblioteca</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select id="status">
+                                <option value="available">Disponible</option>
+                                <option value="assigned">Asignado</option>
+                                <option value="maintenance">En Mantenimiento</option>
+                                <option value="broken">Dañado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Notas</label>
+                            <input type="text" id="notes" placeholder="Ej: Estudiante 1">
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn" style="background:#e2e8f0; border: none; padding: 10px 20px; border-radius: 10px;" onclick="closeInventoryModal()">Cancelar</button>
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div><!-- end admin-container -->
+
+
+    <!-- Toast -->
+    <div class="admin-toast" id="adminToast"></div>
+
+    <script>
+        // ── Main tab switching ──
+        function switchMainTab(name) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            const contentEl = document.getElementById('maintab-' + name);
+            if (contentEl) contentEl.classList.add('active');
+            
+            const btnEl = document.getElementById('mainTab-' + name);
+            if (btnEl) btnEl.classList.add('active');
+            
+            // Sync with sidebar active state
+            updateSidebarActive(name);
+            
+            if (name === 'monitoreo') {
+                loadAllKpis();
+                loadKmkStats();
+                loadMultimediaStats();
+                loadReto0Stats();
+            } else if (name === 'executive') {
+                refreshExecutiveData();
+            } else if (name === 'inventory') {
+                loadInventoryDevices();
+            }
+        }
+
+        // ── Sidebar active sync ──
+        function updateSidebarActive(tabName, subName = null) {
+            // Remove active classes from links
+            document.querySelectorAll('.sidebar .menu-link, .sidebar .submenu-link').forEach(el => {
+                el.classList.remove('active');
+            });
+            // Reset other submenus
+            document.querySelectorAll('.sidebar .submenu').forEach(el => {
+                if (el.id !== 'submenu-' + tabName) {
+                    el.classList.remove('open');
+                    el.parentElement.classList.remove('open');
+                }
+            });
+
+            if (tabName === 'executive') {
+                const el = document.getElementById('menu-executive');
+                if (el) el.classList.add('active');
+            } else if (tabName === 'inventory') {
+                const el = document.getElementById('menu-inventory');
+                if (el) el.classList.add('active');
+            } else if (tabName === 'contenidos') {
+                const group = document.getElementById('menu-group-contenidos');
+                if (group) group.classList.add('active');
+                const sub = document.getElementById('submenu-contenidos');
+                if (sub) {
+                    sub.classList.add('open');
+                    sub.parentElement.classList.add('open');
+                }
+                if (subName) {
+                    const subLink = document.getElementById('submenu-' + subName);
+                    if (subLink) subLink.classList.add('active');
+                }
+            } else if (tabName === 'monitoreo') {
+                const group = document.getElementById('menu-group-monitoreo');
+                if (group) group.classList.add('active');
+                const sub = document.getElementById('submenu-monitoreo');
+                if (sub) {
+                    sub.classList.add('open');
+                    sub.parentElement.classList.add('open');
+                }
+            }
+        }
+
+        // ── Sub-section switching (inside Contenidos Globales) ──
+        function switchSub(name) {
+            document.querySelectorAll('.sub-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sub-nav-btn').forEach(el => el.classList.remove('active'));
+            
+            const secEl = document.getElementById('sub-' + name);
+            if (secEl) secEl.classList.add('active');
+            
+            const btnEl = document.getElementById('sub-btn-' + name);
+            if (btnEl) btnEl.classList.add('active');
+            
+            updateSidebarActive('contenidos', name);
+        }
+
+        // ── Toast ──
+        function showToast(msg, isError) {
+            const toast = document.getElementById('adminToast');
+            toast.textContent = msg;
+            toast.style.background = isError ? '#ef4444' : '#059669';
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+
+        // ── I18N Editor ──
+        let i18nData = null;
+
+        async function loadI18n() {
+            const grid = document.getElementById('i18nEditorGrid');
+            const loading = document.getElementById('i18nLoading');
+            const saveBtn = document.getElementById('i18nSaveBtn');
+            grid.style.display = 'none';
+            saveBtn.style.display = 'none';
+            loading.style.display = 'block';
+            try {
+                const res = await fetch('/api/admin/i18n');
+                const result = await res.json();
+                loading.style.display = 'none';
+                if (result.success && result.i18n) {
+                    i18nData = result.i18n;
+                    renderI18nGrid(i18nData);
+                    grid.style.display = 'block';
+                    saveBtn.style.display = 'inline-block';
+                } else {
+                    showToast('Error: ' + (result.message || 'No se pudieron cargar las traducciones'), true);
+                }
+            } catch(e) {
+                loading.style.display = 'none';
+                showToast('Error de conexión al cargar i18n', true);
+            }
+        }
+
+        function renderI18nGrid(data) {
+            const tbody = document.getElementById('i18nTableBody');
+            const langs = Object.keys(data); // ['de', 'en', 'es']
+            const allKeys = new Set();
+            langs.forEach(l => Object.keys(data[l]).forEach(k => allKeys.add(k)));
+            
+            let html = '';
+            allKeys.forEach(key => {
+                const de = data.de ? (data.de[key] || '') : '';
+                const en = data.en ? (data.en[key] || '') : '';
+                const es = data.es ? (data.es[key] || '') : '';
+                html += `<tr data-key="${key}">
+                    <td style="color:#64748b; font-size:0.85em; font-family:monospace;"><code>${key}</code></td>
+                    <td><input type="text" class="i18n-input" data-lang="de" data-key="${key}" value="${de.replace(/"/g,'&quot;')}" style="width:100%; padding:4px 8px; border:1px solid #e2e8f0; border-radius:4px;"></td>
+                    <td><input type="text" class="i18n-input" data-lang="en" data-key="${key}" value="${en.replace(/"/g,'&quot;')}" style="width:100%; padding:4px 8px; border:1px solid #e2e8f0; border-radius:4px;"></td>
+                    <td><input type="text" class="i18n-input" data-lang="es" data-key="${key}" value="${es.replace(/"/g,'&quot;')}" style="width:100%; padding:4px 8px; border:1px solid #e2e8f0; border-radius:4px;"></td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function filterI18nRows() {
+            const search = (document.getElementById('i18nSearch').value || '').toLowerCase();
+            const lang = document.getElementById('i18nLangFilter').value;
+            document.querySelectorAll('#i18nTableBody tr').forEach(row => {
+                const key = row.getAttribute('data-key') || '';
+                const inputs = row.querySelectorAll('.i18n-input');
+                let visible = key.toLowerCase().includes(search);
+                if (!visible) {
+                    inputs.forEach(inp => { if (inp.value.toLowerCase().includes(search)) visible = true; });
+                }
+                // Language column filter
+                if (lang !== 'all') {
+                    const colMap = { de: 1, en: 2, es: 3 };
+                    row.querySelectorAll('td').forEach((td, idx) => {
+                        if (idx === 0) return; // key col always visible
+                        td.style.display = (lang === 'all' || idx === colMap[lang]) ? '' : 'none';
+                    });
+                } else {
+                    row.querySelectorAll('td').forEach(td => td.style.display = '');
+                }
+                row.style.display = visible ? '' : 'none';
+            });
+        }
+
+        async function saveI18n() {
+            if (!i18nData) return showToast('Carga las traducciones primero', true);
+            // Collect all changed values from inputs
+            const updated = JSON.parse(JSON.stringify(i18nData));
+            document.querySelectorAll('.i18n-input').forEach(inp => {
+                const lang = inp.getAttribute('data-lang');
+                const key = inp.getAttribute('data-key');
+                if (!updated[lang]) updated[lang] = {};
+                updated[lang][key] = inp.value;
+            });
+            try {
+                const res = await fetch('/api/admin/i18n', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updated)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    i18nData = updated;
+                    showToast('✅ Textos actualizados correctamente!');
+                } else {
+                    showToast('Error: ' + result.message, true);
+                }
+            } catch(e) {
+                showToast('Error de conexión al guardar', true);
+            }
+        }
+
+        // ── Database Editor ──
+        let dbCurrentTable = null;
+        let dbEditingRecord = null;
+        let adminTeacherRolesMap = {};
+
+        async function loadDbTable(table) {
+            dbCurrentTable = table;
+            const loading = document.getElementById('dbLoadingMsg');
+            const area = document.getElementById('dbEditorArea');
+            const title = document.getElementById('dbTableTitle');
+            area.style.display = 'none';
+            loading.style.display = 'block';
+            cancelDbEdit();
+            try {
+                if (table === 'teachers') {
+                    try {
+                        const rRes = await fetch('/api/admin/teacher-roles');
+                        const rData = await rRes.json();
+                        if (rData.success) adminTeacherRolesMap = rData.roles || {};
+                    } catch(e){}
+                }
+
+                const res = await fetch('/api/admin/db-records/' + table);
+                const result = await res.json();
+                loading.style.display = 'none';
+                if (!result.success) return showToast('Error: ' + result.message, true);
+                
+                const records = result.records || [];
+                area.style.display = 'block';
+                title.innerHTML = `<i class="fas fa-table"></i> Tabla: <strong>${table}</strong> — ${records.length} registros`;
+                
+                if (records.length === 0) {
+                    document.getElementById('dbTableHead').innerHTML = '';
+                    document.getElementById('dbTableBody').innerHTML = '<tr><td>No hay registros</td></tr>';
+                    document.getElementById('dbAddBtn').style.display = 'inline-block'; // Allow adding to empty table
+                    return;
+                }
+
+                document.getElementById('dbAddBtn').style.display = 'inline-block';
+
+                // Build header from first record keys
+                const keys = Object.keys(records[0]);
+                const displayKeys = keys.filter(k => !['password', 'doc_number'].includes(k));
+                let headHtml = '<tr>' + displayKeys.map(k => `<th>${k}</th>`).join('');
+                if (table === 'teachers') headHtml += '<th>Rol Extra</th>';
+                headHtml += '<th>Acciones</th></tr>';
+                document.getElementById('dbTableHead').innerHTML = headHtml;
+
+                // Build rows
+                let rows = '';
+                records.forEach((rec, idx) => {
+                    let rowHtml = `<tr data-idx="${idx}">` + 
+                        displayKeys.map(k => {
+                            const val = rec[k] != null ? String(rec[k]) : '—';
+                            return `<td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${val}">${val}</td>`;
+                        }).join('');
+                    
+                    if (table === 'teachers') {
+                        const extraRole = adminTeacherRolesMap[(rec.email || '').toLowerCase()] || 'profesor';
+                        let badgeBg = '#64748b';
+                        if (extraRole === 'desarrollador') badgeBg = '#9333ea';
+                        else if (extraRole === 'coordinador') badgeBg = '#2563eb';
+                        else if (extraRole === 'directivo') badgeBg = '#059669';
+                        rowHtml += `<td><span style="background:${badgeBg}; color:white; padding:4px 10px; border-radius:12px; font-size:0.8em; font-weight:bold; text-transform:uppercase; display:inline-block;">${extraRole}</span></td>`;
+                    }
+
+                    rowHtml += `<td style="white-space:nowrap;">
+                            <button class="btn btn-sm" style="background:#6366f1;color:white;margin-right:4px;" onclick='openDbEdit(${JSON.stringify(rec)})'><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm" style="background:#ef4444;color:white;" onclick="deleteDbRecord('${rec.id}')"><i class="fas fa-trash"></i></button>
+                        </td></tr>`;
+                    rows += rowHtml;
+                });
+                document.getElementById('dbTableBody').innerHTML = rows;
+            } catch(e) {
+                loading.style.display = 'none';
+                showToast('Error de conexión', true);
+            }
+        }
+
+        async function deleteDbRecord(id) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este registro? Esta acción no se endeshacer.')) return;
+            try {
+                const res = await fetch(`/api/admin/db-records/${dbCurrentTable}/${id}`, { method: 'DELETE' });
+                const result = await res.json();
+                if (result.success) {
+                    showToast('✅ Registro eliminado');
+                    loadDbTable(dbCurrentTable);
+                } else {
+                    showToast('Error: ' + result.message, true);
+                }
+            } catch(e) { showToast('Error de conexión', true); }
+        }
+
+        function openDbAdd() {
+            dbEditingRecord = null; // null means CREATE
+            const form = document.getElementById('dbEditForm');
+            const fields = document.getElementById('dbEditFields');
+            const cancelBtn = document.getElementById('dbCancelEdit');
+            const title = document.getElementById('dbEditTitle');
+            
+            title.innerHTML = '<i class="fas fa-plus-circle"></i> Agregar Nuevo Registro en ' + dbCurrentTable;
+            
+            // Get typical fields for this table from an existing record if possible
+            const rows = document.querySelectorAll('#dbTableHead th');
+            const tableFields = [];
+            rows.forEach(th => { if (th.textContent !== 'Acciones') tableFields.push(th.textContent); });
+
+            // Default fields if table is empty
+            const defaultFields = {
+                students: ['username', 'full_name', 'nombre', 'apellido1', 'apellido2', 'class_name', 'student_code'],
+                teachers: ['first_name', 'last_name', 'email', 'doc_number', 'subject'],
+                devices: ['serial_number', 'type', 'brand', 'model', 'location', 'status'],
+                incidents: ['device_id', 'reported_by', 'description', 'status']
+            };
+
+            const fieldsToShow = tableFields.length > 0 ? tableFields : (defaultFields[dbCurrentTable] || []);
+            const readOnly = ['id', 'created_at', 'updated_at'];
+
+            let html = '';
+            if (dbCurrentTable === 'teachers') {
+                html = `
+                <div>
+                    <label style="display:block; font-size:0.8em; font-weight:bold; color:#64748b; margin-bottom:4px;">Nombres (first_name)</label>
+                    <input type="text" id="dbedit_first_name" data-field="first_name" value=""
+                        style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.8em; font-weight:bold; color:#64748b; margin-bottom:4px;">Apellidos (last_name)</label>
+                    <input type="text" id="dbedit_last_name" data-field="last_name" value=""
+                        style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.8em; font-weight:bold; color:#64748b; margin-bottom:4px;">Correo electrónico (email)</label>
+                    <input type="text" id="dbedit_email" data-field="email" value=""
+                        style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.8em; font-weight:bold; color:#64748b; margin-bottom:4px;">Documento de Identidad (doc_number)</label>
+                    <input type="text" id="dbedit_doc_number" data-field="doc_number" value=""
+                        style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1;">
+                </div>
+                <div style="grid-column: 1 / -1; margin-top:16px; padding:16px; background:#f3e8ff; border-radius:12px; border:2px solid #a855f7;">
+                    <label style="display:block; font-size:0.9em; font-weight:bold; color:#9333ea; margin-bottom:8px;"><i class="fas fa-user-shield"></i> Rol Extra Institucional (Jerarquía Medienpass)</label>
+                    <select id="dbedit_extra_role" style="width:100%; padding:8px 12px; border-radius:8px; border:2px solid #9333ea; font-weight:bold; color:#9333ea; background:white; font-size:1em;">
+                        <option value="profesor" selected>Profesor (Por defecto)</option>
+                        <option value="coordinador">Coordinador</option>
+                        <option value="directivo">Directivo</option>
+                        <option value="desarrollador">Desarrollador (Acceso Manual Técnico)</option>
+                    </select>
+                </div>`;
+            } else {
+                fieldsToShow.forEach(key => {
+                    if (readOnly.includes(key)) return;
+                    html += `<div>
+                        <label style="display:block; font-size:0.8em; font-weight:bold; color:#64748b; margin-bottom:4px;">${key}</label>
+                        <input type="text" id="dbedit_${key}" data-field="${key}" value=""
+                            style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1;">
+                    </div>`;
+                });
+            }
+            fields.innerHTML = html;
+            form.style.display = 'block';
+            cancelBtn.style.display = 'inline-block';
+            form.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function openDbEdit(record) {
+            dbEditingRecord = record;
+            const form = document.getElementById('dbEditForm');
+            const fields = document.getElementById('dbEditFields');
+            const cancelBtn = document.getElementById('dbCancelEdit');
+            const title = document.getElementById('dbEditTitle');
+            
+            title.innerHTML = '<i class="fas fa-edit"></i> Editar Registro en ' + dbCurrentTable;
+            
+            const readOnly = ['id', 'created_at', 'updated_at'];
+            const hidden = ['password', 'doc_number'];
+
+            let html = '';
+            if (dbCurrentTable === 'teachers') {
+                const currentRole = adminTeacherRolesMap[(record.email || '').toLowerCase()] || 'profesor';
+                html = `
+                <div>
+                    <label style="display:block; font-size:0.8em; font-weight:bold; color:#64748b; margin-bottom:4px;">Nombres (first_name)</label>
+                    <input type="text" id="dbedit_first_name" data-field="first_name" value="${(record.first_name || '').replace(/"/g,'&quot;')}"
+                        style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.8em; font-weight:bold; color:#64748b; margin-bottom:4px;">Apellidos (last_name)</label>
+                    <input type="text" id="dbedit_last_name" data-field="last_name" value="${(record.last_name || '').replace(/"/g,'&quot;')}"
+                        style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.8em; font-weight:bold; color:#64748b; margin-bottom:4px;">Correo electrónico (email)</label>
+                    <input type="text" id="dbedit_email" data-field="email" value="${(record.email || '').replace(/"/g,'&quot;')}"
+                        style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.8em; font-weight:bold; color:#64748b; margin-bottom:4px;">Documento de Identidad (doc_number)</label>
+                    <input type="text" id="dbedit_doc_number" data-field="doc_number" value="${(record.doc_number || '').replace(/"/g,'&quot;')}"
+                        style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1;">
+                </div>
+                <div style="grid-column: 1 / -1; margin-top:16px; padding:16px; background:#f3e8ff; border-radius:12px; border:2px solid #a855f7;">
+                    <label style="display:block; font-size:0.9em; font-weight:bold; color:#9333ea; margin-bottom:8px;"><i class="fas fa-user-shield"></i> Rol Extra Institucional (Jerarquía Medienpass)</label>
+                    <select id="dbedit_extra_role" style="width:100%; padding:8px 12px; border-radius:8px; border:2px solid #9333ea; font-weight:bold; color:#9333ea; background:white; font-size:1em;">
+                        <option value="profesor" ${currentRole === 'profesor' ? 'selected' : ''}>Profesor (Por defecto)</option>
+                        <option value="coordinador" ${currentRole === 'coordinador' ? 'selected' : ''}>Coordinador</option>
+                        <option value="directivo" ${currentRole === 'directivo' ? 'selected' : ''}>Directivo</option>
+                        <option value="desarrollador" ${currentRole === 'desarrollador' ? 'selected' : ''}>Desarrollador (Acceso Manual Técnico)</option>
+                    </select>
+                    <p style="font-size:0.8em; color:#6b7280; margin-top:8px;"><i class="fas fa-info-circle"></i> Nota: El perfil <strong>Desarrollador</strong> es el único con permiso para visualizar el Manual Técnico en el portal /docs/technical.</p>
+                </div>`;
+            } else {
+                Object.keys(record).forEach(key => {
+                    if (hidden.includes(key)) return;
+                    const val = record[key] != null ? String(record[key]) : '';
+                    const ro = readOnly.includes(key);
+                    html += `<div>
+                        <label style="display:block; font-size:0.8em; font-weight:bold; color:#64748b; margin-bottom:4px;">${key}</label>
+                        <input type="text" id="dbedit_${key}" data-field="${key}" value="${val.replace(/"/g,'&quot;')}"
+                            ${ro ? 'readonly style="background:#f1f5f9; cursor:not-allowed;"' : 'style="border:1px solid #cbd5e1;"'}
+                            style="width:100%; padding:6px 10px; border-radius:6px; ${ro ? 'background:#f1f5f9;' : ''}">
+                    </div>`;
+                });
+            }
+
+            fields.innerHTML = html;
+            form.style.display = 'block';
+            cancelBtn.style.display = 'inline-block';
+            form.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function saveDbRecord() {
+            if (!dbCurrentTable) return;
+            const updates = {};
+            document.querySelectorAll('#dbEditFields input[data-field]').forEach(inp => {
+                const field = inp.getAttribute('data-field');
+                if (!['id','created_at','updated_at'].includes(field)) {
+                    updates[field] = inp.value;
+                }
+            });
+
+            // Si es la tabla teachers, normalizar el correo y autocompletar id/subject si es nuevo
+            if (dbCurrentTable === 'teachers') {
+                if (updates.email) {
+                    updates.email = updates.email.trim().toLowerCase();
+                }
+                if (!dbEditingRecord) {
+                    updates.id = 'teacher_' + (updates.email || '');
+                    updates.subject = '';
+                }
+            }
+
+            // Si es teachers, guardar el rol extra
+            if (dbCurrentTable === 'teachers') {
+                const roleSelect = document.getElementById('dbedit_extra_role');
+                const targetEmail = (updates.email || '').trim().toLowerCase();
+                if (roleSelect && targetEmail) {
+                    try {
+                        await fetch('/api/admin/teacher-roles', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: targetEmail, role: roleSelect.value })
+                        });
+                        adminTeacherRolesMap[targetEmail] = roleSelect.value;
+                    } catch(e){}
+                }
+            }
+
+            try {
+                let url = `/api/admin/db-records/${dbCurrentTable}`;
+                if (dbEditingRecord) {
+                    url += '/' + dbEditingRecord.id;
+                }
+                
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast(dbEditingRecord ? '✅ Registro actualizado' : '✅ Registro creado');
+                    cancelDbEdit();
+                    loadDbTable(dbCurrentTable);
+                } else {
+                    showToast('Error: ' + result.message, true);
+                }
+            } catch(e) {
+                showToast('Error de conexión', true);
+            }
+        }
+
+        function cancelDbEdit() {
+            dbEditingRecord = null;
+            document.getElementById('dbEditForm').style.display = 'none';
+            document.getElementById('dbCancelEdit').style.display = 'none';
+        }
+
+        // ── Teacher Mapping Editor ──
+        async function loadTeacherMapping() {
+            const editor = document.getElementById('tmEditor');
+            const loading = document.getElementById('tmLoading');
+            const saveBtn = document.getElementById('tmSaveBtn');
+            editor.style.display = 'none';
+            saveBtn.style.display = 'none';
+            loading.style.display = 'block';
+            try {
+                const res = await fetch('/api/admin/teacher-mapping');
+                const result = await res.json();
+                loading.style.display = 'none';
+                if (result.success && result.config) {
+                    editor.value = JSON.stringify(result.config, null, 2);
+                    editor.style.display = 'block';
+                    saveBtn.style.display = 'inline-block';
+                } else {
+                    showToast('Error: ' + (result.message || 'No se pudo cargar el mapeo'), true);
+                }
+            } catch(e) {
+                loading.style.display = 'none';
+                showToast('Error de conexión al cargar mapeo', true);
+            }
+        }
+
+        async function saveTeacherMapping() {
+            const editor = document.getElementById('tmEditor');
+            try {
+                const config = JSON.parse(editor.value);
+                const res = await fetch('/api/admin/teacher-mapping', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast('✅ Mapeo de profesores guardado!');
+                } else {
+                    showToast('Error: ' + result.message, true);
+                }
+            } catch(e) {
+                alert('El formato JSON es incorrecto. Por favor verifica para que la aplicación no falle.');
+            }
+        }
+
+        // ── Filter students & Pagination ──
+        let currentPage = 1;
+        const itemsPerPage = 30;
+        let filteredRows = [];
+        let showAllRows = false; // true when a specific class is selected
+
+        function filterStudents(resetPage = true) {
+            const filter = document.getElementById('filterClass').value;
+            const rows = document.querySelectorAll('#studentsTableBody tr');
+            filteredRows = [];
+
+            rows.forEach(row => {
+                const cls = row.getAttribute('data-class');
+                if (!filter || cls === filter) {
+                    filteredRows.push(row);
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // When a specific Klasse is selected, show ALL students (no pagination)
+            showAllRows = !!filter;
+
+            if (resetPage) currentPage = 1;
+            renderPagination();
+            document.getElementById('studentCount').textContent = filteredRows.length + ' estudiante(s)';
+        }
+
+        function renderPagination() {
+            filteredRows.forEach(row => row.style.display = 'none');
+
+            if (showAllRows) {
+                // Show ALL rows for the selected class
+                filteredRows.forEach(row => row.style.display = '');
+                updatePaginationUI();
+                return;
+            }
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            for (let i = startIndex; i < endIndex && i < filteredRows.length; i++) {
+                filteredRows[i].style.display = '';
+            }
+            updatePaginationUI();
+        }
+
+        function updatePaginationUI() {
+            const paginationDiv = document.getElementById('paginationControls');
+            if (!paginationDiv) return;
+
+            if (showAllRows) {
+                paginationDiv.style.display = 'none';
+                return;
+            }
+
+            const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+            if (totalPages <= 1) {
+                paginationDiv.style.display = 'none';
+                return;
+            }
+
+            paginationDiv.style.display = 'flex';
+            let html = '';
+            html += `<button class="btn btn-primary btn-sm" onclick="changePage(currentPage - 1)" ${currentPage === 1 ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}><i class="fas fa-chevron-left"></i> Anterior</button>`;
+            html += `<span style="font-weight: 600; color: #475569;">Página ${currentPage} de ${totalPages}</span>`;
+            html += `<button class="btn btn-primary btn-sm" onclick="changePage(currentPage + 1)" ${currentPage === totalPages ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>Siguiente <i class="fas fa-chevron-right"></i></button>`;
+
+            paginationDiv.innerHTML = html;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderPagination();
+        }
+
+        filterStudents();
+
+        // ── Bulk add students ──
+        async function bulkAddStudents() {
+            const input = document.getElementById('bulkInput').value.trim();
+            if (!input) return showToast('Por favor ingresa los datos', true);
+
+            const lines = input.split('\n').filter(l => l.trim());
+            const students = [];
+
+            for (const line of lines) {
+                const parts = line.split(',').map(p => p.trim());
+                let code = null, fullName = '', className = '';
+
+                if (parts.length >= 3) {
+                    code = parts[0];
+                    fullName = parts[1];
+                    className = parts[2];
+                } else if (parts.length === 2) {
+                    fullName = parts[0];
+                    className = parts[1];
+                } else {
+                    continue;
+                }
+
+                const nameWords = fullName.toLowerCase().split(' ').filter(w => w);
+                let baseUsername = nameWords[0] || 'estudiante';
+                let username = baseUsername;
+
+                // Tratar de hacer el username único en el lote
+                let wordIndex = 1;
+                while (students.some(s => s.username === username && s.class_name === className)) {
+                    if (wordIndex < nameWords.length) {
+                        // Agregar la primera letra del siguiente apellido/nombre (ej: santiago f , santiago h)
+                        username = baseUsername + ' ' + nameWords[wordIndex].charAt(0);
+                        wordIndex++;
+                    } else {
+                        // Si ya no hay palabras, ponerle un número
+                        username = baseUsername + ' ' + wordIndex;
+                        wordIndex++;
+                    }
+                }
+
+                students.push({
+                    code: code,
+                    full_name: fullName,
+                    username: username,
+                    class_name: className
+                });
+            }
+
+            if (students.length === 0) return showToast('Formato inválido', true);
+
+            try {
+                const res = await fetch('/api/admin/students/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ students })
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    showToast(`✅ ${result.count} estudiante(s) importados`);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast('Error: ' + (result.message || 'Error desconocido'), true);
+                }
+            } catch (e) {
+                showToast('Error de conexión', true);
+            }
+        }
+
+        // ── Delete student ──
+        async function deleteStudent(id) {
+            if (!confirm('¿Eliminar este estudiante y todos sus datos?')) return;
+            try {
+                const res = await fetch('/api/admin/students/' + id, { method: 'DELETE' });
+                const result = await res.json();
+                if (result.success) {
+                    document.querySelector(`tr[data-id="${id}"]`).remove();
+                    showToast('Estudiante eliminado');
+                    filterStudents(false);
+                }
+            } catch (e) {
+                showToast('Error al eliminar', true);
+            }
+        }
+
+        // ── Load Report ──
+        async function loadReport() {
+            const className = document.getElementById('reportClass').value;
+            if (!className) return showToast('Selecciona una clase', true);
+
+            const output = document.getElementById('reportOutput');
+            output.innerHTML = '<p style="text-align:center;padding:40px;color:#6b7280;"><i class="fas fa-spinner fa-spin"></i> Cargando reporte...</p>';
+
+            try {
+                const res = await fetch(`/api/admin/reports/${className}`);
+                const result = await res.json();
+
+                if (!result.success || !result.students.length) {
+                    output.innerHTML = '<p style="text-align:center;padding:40px;color:#ef4444;">No hay estudiantes en esta clase.</p>';
+                    return;
+                }
+
+                const { students, responses, activities } = result;
+
+                // Stats
+                const totalStudents = students.length;
+                const totalActivities = activities.length;
+                const studentsWithData = new Set(responses.map(r => r.student_id)).size;
+
+                let html = `
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="num">${totalStudents}</div><div class="label">Estudiantes</div></div>
+                        <div class="stat-card"><div class="num">${studentsWithData}</div><div class="label">Con Avance</div></div>
+                        <div class="stat-card"><div class="num">${totalActivities}</div><div class="label">Actividades</div></div>
+                    </div>
+                    <h3>📋 Listado de la clase ${className}</h3>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nombre</th>
+                                <th>Actividades Completadas</th>
+                                <th>⭐ Estrellas Totales</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                students.forEach((s, i) => {
+                    const sResponses = responses.filter(r => r.student_id === s.id);
+                    const completedCount = sResponses.length;
+                    let totalStars = 0;
+                    sResponses.forEach(r => {
+                        if (r.data && r.data.star_rating) {
+                            totalStars += parseInt(r.data.star_rating) || 0;
+                        }
+                        // Count evidence-level stars
+                        Object.keys(r.data || {}).forEach(key => {
+                            if (key.startsWith('star_') && key !== 'star_rating') {
+                                totalStars += parseInt(r.data[key]) || 0;
+                            }
+                        });
+                    });
+
+                    html += `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td><strong>${s.full_name || s.username}</strong></td>
+                            <td>${completedCount} / ${totalActivities}</td>
+                            <td><span class="count-badge">⭐ ${totalStars}</span></td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+
+                // Diploma previews
+                html += '<h3 style="margin-top:30px;">🎓 Diplomas</h3>';
+                students.forEach(s => {
+                    const sResponses = responses.filter(r => r.student_id === s.id);
+                    let totalStars = 0;
+                    const maxStars = activities.reduce((sum, a) => sum + (a.stars || 0), 0);
+                    sResponses.forEach(r => {
+                        if (r.data && r.data.star_rating) totalStars += parseInt(r.data.star_rating) || 0;
+                        Object.keys(r.data || {}).forEach(key => {
+                            if (key.startsWith('star_') && key !== 'star_rating') {
+                                totalStars += parseInt(r.data[key]) || 0;
+                            }
+                        });
+                    });
+
+                    const profileResponse = sResponses.find(r => r.activity_id === 'profile');
+                    const profilePhoto = (profileResponse && profileResponse.data && profileResponse.data.profile_photo) || '';
+                    let avatarHtml = '👤';
+                    if (profilePhoto) {
+                        if (profilePhoto.startsWith('data:image') || profilePhoto.startsWith('http') || profilePhoto.length > 20) {
+                            avatarHtml = `<img src="${profilePhoto}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+                        } else {
+                            avatarHtml = profilePhoto;
+                        }
+                    }
+
+                    html += `
+                        <div class="diploma-preview">
+                            <h2>🏆 MEDIENPASS — DIPLOMA</h2>
+                            <p class="school">Deutsche Schule Barranquilla — Colegio Alemán</p>
+                            <hr style="border: 1px solid #d4a574; margin: 16px auto; max-width: 300px;">
+                            <div class="diploma-avatar" style="font-size: 2.8em; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; background: #f8fafc; border: 2px solid #cbd5e1; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                ${avatarHtml}
+                            </div>
+                            <p>Se certifica que</p>
+                            <p class="student-name">${s.full_name || s.username}</p>
+                            <p>de la clase <strong>${s.class_name}</strong></p>
+                            <p class="level-text">ha completado el Nivel 1 del MedienPass</p>
+                            <p class="level-text">Suchen, Verarbeiten & Aufbewahren</p>
+                            <p class="stars-total">⭐ ${totalStars} estrellas obtenidas</p>
+                            <p style="margin-top: 20px; color: #92400e; font-style: italic;">"Experto/a en el uso responsable de medios digitales"</p>
+                            <p style="margin-top: 30px; font-size: 0.85em; color: #a16207;">Barranquilla, ${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            <div style="margin-top: 20px; display: flex; justify-content: space-around;">
+                                <div style="border-top: 1px solid #b45309; padding-top: 8px; min-width: 150px; font-size: 0.85em;">Profesor(a)</div>
+                                <div style="border-top: 1px solid #b45309; padding-top: 8px; min-width: 150px; font-size: 0.85em;">Coordinación</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                output.innerHTML = html;
+                document.getElementById('printBtn').style.display = '';
+            } catch (e) {
+                output.innerHTML = '<p style="text-align:center;color:#ef4444;">Error al cargar el reporte</p>';
+            }
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        // ── Subject Configuration ──
+        function toggleAllForKlasse(klasse) {
+            const cbs = document.querySelectorAll(`.sc-cb[data-klasse="${klasse}"]`);
+            const allChecked = [...cbs].every(cb => cb.checked);
+            cbs.forEach(cb => cb.checked = !allChecked);
+        }
+
+        // Toggle ALL Klassen for a specific subject (column toggle)
+        function toggleAllForSubject(subjectId) {
+            const cbs = document.querySelectorAll(`.sc-cb[data-subject="${subjectId}"]`);
+            const allChecked = [...cbs].every(cb => cb.checked);
+            cbs.forEach(cb => cb.checked = !allChecked);
+        }
+
+        function selectAllGlobal() {
+            document.querySelectorAll('.sc-cb').forEach(cb => cb.checked = true);
+        }
+
+        function deselectAllGlobal() {
+            document.querySelectorAll('.sc-cb').forEach(cb => cb.checked = false);
+        }
+
+        async function saveSubjectConfig() {
+            const config = {};
+            document.querySelectorAll('.sc-cb').forEach(cb => {
+                const klasse = cb.getAttribute('data-klasse');
+                const subject = cb.getAttribute('data-subject');
+                if (!config[klasse]) config[klasse] = {};
+                config[klasse][subject] = cb.checked;
+            });
+
+            try {
+                const res = await fetch('/api/admin/subject-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast('✅ Configuración de asignaturas guardada');
+                } else {
+                    showToast('Error: ' + (result.message || 'Error desconocido'), true);
+                }
+            } catch (e) {
+                showToast('Error de conexión', true);
+            }
+        }
+
+        async function loadSubjectConfig() {
+            try {
+                const res = await fetch('/api/admin/subject-config');
+                const result = await res.json();
+                if (result.success && result.config) {
+                    Object.entries(result.config).forEach(([klasse, subjects]) => {
+                        Object.entries(subjects).forEach(([subject, enabled]) => {
+                            const cb = document.querySelector(`.sc-cb[data-klasse="${klasse}"][data-subject="${subject}"]`);
+                            if (cb) cb.checked = enabled;
+                        });
+                    });
+                }
+            } catch (e) { /* config not saved yet */ }
+        }
+
+        // Load saved subject config on page load
+        loadSubjectConfig();
+
+        // ── Level / Retos Configuration ──
+        function toggleAllLevelsForKlasse(klasse) {
+            const cbs = document.querySelectorAll(`.lc-cb[data-klasse="${klasse}"]`);
+            const allChecked = [...cbs].every(cb => cb.checked);
+            cbs.forEach(cb => cb.checked = !allChecked);
+        }
+
+        function toggleAllForLevel(levelId) {
+            const cbs = document.querySelectorAll(`.lc-cb[data-level="${levelId}"]`);
+            const allChecked = [...cbs].every(cb => cb.checked);
+            cbs.forEach(cb => cb.checked = !allChecked);
+        }
+
+        function selectAllLevels() {
+            document.querySelectorAll('.lc-cb').forEach(cb => cb.checked = true);
+        }
+
+        function deselectAllLevels() {
+            document.querySelectorAll('.lc-cb').forEach(cb => cb.checked = false);
+        }
+
+        async function saveLevelConfig() {
+            const config = {};
+            document.querySelectorAll('.lc-cb').forEach(cb => {
+                const klasse = cb.getAttribute('data-klasse');
+                const levelId = cb.getAttribute('data-level');
+                if (!config[klasse]) config[klasse] = {};
+                config[klasse][levelId] = cb.checked;
+            });
+
+            try {
+                const res = await fetch('/api/admin/level-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast('✅ Configuración de Niveles/Retos guardada');
+                } else {
+                    showToast('Error: ' + (result.message || 'Error desconocido'), true);
+                }
+            } catch (e) {
+                showToast('Error de conexión', true);
+            }
+        }
+
+        async function loadLevelConfig() {
+            try {
+                const res = await fetch('/api/admin/level-config');
+                const result = await res.json();
+                if (result.success && result.config) {
+                    Object.entries(result.config).forEach(([klasse, levels]) => {
+                        Object.entries(levels).forEach(([levelId, enabled]) => {
+                            const cb = document.querySelector(`.lc-cb[data-klasse="${klasse}"][data-level="${levelId}"]`);
+                            if (cb) cb.checked = enabled;
+                        });
+                    });
+                }
+            } catch (e) { /* config not saved yet */ }
+        }
+
+        // Load saved level config on page load
+        loadLevelConfig();
+
+        // ── Teacher Reports & Pagination ──
+        let teacherData = [];
+        let curTeacherPage = 1;
+        const teacherItemsPerPage = 15;
+
+        async function loadTeacherReports() {
+            try {
+                document.getElementById('teacherReportOutput').innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Cargando reporte de docentes...</p>';
+                const res = await fetch('/api/admin/teacher-reports');
+                const result = await res.json();
+                if (result.success) {
+                    teacherData = result.teachers;
+                    curTeacherPage = 1;
+                    renderTeacherReports();
+                } else {
+                    document.getElementById('teacherReportOutput').innerHTML = '<p style="color:red">Error al cargar docentes.</p>';
+                }
+            } catch (e) {
+                document.getElementById('teacherReportOutput').innerHTML = '<p style="color:red">Error de conexión.</p>';
+            }
+        }
+
+        function renderTeacherReports() {
+            const output = document.getElementById('teacherReportOutput');
+            const startIndex = (curTeacherPage - 1) * teacherItemsPerPage;
+            const endIndex = startIndex + teacherItemsPerPage;
+            const pageData = teacherData.slice(startIndex, endIndex);
+
+            if (pageData.length === 0) {
+                output.innerHTML = '<p>No se encontraron docentes con grupos asignados.</p>';
+                document.getElementById('teacherPaginationControls').style.display = 'none';
+                return;
+            }
+
+            let html = `
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Docente</th>
+                            <th>Total Grupos</th>
+                            <th>Grupos Asignados</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            pageData.forEach(t => {
+                html += `
+                    <tr>
+                        <td><strong>${t.name}</strong></td>
+                        <td><span class="count-badge">${t.groupsCount}</span></td>
+                        <td><small style="color:#64748b">${t.groups}</small></td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            output.innerHTML = html;
+
+            // Pagination UI
+            const totalPages = Math.ceil(teacherData.length / teacherItemsPerPage);
+            const pagControls = document.getElementById('teacherPaginationControls');
+            if (totalPages > 1) {
+                pagControls.style.display = 'flex';
+                let pgHtml = `<button class="btn btn-primary btn-sm" onclick="changeTeacherPage(curTeacherPage - 1)" ${curTeacherPage === 1 ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}><i class="fas fa-chevron-left"></i> Anterior</button>`;
+                pgHtml += `<span style="font-weight: 600; color: #475569;">Página ${curTeacherPage} de ${totalPages}</span>`;
+                pgHtml += `<button class="btn btn-primary btn-sm" onclick="changeTeacherPage(curTeacherPage + 1)" ${curTeacherPage === totalPages ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>Siguiente <i class="fas fa-chevron-right"></i></button>`;
+                pagControls.innerHTML = pgHtml;
+            } else {
+                pagControls.style.display = 'none';
+            }
+        }
+
+        function changeTeacherPage(page) {
+            const totalPages = Math.ceil(teacherData.length / teacherItemsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                curTeacherPage = page;
+                renderTeacherReports();
+            }
+        }
+
+        // Call loadTeacherReports once the tab is clicked, or immediately:
+        loadTeacherReports();
+
+        // ── PSP Matrix ──
+        async function loadPspMatrix() {
+            const table = document.getElementById('pspMatrixTable');
+            const thead = document.getElementById('pspMatrixHeader');
+            const tbody = document.getElementById('pspMatrixBody');
+            const loading = document.getElementById('pspMatrixLoading');
+
+            table.style.display = 'none';
+            loading.style.display = 'block';
+            loading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando matriz global...';
+
+            try {
+                const res = await fetch('/api/admin/psp-matrix');
+                const result = await res.json();
+
+                loading.style.display = 'none';
+                if (result.success && result.matrix) {
+                    table.style.display = 'table';
+                    const subjectsList = <%- JSON.stringify(subjects) %>;
+                    
+                    // Header
+                    let thHtml = '<th>Klasse</th>';
+                    subjectsList.forEach(s => {
+                        thHtml += `<th style="text-align:center;">${s.icon} <br/> <small>${s.name.de}</small></th>`;
+                    });
+                    thead.innerHTML = thHtml;
+
+                    // Body
+                    let tbHtml = '';
+                    Object.keys(result.matrix).sort().forEach(className => {
+                        tbHtml += `<tr><td><strong>${className}</strong></td>`;
+                        subjectsList.forEach(s => {
+                            const data = result.matrix[className][s.id];
+                            if(data && data.studentCount > 0) {
+                                let colors = '#ef4444'; 
+                                if(data.avg > 30) colors = '#f59e0b';
+                                if(data.avg > 70) colors = '#10b981';
+                                tbHtml += `<td style="text-align:center; font-weight:bold; color: ${colors}">${data.avg}%<br/><small style="color:#64748b;font-weight:normal;">(${data.studentCount} est)</small></td>`;
+                            } else {
+                                tbHtml += `<td style="text-align:center; color:#cbd5e1;">—</td>`;
+                            }
+                        });
+                        tbHtml += `</tr>`;
+                    });
+                    tbody.innerHTML = tbHtml;
+                } else {
+                    loading.style.display = 'block';
+                    loading.innerHTML = '<span style="color:red">Error al cargar matriz</span>';
+                }
+            } catch(e) {
+                loading.style.display = 'block';
+                loading.innerHTML = '<span style="color:red">Error de conexión</span>';
+            }
+        }
+        
+        loadPspMatrix();
+
+        // ── PSP Indicators ──
+        async function loadPspIndicators() {
+            const cls = document.getElementById('pspClassFilter').value;
+            if (!cls) return showToast('Selecciona una clase primero', true);
+
+            const tbody = document.getElementById('pspTableBody');
+            const avgDiv = document.getElementById('pspClassAvg');
+            const table = document.getElementById('pspTable');
+
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> Cargando indicadores...</td></tr>';
+            table.style.display = 'table';
+            avgDiv.innerHTML = '';
+
+            try {
+                const res = await fetch('/api/admin/psp-indicators/' + cls);
+                const result = await res.json();
+
+                if (result.success && result.students) {
+                    if (result.students.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay estudiantes en esta clase.</td></tr>';
+                        return;
+                    }
+
+                    let html = '';
+                    let totalProgress = 0;
+
+                    result.students.forEach(s => {
+                        totalProgress += s.progress;
+
+                        // Progress bar building
+                        let barColor = '#ef4444'; // red
+                        if (s.progress > 30) barColor = '#f59e0b'; // orange
+                        if (s.progress > 70) barColor = '#10b981'; // green
+
+                        const progressBar = `
+                            <div style="background: #e2e8f0; border-radius: 10px; height: 12px; width: 100%; overflow: hidden; margin-top: 5px;">
+                                <div style="background: ${barColor}; height: 100%; width: ${s.progress}%; transition: 0.5s;"></div>
+                            </div>
+                        `;
+
+                        // Teacher status text formatting
+                        let evalBadge = s.evaluation_passed
+                            ? '<span style="color:#059669;font-weight:bold;"><i class="fas fa-check-circle"></i> Aprobado</span>'
+                            : '<span style="color:#ef4444;"><i class="fas fa-times-circle"></i> Pendiente</span>';
+
+                        if (s.teacher === 'Sin asigar') evalBadge = '<span style="color:#94a3b8;">—</span>';
+
+                        html += `
+                            <tr>
+                                <td><strong>${s.name}</strong></td>
+                                <td>${s.teacher}</td>
+                                <td>${evalBadge}</td>
+                                <td><span class="count-badge">${s.retosCompleted} / 6</span></td>
+                                <td style="width: 200px;">
+                                    <div style="font-size: 0.8em; font-weight: bold; text-align: right; color: ${barColor}">${s.progress}%</div>
+                                    ${progressBar}
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    tbody.innerHTML = html;
+                    const avgProgress = Math.round(totalProgress / result.students.length);
+                    avgDiv.innerHTML = `<i class="fas fa-chart-pie"></i> Promedio de Cumplimiento del Grupo ${cls}: ${avgProgress}%`;
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:red;">Error al cargar datos.</td></tr>';
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:red;">Error de conexión.</td></tr>';
+            }
+        }
+
+        // ════════════════════════════════════════
+        // KMK TRAINING — JAVASCRIPT
+        // ════════════════════════════════════════
+        let kmkSubjectChartInstance = null;
+        let kmkAllTeachersData = [];
+        let kmkQuizQuestions = [];
+        let kmkQuizAnswers = {};
+
+        function showKmkPanel(panel) {
+            ['stats','teachers','quiz'].forEach(p => {
+                document.getElementById('kmk-panel-' + p).style.display = p === panel ? '' : 'none';
+                const btn = document.getElementById('kmk-btn-' + p);
+                if (btn) btn.classList.toggle('active', p === panel);
+            });
+        }
+
+        async function loadKmkStats() {
+            document.getElementById('kmk-stats-loading').style.display = 'block';
+            document.getElementById('kmk-global-kpi').style.display = 'none';
+            document.getElementById('kmk-chart-area').style.display = 'none';
+            document.getElementById('kmk-subject-cards').innerHTML = '';
+            try {
+                const res = await fetch('/api/admin/kmk-training-stats');
+                const result = await res.json();
+                document.getElementById('kmk-stats-loading').style.display = 'none';
+                if (!result.success) { showToast('Error cargando stats KMK', true); return; }
+
+                // Global KPI
+                const { coveragePct, trained, total, stats } = result;
+                document.getElementById('kmk-global-pct').textContent = coveragePct + '%';
+                document.getElementById('kmk-trained-count').textContent = trained;
+                document.getElementById('kmk-total-count').textContent = total;
+                setTimeout(() => { document.getElementById('kmk-global-bar').style.width = coveragePct + '%'; }, 100);
+                document.getElementById('kmk-global-status').textContent = coveragePct >= 70 ? '✅' : (coveragePct >= 50 ? '⚠️' : '🔴');
+                document.getElementById('kmk-global-kpi').style.display = 'block';
+
+                // Chart
+                document.getElementById('kmk-chart-area').style.display = 'block';
+                const labels = stats.map(s => s.icon + ' ' + s.subjectName);
+                const data = stats.map(s => s.pct);
+                const bgColors = stats.map(s => s.pct >= 70 ? 'rgba(16,185,129,0.75)' : (s.pct >= 50 ? 'rgba(245,158,11,0.75)' : 'rgba(239,68,68,0.75)'));
+
+                if (kmkSubjectChartInstance) kmkSubjectChartInstance.destroy();
+                kmkSubjectChartInstance = new Chart(document.getElementById('kmkSubjectChart'), {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                label: '% Docentes Capacitados',
+                                data,
+                                backgroundColor: bgColors,
+                                borderRadius: 8,
+                                borderSkipped: false
+                            },
+                            {
+                                label: 'Meta 70%',
+                                data: stats.map(() => 70),
+                                type: 'line',
+                                borderColor: '#059669',
+                                borderDash: [6,4],
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                fill: false,
+                                tension: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ctx.dataset.label === 'Meta 70%'
+                                        ? 'Meta: 70%'
+                                        : `${ctx.parsed.y}% (${stats[ctx.dataIndex]?.trained || 0}/${stats[ctx.dataIndex]?.total || 0} docentes)`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, grid: { color: '#f1f5f9' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // Subject cards
+                const cardsEl = document.getElementById('kmk-subject-cards');
+                cardsEl.innerHTML = stats.map(s => {
+                    const color = s.pct >= 70 ? '#10b981' : (s.pct >= 50 ? '#f59e0b' : '#ef4444');
+                    const teacherList = (s.teachers || []).map(t =>
+                        `<div class="training-teacher-item">✅ <strong>${t.name}</strong>
+                         <small style="margin-left:auto;color:#94a3b8;">${t.date ? new Date(t.date).toLocaleDateString('es') : ''} ${t.score ? '· ' + t.score + '/25' : ''}</small></div>`
+                    ).join('') || '<div style="color:#94a3b8;font-size:0.82em;">No hay docentes capacitados aún.</div>';
+                    return `<div class="training-subject-card" style="border-left-color:${color};">
+                        <div class="tsc-header"><span style="font-size:1.4em;">${s.icon}</span>${s.subjectName}</div>
+                        <div class="tsc-pct" style="color:${color};">${s.pct}%</div>
+                        <small style="color:#64748b;">${s.trained} / ${s.total} docentes</small>
+                        <div class="tsc-bar"><div class="tsc-bar-fill" style="width:${s.pct}%;background:${color};"></div></div>
+                        <div class="tsc-teachers">${teacherList}</div>
+                    </div>`;
+                }).join('');
+
+            } catch(e) {
+                document.getElementById('kmk-stats-loading').style.display = 'none';
+                showToast('Error de conexión al cargar stats KMK', true);
+            }
+        }
+
+        async function loadKmkTeachers() {
+            document.getElementById('kmk-teachers-table-wrap').innerHTML = '<p style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Cargando...</p>';
+            try {
+                const res = await fetch('/api/admin/kmk-trained-teachers');
+                const result = await res.json();
+                if (!result.success) { showToast('Error cargando docentes', true); return; }
+                kmkAllTeachersData = result.teachers;
+                renderKmkTeachersTable(kmkAllTeachersData);
+            } catch(e) {
+                showToast('Error de conexión', true);
+            }
+        }
+
+        function renderKmkTeachersTable(teachers) {
+            const wrap = document.getElementById('kmk-teachers-table-wrap');
+            if (!teachers.length) {
+                wrap.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px;">No se encontraron docentes.</p>';
+                return;
+            }
+            let html = `<table class="admin-table"><thead><tr>
+                <th>Docente</th><th>Asignatura</th><th>Estado</th><th>Fecha</th><th>Puntaje</th>
+            </tr></thead><tbody>`;
+            teachers.forEach(t => {
+                const nombre = ((t.first_name || '') + ' ' + t.last_name).trim() || t.id;
+                const asig = t.subject_assigned || t.subject || '—';
+                const estado = t.training_completed
+                    ? '<span style="color:#059669;font-weight:600;"><i class="fas fa-check-circle"></i> Capacitado</span>'
+                    : '<span style="color:#ef4444;"><i class="fas fa-times-circle"></i> Pendiente</span>';
+                const fecha = t.training_date ? new Date(t.training_date).toLocaleDateString('es') : '—';
+                const score = t.training_score != null ? `<strong style="color:${t.training_score >= 75 ? '#059669' : '#ef4444'}">${t.training_score}%</strong>` : '—';
+                html += `<tr data-name="${nombre.toLowerCase()}" data-subject="${(t.subject_assigned||'').toLowerCase()}">
+                    <td><strong>${nombre}</strong></td><td>${asig}</td><td>${estado}</td><td>${fecha}</td><td>${score}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            wrap.innerHTML = html;
+        }
+
+        function filterKmkTeachers() {
+            const search = (document.getElementById('kmkTeacherSearch')?.value || '').toLowerCase();
+            const subj = (document.getElementById('kmkSubjectFilter')?.value || '').toLowerCase();
+            const filtered = kmkAllTeachersData.filter(t => {
+                const nombre = ((t.first_name || '') + ' ' + t.last_name).toLowerCase();
+                const asig = (t.subject_assigned || t.subject || '').toLowerCase();
+                return (!search || nombre.includes(search)) && (!subj || asig.includes(subj));
+            });
+            renderKmkTeachersTable(filtered);
+        }
+
+        // ── KMK Quiz ──
+        async function initKmkQuiz() {
+            const teacherId = document.getElementById('kmkQuizTeacherSelect').value;
+            if (!teacherId) { showToast('Selecciona un docente primero', true); return; }
+            document.getElementById('kmk-quiz-area').innerHTML = '<p style="text-align:center"><i class="fas fa-spinner fa-spin"></i> Cargando preguntas...</p>';
+            try {
+                const res = await fetch('/api/kmk-training/questions');
+                const result = await res.json();
+                if (!result.success) { showToast('Error cargando preguntas', true); return; }
+                kmkQuizQuestions = result.questions;
+                kmkQuizAnswers = {};
+                renderKmkQuiz();
+            } catch(e) { showToast('Error de conexión', true); }
+        }
+
+        function renderKmkQuiz() {
+            const categories = [
+                { key: 'fundamentos', label: '📚 Fundamentos KMK' },
+                { key: 'busqueda', label: '🔍 Búsqueda y Análisis de Información' },
+                { key: 'seguridad', label: '🛡️ Seguridad y Privacidad Digital' },
+                { key: 'produccion', label: '🎨 Producción de Contenido Digital' },
+                { key: 'comunicacion', label: '🤝 Comunicación y Colaboración Digital' }
+            ];
+            const answered = Object.keys(kmkQuizAnswers).length;
+            const total = kmkQuizQuestions.length;
+            let html = `<div class="kmk-quiz-container">
+                <div class="kmk-progress-bar-wrap"><div class="kmk-progress-bar" style="width:${Math.round((answered/total)*100)}%"></div></div>
+                <p style="font-size:0.85em;color:#64748b;text-align:right;margin-top:4px;">${answered}/${total} respondidas</p>`;
+
+            categories.forEach(cat => {
+                const catQuestions = kmkQuizQuestions.filter(q => q.category === cat.key);
+                if (!catQuestions.length) return;
+                html += `<div class="kmk-category-header"><i class="fas fa-layer-group"></i>${cat.label}</div>`;
+                catQuestions.forEach((q, qi) => {
+                    const answered = kmkQuizAnswers[q.id];
+                    const cardClass = answered !== undefined
+                        ? (answered === q.correct ? 'answered-correct' : 'answered-wrong') : '';
+                    html += `<div class="kmk-question-card ${cardClass}" id="qcard-${q.id}">
+                        <div class="kmk-question-num">Pregunta ${kmkQuizQuestions.indexOf(q)+1} / ${total}
+                            <span class="kmk-difficulty diff-${q.difficulty}">${q.difficulty}</span>
+                        </div>
+                        <div class="kmk-question-text">${q.question}</div>
+                        <div class="kmk-options">`;
+                    q.options.forEach((opt, oi) => {
+                        let cls = '';
+                        if (answered !== undefined) {
+                            if (oi === q.correct) cls = 'correct';
+                            else if (oi === answered && answered !== q.correct) cls = 'wrong';
+                        }
+                        html += `<div class="kmk-option ${cls}" onclick="answerKmkQuestion('${q.id}',${oi},${q.correct})" id="kmkopt-${q.id}-${oi}">
+                            <span style="min-width:22px;font-weight:700;">${String.fromCharCode(65+oi)}.</span>${opt}
+                        </div>`;
+                    });
+                    const expDisplay = answered !== undefined ? 'block' : 'none';
+                    html += `</div>
+                        <div class="kmk-explanation" id="exp-${q.id}" style="display:${expDisplay};">
+                            💡 <strong>Explicación:</strong> ${q.explanation}
+                        </div>
+                    </div>`;
+                });
+            });
+
+            // If all answered, show result + register button
+            if (answered === total) {
+                const correct = Object.entries(kmkQuizAnswers).filter(([qid, ans]) => {
+                    const q = kmkQuizQuestions.find(q => q.id === qid);
+                    return q && ans === q.correct;
+                }).length;
+                const pct = Math.round((correct/total)*100);
+                const passed = pct >= 70;
+                html += `<div class="kmk-result-card" style="${passed ? '' : 'background:linear-gradient(135deg,#fef2f2,#fee2e2);border-color:#ef4444;'}">
+                    <div class="kmk-result-pct" style="color:${passed ? '#059669' : '#dc2626'}">${pct}%</div>
+                    <p style="font-size:1.2em;font-weight:700;margin:8px 0;">${correct} / ${total} respuestas correctas</p>
+                    <p style="color:${passed ? '#059669' : '#dc2626'};font-weight:600;">${passed ? '🎓 ¡Capacitación KMK aprobada!' : '⚠️ Puntaje insuficiente. Se requiere 70% para aprobar.'}</p>
+                    ${passed ? `<button class="btn btn-success" style="margin-top:16px;font-size:1em;" onclick="registerKmkTraining(${correct}, ${total})">
+                        <i class="fas fa-save"></i> Registrar Capacitación Aprobada
+                    </button>` : `<button class="btn btn-primary" style="margin-top:16px;" onclick="initKmkQuiz()">
+                        <i class="fas fa-redo"></i> Intentar de nuevo
+                    </button>`}
+                </div>`;
+            } else {
+                html += `<div style="text-align:center;padding:20px;">
+                    <button class="btn btn-primary" onclick="renderKmkQuiz()" style="opacity:0.5;cursor:default;" disabled>
+                        Responde todas las preguntas para ver el resultado
+                    </button>
+                </div>`;
+            }
+
+            html += '</div>';
+            document.getElementById('kmk-quiz-area').innerHTML = html;
+        }
+
+        function answerKmkQuestion(qId, selectedIdx, correctIdx) {
+            if (kmkQuizAnswers[qId] !== undefined) return; // already answered
+            kmkQuizAnswers[qId] = selectedIdx;
+            // Show explanation
+            const exp = document.getElementById('exp-' + qId);
+            if (exp) exp.style.display = 'block';
+            // Update card class
+            const card = document.getElementById('qcard-' + qId);
+            if (card) card.classList.add(selectedIdx === correctIdx ? 'answered-correct' : 'answered-wrong');
+            // Update options visual
+            kmkQuizQuestions.find(q => q.id === qId)?.options.forEach((_, oi) => {
+                const opt = document.getElementById(`kmkopt-${qId}-${oi}`);
+                if (!opt) return;
+                if (oi === correctIdx) opt.classList.add('correct');
+                else if (oi === selectedIdx) opt.classList.add('wrong');
+            });
+            // Update progress bar
+            const answered = Object.keys(kmkQuizAnswers).length;
+            const total = kmkQuizQuestions.length;
+            const bar = document.querySelector('.kmk-progress-bar');
+            if (bar) bar.style.width = Math.round((answered/total)*100) + '%';
+            // If all answered, re-render to show result
+            if (answered === total) setTimeout(() => renderKmkQuiz(), 400);
+        }
+
+        async function registerKmkTraining(score, total) {
+            const teacherId = document.getElementById('kmkQuizTeacherSelect').value;
+            if (!teacherId) { showToast('No se pudo identificar el docente', true); return; }
+            try {
+                const res = await fetch('/api/kmk-training/complete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ teacher_id: teacherId, score, total })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast('✅ ¡Capacitación KMK registrada exitosamente!');
+                    kmkQuizAnswers = {};
+                    document.getElementById('kmkQuizTeacherSelect').value = '';
+                    document.getElementById('kmk-quiz-area').innerHTML = '<p style="text-align:center;color:#059669;padding:20px;font-weight:600;"><i class="fas fa-check-circle fa-2x"></i><br>Capacitación registrada. Puedes ver el docente en la pestaña "Cobertura por Asignatura".</p>';
+                } else {
+                    showToast('Error: ' + result.message, true);
+                }
+            } catch(e) { showToast('Error de conexión', true); }
+        }
+
+        // Load teacher list for quiz select on page load
+        (async () => {
+            try {
+                const res = await fetch('/api/admin/kmk-trained-teachers');
+                const result = await res.json();
+                if (result.success) {
+                    const sel = document.getElementById('kmkQuizTeacherSelect');
+                    result.teachers.forEach(t => {
+                        const name = ((t.first_name || '') + ' ' + (t.last_name || '')).trim() || t.id;
+                        const opt = document.createElement('option');
+                        opt.value = t.id;
+                        opt.textContent = name + (t.training_completed ? ' ✅' : '');
+                        sel.appendChild(opt);
+                    });
+                }
+            } catch(e) {}
+        })();
+
+        // ════════════════════════════════════════
+        // MULTIMEDIA STATS — JAVASCRIPT
+        // ════════════════════════════════════════
+        let mmSubjectChartInstance = null;
+        let mmAllProductsData = [];
+
+        async function loadMultimediaStats() {
+            document.getElementById('mm-loading').style.display = 'block';
+            document.getElementById('mm-chart-area').style.display = 'none';
+            document.getElementById('mm-subject-cards').style.display = 'none';
+            document.getElementById('mm-products-detail').style.display = 'none';
+            try {
+                const [statsRes, prodRes] = await Promise.all([
+                    fetch('/api/admin/multimedia-stats'),
+                    fetch('/api/admin/multimedia-products')
+                ]);
+                const statsResult = await statsRes.json();
+                const prodResult = await prodRes.json();
+                document.getElementById('mm-loading').style.display = 'none';
+
+                if (!statsResult.success) { showToast('Error cargando stats multimedia', true); return; }
+                const { stats, totalStudents } = statsResult;
+                mmAllProductsData = prodResult.products || [];
+
+                // Chart
+                document.getElementById('mm-chart-area').style.display = 'block';
+                const labels = stats.map(s => s.icon + ' ' + s.subjectName);
+                const data = stats.map(s => s.pct);
+                const bgColors = stats.map(s => s.pct >= 85 ? 'rgba(2,132,199,0.75)' : (s.pct >= 50 ? 'rgba(245,158,11,0.75)' : 'rgba(239,68,68,0.75)'));
+
+                if (mmSubjectChartInstance) mmSubjectChartInstance.destroy();
+                mmSubjectChartInstance = new Chart(document.getElementById('mmSubjectChart'), {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                label: '% Estudiantes con producto publicado',
+                                data,
+                                backgroundColor: bgColors,
+                                borderRadius: 8,
+                                borderSkipped: false
+                            },
+                            {
+                                label: 'Meta 85%',
+                                data: stats.map(() => 85),
+                                type: 'line',
+                                borderColor: '#ef4444',
+                                borderDash: [6,4],
+                                borderWidth: 2.5,
+                                pointRadius: 0,
+                                fill: false,
+                                tension: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ctx.dataset.label === 'Meta 85%'
+                                        ? 'Meta: 85%'
+                                        : `${ctx.parsed.y}% (${stats[ctx.dataIndex]?.uniqueStudents || 0} estudiantes / ${totalStudents} total · ${stats[ctx.dataIndex]?.totalProducts || 0} productos)`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, grid: { color: '#f1f5f9' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // Subject cards
+                const cardsEl = document.getElementById('mm-subject-cards');
+                cardsEl.style.display = 'grid';
+                const typeIcons = { video: '🎬', presentacion: '📊', canvas: '🎨', otro: '📁' };
+                const typeCounts = (products) => {
+                    const counts = {};
+                    products.forEach(p => { counts[p.product_type] = (counts[p.product_type] || 0) + 1; });
+                    return Object.entries(counts).map(([t, c]) => `${typeIcons[t] || '📁'} ${t}: ${c}`).join(' · ');
+                };
+                cardsEl.innerHTML = stats.map(s => {
+                    const color = s.pct >= 85 ? '#0284c7' : (s.pct >= 50 ? '#f59e0b' : '#ef4444');
+                    return `<div class="training-subject-card" style="border-left-color:${color};">
+                        <div class="tsc-header"><span style="font-size:1.4em;">${s.icon}</span>${s.subjectName}</div>
+                        <div class="tsc-pct" style="color:${color};">${s.pct}%</div>
+                        <small style="color:#64748b;">${s.uniqueStudents} estudiantes · ${s.totalProducts} productos</small>
+                        <div class="tsc-bar"><div class="tsc-bar-fill" style="width:${s.pct}%;background:${color};"></div></div>
+                        ${s.totalProducts > 0 ? `<div style="margin-top:8px;font-size:0.8em;color:#64748b;">${typeCounts(s.products)}</div>` : '<div style="font-size:0.8em;color:#94a3b8;margin-top:8px;">Sin productos aún</div>'}
+                    </div>`;
+                }).join('');
+
+                // Products detail
+                document.getElementById('mm-products-detail').style.display = 'block';
+                renderMmProductsList(mmAllProductsData);
+
+            } catch(e) {
+                document.getElementById('mm-loading').style.display = 'none';
+                showToast('Error de conexión al cargar multimedia', true);
+            }
+        }
+
+        function filterMmProducts() {
+            const subj = document.getElementById('mmProductSubjectFilter').value;
+            const type = document.getElementById('mmProductTypeFilter').value;
+            const filtered = mmAllProductsData.filter(p =>
+                (!subj || p.subject === subj) && (!type || p.product_type === type)
+            );
+            renderMmProductsList(filtered);
+        }
+
+        function renderMmProductsList(products) {
+            const list = document.getElementById('mm-products-list');
+            if (!products.length) {
+                list.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px;">No se encontraron productos con los filtros aplicados.</p>';
+                return;
+            }
+            const typeIcons = { video: '🎬', presentacion: '📊', canvas: '🎨', otro: '📁' };
+            const typeClasses = { video: 'mm-type-video', presentacion: 'mm-type-presentacion', canvas: 'mm-type-canvas', otro: 'mm-type-otro' };
+            list.innerHTML = products.slice(0, 100).map(p => {
+                const student = p.students;
+                const studentName = student ? (student.full_name || student.username) : '—';
+                const studentClass = student ? student.class_name : '';
+                const linkHtml = p.link
+                    ? `<a href="${p.link}" target="_blank" rel="noopener" style="color:#0284c7;font-size:0.85em;word-break:break-all;"><i class="fas fa-external-link-alt"></i> ${p.link.slice(0,60)}...</a>`
+                    : '';
+                const imgHtml = p.image_url
+                    ? `<img src="${p.image_url}" alt="Producto" style="max-width:120px;max-height:90px;border-radius:6px;border:1px solid #e2e8f0;margin-top:8px;" onerror="this.style.display='none'">`
+                    : '';
+                return `<div class="mm-product-card">
+                    <div>
+                        <span class="mm-product-type-badge ${typeClasses[p.product_type] || 'mm-type-otro'}">${typeIcons[p.product_type] || '📁'} ${p.product_type}</span>
+                        ${imgHtml}
+                    </div>
+                    <div>
+                        <div style="font-weight:700;color:#1e293b;margin-bottom:4px;">${studentName} <span class="count-badge">${studentClass}</span></div>
+                        <div style="font-size:0.82em;color:#64748b;margin-bottom:6px;">${p.subject} · ${new Date(p.created_at).toLocaleDateString('es')}</div>
+                        <div style="font-size:0.9em;color:#475569;">${p.description || '<em style="color:#94a3b8;">Sin descripción</em>'}</div>
+                        ${linkHtml}
+                    </div>
+                    <div style="font-size:0.75em;color:#94a3b8;text-align:right;white-space:nowrap;">${p.activity_id}</div>
+                </div>`;
+            }).join('');
+            if (products.length > 100) {
+                list.innerHTML += `<p style="text-align:center;color:#94a3b8;font-size:0.85em;padding:10px;">Mostrando los primeros 100 de ${products.length} productos.</p>`;
+            }
+        }
+        // ─── RETO 0 STATS ───
+        async function loadReto0Stats() {
+            const loading = document.getElementById('reto0-loading');
+            const content = document.getElementById('reto0-stats-content');
+            loading.style.display = 'block';
+            content.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/admin/reto0-stats');
+                const data = await res.json();
+
+                if (data.success) {
+                    document.getElementById('reto0-global-pct').textContent = data.completionPct + '%';
+                    document.getElementById('reto0-completed-count').textContent = data.completedCount;
+                    document.getElementById('reto0-total-students').textContent = data.totalStudents;
+                    
+                    // Update main KPI card
+                    const kpiPct = document.getElementById('kpi-reto0-pct');
+                    if (kpiPct) kpiPct.textContent = data.passingPct + '%';
+
+                    // Fill class table
+                    const classBody = document.getElementById('reto0-class-body');
+                    classBody.innerHTML = '';
+                    Object.keys(data.classStats).forEach(cls => {
+                        const s = data.classStats[cls];
+                        const row = `
+                            <tr>
+                                <td><strong>${cls}</strong></td>
+                                <td>${s.total}</td>
+                                <td>${s.completed}</td>
+                                <td><span class="count-badge" style="background:${s.pct >= 100 ? '#d1fae5' : '#dbeafe'}; color:${s.pct >= 100 ? '#065f46' : '#1e40af'}">${s.pct}%</span></td>
+                                <td>
+                                    <div style="width:100px; background:#e2e8f0; height:8px; border-radius:4px; overflow:hidden;">
+                                        <div style="width:${s.pct}%; height:100%; background:${s.pct >= 100 ? '#10b981' : '#3b82f6'};"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                        classBody.insertAdjacentHTML('beforeend', row);
+                    });
+
+                    // Fill questions grid
+                    const questionsGrid = document.getElementById('reto0-questions-grid');
+                    questionsGrid.innerHTML = '';
+                    data.questions.forEach(q => {
+                        const qNum = q.id.replace('eval_q', '');
+                        const card = `
+                            <div style="padding:10px; background:white; border:1px solid #e2e8f0; border-radius:8px; text-align:center;">
+                                <div style="font-size:0.7em; color:#64748b; font-weight:700;">Q${qNum}</div>
+                                <div style="font-size:1.1em; font-weight:900; color:#1e293b;">${q.pct}%</div>
+                                <div style="width:100%; height:4px; background:#f1f5f9; border-radius:2px; margin-top:5px; overflow:hidden;">
+                                    <div style="width:${q.pct}%; height:100%; background:#8b5cf6;"></div>
+                                </div>
+                            </div>
+                        `;
+                        questionsGrid.insertAdjacentHTML('beforeend', card);
+                    });
+
+                    content.style.display = 'block';
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error al cargar estadísticas de Reto 0");
+            }
+            loading.style.display = 'none';
+        }
+
+        async function viewStudentProfile(studentId) {
+            try {
+                const res = await fetch('/api/admin/student-profile/' + studentId);
+                const data = await res.json();
+                
+                if (!data.success) {
+                    return alert('Error al cargar el perfil: ' + (data.message || 'Desconocido'));
+                }
+
+                const s = data.student;
+                const profile = data.profileData || {};
+
+                // Actualizar Modal UI
+                document.getElementById('spModalName').innerText = s.full_name || s.username || 'Sin Nombre';
+                document.getElementById('spModalClass').innerText = s.class_name || '-';
+                
+                // Mostrar Avatar o Placeholder
+                const avatarDiv = document.getElementById('spModalAvatar');
+                if (profile.profile_photo && profile.profile_photo.length < 15) {
+                    avatarDiv.innerHTML = `<div style="font-size: 4em; line-height: 1;">${profile.profile_photo}</div>`;
+                } else if (profile.profile_photo && profile.profile_photo.startsWith('data:image')) {
+                    avatarDiv.innerHTML = `<img src="${profile.profile_photo}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">`;
+                } else {
+                    avatarDiv.innerHTML = `<i class="fas fa-user-circle" style="font-size: 5em; color: #cbd5e1;"></i>`;
+                }
+
+                // Generar lista de respuestas
+                const listDiv = document.getElementById('spModalAnswers');
+                let answersHtml = '';
+                
+                const excludeKeys = ['profile_photo', 'star_rating'];
+                
+                for (const [key, value] of Object.entries(profile)) {
+                    if (excludeKeys.includes(key)) continue;
+                    
+                    let displayValue = value;
+                    if (typeof value === 'boolean') {
+                        displayValue = value ? 'Sí' : 'No';
+                    } else if (Array.isArray(value)) {
+                        displayValue = value.join(', ');
+                    } else if (!value) {
+                        displayValue = '<em style="color:#94a3b8">Sin respuesta</em>';
+                    }
+
+                    answersHtml += `
+                        <div style="margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+                            <span style="font-size: 0.8em; font-weight: bold; color: #64748b; display: block; text-transform: uppercase;">${key.replace(/_/g, ' ')}</span>
+                            <span style="color: #1e293b;">${displayValue}</span>
+                        </div>
+                    `;
+                }
+
+                if (!answersHtml) {
+                    answersHtml = '<p style="color:#94a3b8; text-align:center; padding: 20px;">Este estudiante aún no ha completado el Reto 0.</p>';
+                }
+
+                listDiv.innerHTML = answersHtml;
+                
+                // Mostrar calificación de estrellas si existe
+                const starsDiv = document.getElementById('spModalStars');
+                if (profile.star_rating) {
+                    let stars = '';
+                    for(let i=0; i<5; i++) {
+                        stars += `<i class="fas fa-star" style="color: ${i < profile.star_rating ? '#fbbf24' : '#e2e8f0'}"></i>`;
+                    }
+                    starsDiv.innerHTML = stars;
+                    starsDiv.style.display = 'block';
+                } else {
+                    starsDiv.style.display = 'none';
+                }
+
+                // Abrir modal
+                document.getElementById('studentProfileModalOverlay').style.display = 'flex';
+
+            } catch (e) {
+                console.error(e);
+                alert('Error de red al cargar el perfil.');
+            }
+        }
+
+        function closeStudentProfileModal() {
+            document.getElementById('studentProfileModalOverlay').style.display = 'none';
+        }
+
+    // ════════════════════════════════════════
+    // EXECUTIVE DASHBOARD TABS LOGIC
+    // ════════════════════════════════════════
+    let chartKlasseInst, chartSubjectInst;
+
+    async function refreshExecutiveData() {
+        const filterPeriodEl = document.getElementById('filterPeriod');
+        const filterYearEl = document.getElementById('filterYear');
+        if (!filterPeriodEl || !filterYearEl) return;
+
+        const period = filterPeriodEl.value;
+        const year = filterYearEl.value;
+        
+        // Load KPIs
+        try {
+            const resp = await fetch('/api/admin/kpis');
+            const data = await resp.json();
+            if (data.success) {
+                document.getElementById('kpiStudents').textContent = data.kpis.totalStudents;
+                document.getElementById('kpiProgress').textContent = data.kpis.progressRate + '%';
+                document.getElementById('kpiTeachers').textContent = data.kpis.teachersCertified + '%';
+                document.getElementById('kpiDevices').textContent = data.kpis.totalDevices;
+                document.getElementById('kpiIncidents').textContent = data.kpis.openIncidents;
+            }
+        } catch (e) { console.error('Error loading KPIs:', e); }
+
+        // Load charts
+        try {
+            const resp = await fetch('/api/admin/progress-by-klasse?year=' + year);
+            const data = await resp.json();
+            if (data.success) {
+                updateKlasseChart(data.data);
+            }
+        } catch (e) { console.error('Error loading Klasse chart:', e); }
+
+        try {
+            const resp = await fetch('/api/admin/progress-by-subject?year=' + year);
+            const data = await resp.json();
+            if (data.success) {
+                updateSubjectChart(data.data);
+            }
+        } catch (e) { console.error('Error loading Subject chart:', e); }
+
+        // Load no progress students
+        try {
+            const resp = await fetch('/api/admin/students-without-progress?year=' + year);
+            const data = await resp.json();
+            if (data.success) {
+                renderNoProgressList(data.students);
+            }
+        } catch (e) { console.error('Error loading no progress:', e); }
+
+        // Load pending teachers
+        try {
+            const resp = await fetch('/api/admin/teachers-status');
+            const data = await resp.json();
+            if (data.success) {
+                renderPendingTeachers(data.pending);
+            }
+        } catch (e) { console.error('Error loading teachers:', e); }
+    }
+
+    function updateKlasseChart(data) {
+        const canvas = document.getElementById('chartKlasse');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (chartKlasseInst) chartKlasseInst.destroy();
+        chartKlasseInst = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.klasse),
+                datasets: [{
+                    label: '% Progreso',
+                    data: data.map(d => d.progress),
+                    backgroundColor: data.map(d => d.progress >= 100 ? '#10b981' : d.progress >= 50 ? '#f59e0b' : '#ef4444')
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true, max: 100 } }
+            }
+        });
+    }
+
+    function updateSubjectChart(data) {
+        const canvas = document.getElementById('chartSubject');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (chartSubjectInst) chartSubjectInst.destroy();
+        chartSubjectInst = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.subject),
+                datasets: [{
+                    label: 'Estudiantes Activos',
+                    data: data.map(d => d.count),
+                    backgroundColor: ['#dc2626', '#0ea5e9', '#ea580c', '#059669', '#8b5cf6']
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+    }
+
+    function renderNoProgressList(students) {
+        const el = document.getElementById('noProgressList');
+        if (!el) return;
+        if (!students || students.length === 0) {
+            el.innerHTML = '<p style="color:#10b981;"><i class="fas fa-check-circle"></i> ¡Todos los estudiantes tienen progreso!</p>';
+            return;
+        }
+        let html = '<table><thead><tr><th>Estudiante</th><th>Clase</th></tr></thead><tbody>';
+        students.slice(0, 10).forEach(s => {
+            html += `<tr><td>${s.name}</td><td>${s.class}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        if (students.length > 10) html += `<p style="color:#64748b;">...y ${students.length - 10} más</p>`;
+        el.innerHTML = html;
+    }
+
+    function renderPendingTeachers(teachers) {
+        const el = document.getElementById('pendingTeachersList');
+        if (!el) return;
+        if (!teachers || teachers.length === 0) {
+            el.innerHTML = '<p style="color:#10b981;"><i class="fas fa-check-circle"></i> ¡Todos los docentes están certificados!</p>';
+            return;
+        }
+        let html = '<table><thead><tr><th>Docente</th><th>Materia</th><th>Estado y Sugerencia</th></tr></thead><tbody>';
+        teachers.forEach(t => {
+            let statusHtml = '<span class="badge badge-warning">Sin iniciar</span>';
+            if (t.score !== undefined && t.score !== null && t.score < 75) {
+                statusHtml = `<span class="badge badge-danger">Falló (${t.score}%) - Revisar contenidos KMK</span>`;
+            } else if (t.score !== undefined && t.score !== null) {
+                statusHtml = `<span class="badge badge-warning">Pendiente (${t.score}%)</span>`;
+            }
+            html += `<tr><td>${t.name}</td><td>${t.subject || 'N/A'}</td><td>${statusHtml}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        el.innerHTML = html;
+    }
+
+    // ════════════════════════════════════════
+    // INVENTORY TABS LOGIC
+    // ════════════════════════════════════════
+    let editingInventoryDevice = null;
+
+    async function loadInventoryDevices() {
+        const locationEl = document.getElementById('filterLocation');
+        const statusEl = document.getElementById('filterStatus');
+        if (!locationEl || !statusEl) return;
+
+        const location = locationEl.value;
+        const status = statusEl.value;
+        
+        let url = '/api/devices';
+        const params = [];
+        if (location) params.push('location=' + location);
+        if (status) params.push('status=' + status);
+        if (params.length) url += '?' + params.join('&');
+
+        try {
+            const resp = await fetch(url);
+            const result = await resp.json();
+            
+            const tbody = document.getElementById('devicesTableBody');
+            if (!tbody) return;
+
+            if (!result.success || !result.devices.length) {
+                tbody.innerHTML = 
+                    '<tr><td colspan="7" style="text-align:center; color:#64748b;">No hay equipos registrados</td></tr>';
+                updateInventoryStats([]);
+                return;
+            }
+
+            updateInventoryStats(result.devices);
+            
+            tbody.innerHTML = result.devices.map(d => `
+                <tr>
+                    <td><strong>${d.serial_number}</strong></td>
+                    <td>${d.type}</td>
+                    <td>${d.brand || ''} ${d.model || ''}</td>
+                    <td>${d.location}</td>
+                    <td><span class="badge badge-${d.status}">${getInventoryStatusLabel(d.status)}</span></td>
+                    <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis;">${d.notes || '—'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="openInventoryEditModal(${JSON.stringify(d).replace(/"/g, '&quot;')})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            console.error('Error loading devices:', e);
+            showToast('Error al cargar equipos', true);
+        }
+    }
+
+    function updateInventoryStats(devices) {
+        const total = devices.length;
+        const available = devices.filter(d => d.status === 'available').length;
+        const assigned = devices.filter(d => d.status === 'assigned').length;
+        const maintenance = devices.filter(d => d.status === 'maintenance' || d.status === 'broken').length;
+        
+        const statTotal = document.getElementById('statTotal');
+        const statAvailable = document.getElementById('statAvailable');
+        const statAssigned = document.getElementById('statAssigned');
+        const statMaintenance = document.getElementById('statMaintenance');
+
+        if (statTotal) statTotal.textContent = total;
+        if (statAvailable) statAvailable.textContent = available;
+        if (statAssigned) statAssigned.textContent = assigned;
+        if (statMaintenance) statMaintenance.textContent = maintenance;
+    }
+
+    function getInventoryStatusLabel(status) {
+        const labels = {
+            'available': 'Disponible',
+            'assigned': 'Asignado',
+            'maintenance': 'En Mantenimiento',
+            'broken': 'Dañado'
+        };
+        return labels[status] || status;
+    }
+
+    function openInventoryAddModal() {
+        editingInventoryDevice = null;
+        const modal = document.getElementById('deviceModal');
+        if (!modal) return;
+
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus"></i> Agregar Equipo';
+        document.getElementById('deviceForm').reset();
+        document.getElementById('deviceId').value = '';
+        modal.classList.add('active');
+    }
+
+    function openInventoryEditModal(device) {
+        editingInventoryDevice = device;
+        const modal = document.getElementById('deviceModal');
+        if (!modal) return;
+
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Equipo';
+        document.getElementById('deviceId').value = device.id;
+        document.getElementById('serial_number').value = device.serial_number;
+        document.getElementById('type').value = device.type;
+        document.getElementById('brand').value = device.brand || '';
+        document.getElementById('model').value = device.model || '';
+        document.getElementById('location').value = device.location;
+        document.getElementById('status').value = device.status;
+        document.getElementById('notes').value = device.notes || '';
+        modal.classList.add('active');
+    }
+
+    function closeInventoryModal() {
+        const modal = document.getElementById('deviceModal');
+        if (modal) modal.classList.remove('active');
+    }
+
+    // Attach inventory form listener on load
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('deviceForm');
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const device = {
+                    serial_number: document.getElementById('serial_number').value,
+                    type: document.getElementById('type').value,
+                    brand: document.getElementById('brand').value || null,
+                    model: document.getElementById('model').value || null,
+                    location: document.getElementById('location').value,
+                    status: document.getElementById('status').value,
+                    notes: document.getElementById('notes').value || null
+                };
+
+                const id = document.getElementById('deviceId').value;
+                const url = id ? '/api/devices/' + id : '/api/devices';
+                const method = id ? 'PUT' : 'POST';
+
+                try {
+                    const resp = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(device)
+                    });
+                    const result = await resp.json();
+                    
+                    if (result.success) {
+                        showToast(id ? 'Equipo actualizado' : 'Equipo agregado');
+                        closeInventoryModal();
+                        loadInventoryDevices();
+                    } else {
+                        showToast(result.message || 'Error', true);
+                    }
+                } catch (e) {
+                    showToast('Error de conexión', true);
+                }
+            });
+        }
+    });
+        </script>
+
+    <!-- Modal de Perfil del Estudiante -->
+    <div id="studentProfileModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.6); z-index:9999; justify-content:center; align-items:center; backdrop-filter: blur(4px);">
+        <div style="background:white; width:90%; max-width:500px; border-radius:16px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); overflow:hidden; display:flex; flex-direction:column; max-height: 90vh;">
+            
+            <div style="background: linear-gradient(135deg, #4f46e5, #6366f1); padding: 20px; text-align: center; color: white; position: relative;">
+                <button onclick="closeStudentProfileModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: background 0.2s;"><i class="fas fa-times"></i></button>
+                <div id="spModalAvatar" style="width: 100px; height: 100px; background: white; border-radius: 50%; margin: 0 auto 10px auto; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden;"></div>
+                <h3 id="spModalName" style="margin: 0; font-size: 1.5em; font-weight: 700;">Nombre</h3>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;"><i class="fas fa-chalkboard"></i> Clase: <span id="spModalClass" style="font-weight: bold;">-</span></p>
+                <div id="spModalStars" style="margin-top: 10px; font-size: 1.2em;"></div>
+            </div>
+
+            <div style="padding: 20px; overflow-y: auto; flex-grow: 1; background: #f8fafc;">
+                <h4 style="margin: 0 0 15px 0; color: #475569; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fas fa-clipboard-check"></i> Respuestas de "Este soy yo"</h4>
+                <div id="spModalAnswers" style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                </div>
+            </div>
+
+            <div style="padding: 15px 20px; background: white; border-top: 1px solid #e2e8f0; text-align: right;">
+                <button onclick="closeStudentProfileModal()" class="btn" style="background: #e2e8f0; color: #475569;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    async function loadPendingTeachers() {
+        const panel = document.getElementById('pendingTeachersPanel');
+        panel.style.display = 'block';
+        panel.scrollIntoView({ behavior: 'smooth' });
+        
+        const loader = document.getElementById('pendingLoading');
+        const tbody = document.getElementById('pendingTeachersBody');
+        loader.style.display = 'block';
+        tbody.innerHTML = '';
+        
+        try {
+            const res = await fetch('/api/admin/pending-teachers');
+            const data = await res.json();
+            if(!data.success) throw new Error('Error al cargar');
+            
+            if(data.pending.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: #94a3b8;">No hay solicitudes de registro pendientes.</td></tr>';
+            } else {
+                data.pending.forEach(p => {
+                    const date = new Date(p.date).toLocaleString('es');
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${date}</td>
+                            <td><strong>${p.doc_number}</strong></td>
+                            <td>${p.first_name}</td>
+                            <td>${p.last_name}</td>
+                            <td>${p.email}</td>
+                            <td>
+                                <button class="btn btn-sm" style="background:#10b981; color:white; margin-right:5px;" onclick="approveTeacher('${p.id}')" title="Aprobar"><i class="fas fa-check"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="rejectTeacher('${p.id}')" title="Rechazar"><i class="fas fa-times"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch(e) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: red;">Error cargando solicitudes.</td></tr>';
+        }
+        loader.style.display = 'none';
+    }
+
+    async function approveTeacher(id) {
+        if(!confirm('¿Estás seguro de que quieres APROBAR este docente? Se le dará acceso permanente.')) return;
+        try {
+            const res = await fetch('/api/admin/approve-teacher/' + id, { method: 'POST' });
+            const data = await res.json();
+            alert(data.success ? '✅ ' + data.message : '❌ Error: ' + data.message);
+            loadPendingTeachers(); // Reload list
+        } catch(e) {
+            alert('Error de red');
+        }
+    }
+
+    async function rejectTeacher(id) {
+        if(!confirm('¿Estás seguro de que quieres RECHAZAR y eliminar esta solicitud?')) return;
+        try {
+            const res = await fetch('/api/admin/reject-teacher/' + id, { method: 'POST' });
+            const data = await res.json();
+            alert(data.success ? '✅ ' + data.message : '❌ Error: ' + data.message);
+            loadPendingTeachers(); // Reload list
+        } catch(e) {
+            alert('Error de red');
+        }
+    }
+    
+    // Set default tab on load
+    document.addEventListener('DOMContentLoaded', () => {
+        switchMainTab('executive');
+    });
+</script>
+</body>
+
+</html>

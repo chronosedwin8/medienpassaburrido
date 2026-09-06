@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedienPass</title>
+    <meta name="description" content="Digitaler MedienPass - Deutsche Schule Barranquilla">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/custom.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="/js/i18n.js"></script>
+</head>
+
+<body data-section="<%= typeof section !== 'undefined' ? section : '' %>">
+    <style>
+        header {
+            width: 100%;
+            min-width: fit-content;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .hero-title {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hero-icon {
+            font-size: 1.8em;
+        }
+
+        .hero-title-text {
+            font-size: 2.2em; /* Grande */
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            background: linear-gradient(90deg, #fbbf24, #f9a8d4, #a78bfa, #67e8f9, #fbbf24);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle-custom {
+            font-size: 1.1em; /* Más grande */
+            font-weight: 900;
+            color: #fbbf24; /* highlight */
+            margin: 0;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-subtitle {
+            font-size: 0.7em;
+            opacity: 0.85;
+            margin: 0;
+        }
+
+        .header-lang-switch {
+            display: flex;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .h-lang-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: var(--font);
+        }
+
+        .h-lang-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .h-lang-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 1150px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 14px;
+            }
+            .hero-title {
+                justify-content: center;
+            }
+            .header-right {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+
+        /* Sticky Shrink Header using transitions */
+        header, 
+        header .header-content,
+        header .hero-title-text,
+        header .hero-icon,
+        header .subtitle-custom,
+        header .header-subtitle,
+        header .user-avatar,
+        header .user-details,
+        header .h-lang-btn,
+        header .teacher-portal-btn,
+        header .logout-btn {
+            transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        header.shrunk {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35) !important;
+            /* Evitamos transformaciones en el contenedor principal del header para prevenir bucles de posicionamiento pegajoso */
+        }
+
+        /* Scale down elements inside header when shrunk */
+        header.shrunk .header-content {
+            padding: 8px 24px;
+        }
+
+        header.shrunk .hero-title-text {
+            transform: scale(0.9);
+            transform-origin: left center;
+        }
+
+        header.shrunk .hero-icon {
+            transform: scale(0.9);
+        }
+
+        header.shrunk .subtitle-custom {
+            transform: scale(0.9);
+            transform-origin: left center;
+        }
+
+        header.shrunk .header-subtitle {
+            opacity: 0;
+            height: 0;
+            margin: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        header.shrunk .user-avatar {
+            transform: scale(0.9);
+        }
+
+        header.shrunk .user-details {
+            opacity: 0;
+            transform: translateX(-10px);
+            max-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        header.shrunk .h-lang-btn {
+            transform: scale(0.9);
+        }
+
+        header.shrunk .teacher-portal-btn,
+        header.shrunk .logout-btn {
+            transform: scale(0.9);
+        }
+    </style>
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <h1 class="hero-title">
+                    <span class="hero-icon">📱</span>
+                    <span class="hero-title-text notranslate" translate="no">MEDIENPASS</span>
+                </h1>
+                <p class="subtitle-custom">PSP - EDUCACIÓN EN MEDIOS - DEUTSCHE SCHULE</p>
+                <p class="header-subtitle" data-i18n="schoolFooter">Deutsche Schule Barranquilla — Colegio Alemán</p>
+            </div>
+            
+            <div class="header-lang-switch">
+                <button class="lang-btn h-lang-btn" data-lang="de" onclick="if(window.langUtils) window.langUtils.switchLang('de')">DE DE</button>
+                <button class="lang-btn h-lang-btn" data-lang="en" onclick="if(window.langUtils) window.langUtils.switchLang('en')">GB EN</button>
+                <button class="lang-btn h-lang-btn active" data-lang="es" onclick="if(window.langUtils) window.langUtils.switchLang('es')">ES ES</button>
+            </div>
+            <div class="header-right" style="display:flex;align-items:center;gap:12px;">
+                <% if (typeof teacher !== 'undefined' && teacher) { %>
+                    <a href="/docs" style="background:#8b5cf6;color:white;padding:8px 16px;border-radius:12px;font-weight:700;font-size:0.85em;text-decoration:none;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(139,92,246,0.3);" title="Manual de Usuario">
+                        <i class="fas fa-book text-sm"></i> <span>📚 Manual de Usuario</span>
+                    </a>
+                <% } %>
+                <a href="/teacher/login" class="teacher-portal-btn" title="Portal Docente & Capacitación">
+                    <i class="fas fa-chalkboard-teacher"></i> <span class="tp-text" data-i18n="teacherPortalLabel">Docentes</span>
+                </a>
+
+                <% if (typeof student !=='undefined' && student) { %>
+<div class="user-info">
+    <span class="user-avatar" id="headerUserAvatar" style="font-size: <%= (student.profile_photo && student.profile_photo.length < 15) ? '1.2em' : '0.8em' %>;"><% if (student.profile_photo) { %>
+        <% if (student.profile_photo.length < 15) { %>
+            <%= student.profile_photo %>
+        <% } else if (student.profile_photo.startsWith('data:image')) { %>
+            <!-- avatar image hidden -->
+        <% } else { %>
+            <%= student.username.charAt(0).toUpperCase() %>
+        <% } %>
+    <% } else { %>
+        <%= student.username.charAt(0).toUpperCase() %>
+    <% } %></span>
+    <div class="user-details">
+        <% if (student.full_name) { %>
+                <span class="user-name"><%= student.full_name %></span>
+            <% } else if (student.first_name && student.last_name) { %>
+                <span class="user-name"><%= student.first_name %> <%= student.last_name %></span>
+            <% } else { %>
+                <span class="user-name"><%= student.username %></span>
+            <% } %>
+        <span class="user-class"><%= student.class_name %></span>
+    </div>
+</div>
+                    <a href="/logout" class="logout-btn" data-i18n-title="logoutTitle" title="Abmelden / Cerrar sesión">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                <% } %>
+            </div>
+        </div>
+    </header>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const headerEl = document.querySelector('header');
+            if (headerEl) {
+                let isShrunk = false;
+                const handleScroll = () => {
+                    const scrollY = window.scrollY;
+                    if (!isShrunk && scrollY > 80) {
+                        headerEl.classList.add('shrunk');
+                        isShrunk = true;
+                    } else if (isShrunk && scrollY < 30) {
+                        headerEl.classList.remove('shrunk');
+                        isShrunk = false;
+                    }
+                };
+                window.addEventListener('scroll', handleScroll, { passive: true });
+                handleScroll(); // Initial check
+            }
+        });
+    </script>
+    <main class="container">

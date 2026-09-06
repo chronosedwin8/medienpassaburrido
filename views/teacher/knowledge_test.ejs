@@ -1,0 +1,185 @@
+<%- include('../partials/header') %>
+<%
+const t = {
+    de: {
+        title: "Wissenstest: KMK-Kompetenzen",
+        subtitle: "Testen Sie Ihr Wissen über das KMK-Kompetenzmodell.",
+        q1: "Bereich 1 (Suchen): Wie stellen Sie die Zuverlässigkeit einer Quelle sicher?",
+        o1a: "Dem ersten Suchergebnis vertrauen",
+        o1b: "Nur Bilder verwenden",
+        o1c: "Quellen vergleichen und auf Fakten prüfen", // Correct
+        q2: "Bereich 2 (Kommunizieren): Was ist eine wichtige Regel der 'Netiquette'?",
+        o2a: "In Großbuchstaben schreiben (Schreien)",
+        o2b: "Sich höflich in digitalen Umgebungen ausdrücken", // Correct
+        o2c: "Alle Kettenbriefe weiterleiten",
+        q3: "Bereich 3 (Produzieren): Was müssen Schüler beim Verwenden fremder Bilder beachten?",
+        o3a: "Bilder dürfen ohne Quellenangabe genutzt werden",
+        o3b: "Urheberrechte respektieren und Creative Commons nutzen", // Correct
+        o3c: "Alle Fotos haben kein Urheberrecht",
+        q4: "Bereich 4 (Schützen): Wie schützt man am besten seine Konten?",
+        o4a: "Gleiches Passwort überall",
+        o4b: "Passwort mit Freunden teilen",
+        o4c: "Langes, sicheres Passwort verwenden", // Correct
+        q5: "Bereich 5 (Problemlösen): Ein Projektor funktioniert nicht. Was tun?",
+        o5a: "Direkt aufgeben",
+        o5b: "Nach dem Trial-and-Error-Verfahren logisch prüfen (Kabel, Strom)", // Correct
+        o5c: "Einen neuen Projektor kaufen",
+        q6: "Bereich 6 (Analysieren): Wie erkennt man Fake News?",
+        o6a: "Headlines ohne Prüfung teilen",
+        o6b: "SIFT-Methode anwenden (Stop, Investigate, Find better sources, Trace)", // Correct
+        o6c: "Auf Social Media Kommentare vertrauen",
+        submit: "Antworten einreichen"
+    },
+    en: {
+        title: "Knowledge Test: KMK Competencies",
+        subtitle: "Test your knowledge of the KMK Competency Framework.",
+        q1: "Area 1 (Search): How do you ensure the reliability of a source?",
+        o1a: "Trust the first search result",
+        o1b: "Only use images",
+        o1c: "Compare sources and check facts", // Correct
+        q2: "Area 2 (Communicate): What is an important rule of 'Netiquette'?",
+        o2a: "Write in all caps (shouting)",
+        o2b: "Express yourself politely in digital environments", // Correct
+        o2c: "Forward all chain letters",
+        q3: "Area 3 (Produce): What must students consider when using other people's images?",
+        o3a: "Images can be used without citation",
+        o3b: "Respect copyrights and use Creative Commons", // Correct
+        o3c: "All photos have no copyright",
+        q4: "Area 4 (Protect): What is the best way to protect your accounts?",
+        o4a: "Same password everywhere",
+        o4b: "Share password with friends",
+        o4c: "Use a long, secure password", // Correct
+        q5: "Area 5 (Problem Solving): A projector doesn't work. What should you do?",
+        o5a: "Give up immediately",
+        o5b: "Use logical trial-and-error checks (cables, power)", // Correct
+        o5c: "Buy a new projector",
+        q6: "Area 6 (Analyze): How do you recognize Fake News?",
+        o6a: "Share headlines without checking",
+        o6b: "Use the SIFT method (Stop, Investigate, Find better sources, Trace)", // Correct
+        o6c: "Trust social media comments",
+        submit: "Submit Answers"
+    },
+    es: {
+        title: "Test de Conocimiento: Competencias KMK",
+        subtitle: "Evalúa tu conocimiento sobre el marco de competencias KMK.",
+        q1: "Competencia 1 (Buscar): ¿Cómo garantizas la confiabilidad de una fuente?",
+        o1a: "Confiar en el primer resultado de búsqueda",
+        o1b: "Usar solamente imágenes",
+        o1c: "Comparar diversas fuentes y verificar datos", // Correct
+        q2: "Competencia 2 (Comunicar): ¿Cuál es una regla importante de 'Netiqueta'?",
+        o2a: "Escribir todo en mayúsculas (gritar)",
+        o2b: "Expresarse de manera educada en entornos digitales", // Correct
+        o2c: "Reenviar todas las cadenas de mensajes",
+        q3: "Competencia 3 (Producir): ¿Qué deben tener en cuenta los estudiantes al usar imágenes?",
+        o3a: "Pueden usar imágenes sin citar la fuente",
+        o3b: "Respetar derechos de autor y usar Creative Commons", // Correct
+        o3c: "Todas las fotos carecen de derechos de autor",
+        q4: "Competencia 4 (Proteger): ¿Cuál es la mejor manera de proteger cuentas online?",
+        o4a: "Usar la misma contraseña en todos lados",
+        o4b: "Compartir la contraseña con amigos de confianza",
+        o4c: "Usar una contraseña larga y segura", // Correct
+        q5: "Competencia 5 (Solucionar): El proyector no funciona. ¿Qué debes hacer?",
+        o5a: "Rendirse inmediatamente",
+        o5b: "Hacer pruebas de ensayo/error de forma lógica (cables, energía)", // Correct
+        o5c: "Comprar un proyector nuevo",
+        q6: "Competencia 6 (Analizar): ¿Cómo reconoces las Fake News?",
+        o6a: "Compartir los titulares sin revisar",
+        o6b: "Aplicar la técnica SIFT (Detenerse, Investigar, Encontrar fuentes, Rastrear)", // Correct
+        o6c: "Confiar ciegamente en comentarios de redes sociales",
+        submit: "Enviar Respuestas"
+    }
+};
+
+const subj = (teacher.subject || '').toLowerCase();
+const langCode = subj === 'aleman' ? 'de' : subj === 'ingles' ? 'en' : 'es';
+const l = t[langCode] || t['es'];
+%>
+
+<style>
+.kmk-test-container { max-width: 800px; margin: 40px auto; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+.kmk-test-container h1 { color: #1e1b4b; text-align: center; }
+.kmk-test-container p.subtitle { text-align: center; color: #64748b; margin-bottom: 30px; }
+.question-block { margin-bottom: 25px; padding: 20px; background: #f8fafc; border-left: 4px solid #4f46e5; border-radius: 8px; }
+.question-block h3 { margin-top: 0; font-size: 1.1em; color: #334155; }
+.options label { display: block; margin-bottom: 10px; cursor: pointer; color: #475569; }
+.options input { margin-right: 10px; }
+.submit-btn { display: block; width: 100%; padding: 15px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+.submit-btn:hover { background: #059669; }
+</style>
+
+<div class="kmk-test-container">
+    <h1>📝 <%= l.title %></h1>
+    <p class="subtitle"><%= l.subtitle %></p>
+
+    <% if (score === null) { %>
+    <form action="/teacher/knowledge-test" method="POST">
+        <div class="question-block">
+            <h3><%= l.q1 %></h3>
+            <div class="options">
+                <label><input type="radio" name="q1" value="A"> <%= l.o1a %></label>
+                <label><input type="radio" name="q1" value="B"> <%= l.o1b %></label>
+                <label><input type="radio" name="q1" value="C" required> <%= l.o1c %></label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <h3><%= l.q2 %></h3>
+            <div class="options">
+                <label><input type="radio" name="q2" value="A"> <%= l.o2a %></label>
+                <label><input type="radio" name="q2" value="B" required> <%= l.o2b %></label>
+                <label><input type="radio" name="q2" value="C"> <%= l.o2c %></label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <h3><%= l.q3 %></h3>
+            <div class="options">
+                <label><input type="radio" name="q3" value="A"> <%= l.o3a %></label>
+                <label><input type="radio" name="q3" value="B" required> <%= l.o3b %></label>
+                <label><input type="radio" name="q3" value="C"> <%= l.o3c %></label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <h3><%= l.q4 %></h3>
+            <div class="options">
+                <label><input type="radio" name="q4" value="A"> <%= l.o4a %></label>
+                <label><input type="radio" name="q4" value="B"> <%= l.o4b %></label>
+                <label><input type="radio" name="q4" value="C" required> <%= l.o4c %></label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <h3><%= l.q5 %></h3>
+            <div class="options">
+                <label><input type="radio" name="q5" value="A"> <%= l.o5a %></label>
+                <label><input type="radio" name="q5" value="B" required> <%= l.o5b %></label>
+                <label><input type="radio" name="q5" value="C"> <%= l.o5c %></label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <h3><%= l.q6 %></h3>
+            <div class="options">
+                <label><input type="radio" name="q6" value="A"> <%= l.o6a %></label>
+                <label><input type="radio" name="q6" value="B" required> <%= l.o6b %></label>
+                <label><input type="radio" name="q6" value="C"> <%= l.o6c %></label>
+            </div>
+        </div>
+
+        <button type="submit" class="submit-btn"><i class="fas fa-paper-plane"></i> <%= l.submit %></button>
+    </form>
+    <% } else { %>
+        <div class="result-block" style="text-align: center; margin-top: 20px;">
+            <h2>Puntaje / Score: <%= score %>%</h2>
+            <% if (passed) { %>
+                <p style="color: #10b981; font-weight: bold; font-size: 1.2em;">¡Felicitaciones! Has aprobado.</p>
+            <% } else { %>
+                <p style="color: #ef4444; font-weight: bold; font-size: 1.2em;">No has alcanzado el 75%. Por favor, revisa los contenidos del taller KMK y vuelve a intentarlo.</p>
+            <% } %>
+            <a href="/teacher/training" class="submit-btn" style="display: inline-block; text-decoration: none; margin-top: 15px; width: auto; padding: 10px 20px;">Volver a Capacitación / Back to Training</a>
+        </div>
+    <% } %>
+</div>
+
+<%- include('../partials/footer') %>

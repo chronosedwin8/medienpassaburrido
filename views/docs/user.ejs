@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Medienpass</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.05);
+        }
+        .tab-btn.active {
+            background-color: #2563eb; color: white;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-slate-800 flex flex-col">
+
+    <!-- Top Navbar -->
+    <header class="glass-panel sticky top-0 z-50 px-6 py-4 flex justify-between items-center border-b border-white/50">
+        <div class="flex items-center space-x-3">
+            <% if (userRole === 'admin') { %>
+                <a href="/admin/dashboard" class="w-10 h-10 rounded-2xl bg-blue-600 hover:bg-blue-700 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 transition" title="Volver al Panel">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+            <% } else if (userRole === 'teacher') { %>
+                <a href="/teacher/worksheets" class="w-10 h-10 rounded-2xl bg-blue-600 hover:bg-blue-700 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 transition" title="Volver al Panel">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+            <% } else { %>
+                <a href="/profile" class="w-10 h-10 rounded-2xl bg-blue-600 hover:bg-blue-700 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 transition" title="Volver al Perfil">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+            <% } %>
+            <div>
+                <h1 class="font-bold text-lg leading-tight text-slate-900">Manual de <span class="text-blue-600">Usuario</span></h1>
+                <p class="text-xs text-slate-500 font-medium">Guías de Operación Paso a Paso</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <% if (userRole === 'admin') { %>
+                <a href="/admin/dashboard" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-xl transition">Volver al Panel</a>
+            <% } else if (userRole === 'teacher') { %>
+                <a href="/teacher/worksheets" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-xl transition">Volver al Panel</a>
+            <% } else { %>
+                <a href="/profile" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-xl transition">Volver al Perfil</a>
+            <% } %>
+        </div>
+    </header>
+
+    <div class="flex-grow max-w-6xl mx-auto w-full px-6 py-10 flex flex-col items-center">
+        
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="mb-8 w-full max-w-3xl p-4 bg-red-100 border border-red-300 text-red-800 rounded-2xl flex items-center space-x-3 shadow-md animate-bounce">
+                <i class="fas fa-exclamation-triangle text-xl text-red-600"></i>
+                <p class="font-semibold text-sm"><%= error %></p>
+            </div>
+        <% } %>
+        
+        <!-- Role Tabs Selection -->
+        <div class="w-full max-w-3xl glass-panel p-2 rounded-2xl flex space-x-2 mb-12 border border-white/60 shadow-lg">
+            <button onclick="switchTab('admin')" id="btn-admin" class="tab-btn active flex-1 py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 transition">
+                <i class="fas fa-user-shield text-lg"></i> <span>1. Guía del Administrador</span>
+            </button>
+            <button onclick="switchTab('teacher')" id="btn-teacher" class="tab-btn flex-1 py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 text-slate-600 hover:bg-slate-100 transition">
+                <i class="fas fa-chalkboard-teacher text-lg"></i> <span>2. Guía del Docente</span>
+            </button>
+            <button onclick="switchTab('student')" id="btn-student" class="tab-btn flex-1 py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 text-slate-600 hover:bg-slate-100 transition">
+                <i class="fas fa-user-graduate text-lg"></i> <span>3. Guía del Estudiante</span>
+            </button>
+        </div>
+
+        <!-- 1. ADMIN GUIDE CONTENT -->
+        <div id="tab-admin" class="tab-content w-full max-w-4xl space-y-8 animate-fadeIn">
+            <div class="glass-panel rounded-3xl p-8 border border-white/60 shadow-xl">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">Guía de Operación para Administradores</h2>
+                        <p class="text-xs text-slate-500">Gestión de Usuarios, Control de Inventario y Bitácora de Novedades</p>
+                    </div>
+                </div>
+
+                <div class="space-y-8 text-slate-600 text-sm leading-relaxed">
+                    
+                    <div class="space-y-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center mr-2">1</span>
+                            Acceso y Panel Principal (Dashboard)
+                        </h3>
+                        <p>
+                            Para ingresar al panel administrativo, dirígete a <code class="bg-slate-100 px-2 py-0.5 rounded font-mono">/admin/login</code> e introduce la contraseña maestra de administración. Una vez dentro, visualizarás el <strong>Dashboard Principal</strong>, el cual presenta tarjetas de métricas globales (KPIs) en tiempo real: total de alumnos registrados, porcentaje de avance en el Reto 0 y cantidad de novedades abiertas.
+                        </p>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center mr-2">2</span>
+                            Gestión de Alumnos y Docentes (CRUD)
+                        </h3>
+                        <p>
+                            En la sección de <strong>Gestión de Usuarios</strong>, puedes administrar toda la comunidad escolar:
+                        </p>
+                        <ul class="list-disc pl-5 space-y-2 text-xs text-slate-600">
+                            <li><strong>Dar de alta:</strong> Haz clic en <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px]">➕ Nuevo Alumno</span> o <span class="bg-emerald-600 text-white px-2 py-0.5 rounded text-[10px]">➕ Nuevo Docente</span>, completa el formulario con el nombre de usuario y selecciona la Klasse o materia correspondiente.</li>
+                            <li><strong>Edición y Baja:</strong> Utiliza los botones de acción en la tabla para modificar la Klasse de un estudiante o eliminar registros duplicados de manera inmediata.</li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center mr-2">3</span>
+                            Control de Inventario y Préstamos de Dispositivos
+                        </h3>
+                        <p>
+                            El módulo de <strong>Inventario (`/admin/inventory`)</strong> te permite llevar el control exacto del hardware institucional (laptops, tablets, carritos de carga):
+                        </p>
+                        <ul class="list-disc pl-5 space-y-2 text-xs text-slate-600">
+                            <li><strong>Registrar Dispositivos:</strong> Ingresa el número de serie, marca, modelo y ubicación en el colegio.</li>
+                            <li><strong>Control de Estado:</strong> Cambia el estado del equipo entre <span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-semibold text-[10px]">Disponible</span>, <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-semibold text-[10px]">Prestado</span> o <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-semibold text-[10px]">Mantenimiento</span>.</li>
+                            <li><strong>Asignación de Préstamos:</strong> Registra qué alumno tiene asignado un equipo y la fecha estimada de devolución.</li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center mr-2">4</span>
+                            Bitácora de Novedades e Incidencias Técnicas
+                        </h3>
+                        <p>
+                            La <strong>Bitácora de Novedades</strong> centraliza los reportes enviados por los docentes desde las aulas. Puedes filtrar las incidencias por aula, nivel de prioridad (Alta, Media, Baja) o estado (Abierto, Resuelto). Al solucionar un fallo técnico, haz clic en <span class="bg-slate-800 text-white px-2 py-0.5 rounded text-[10px]">Marcar como Resuelto</span> para mantener actualizados a los profesores.
+                        </p>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center mr-2">5</span>
+                            Generación de Reportes y Diplomas
+                        </h3>
+                        <p>
+                            El sistema genera reportes consolidados por Klasse. Al verificar que un grupo de estudiantes ha completado exitosamente sus retos, puedes exportar el listado completo y generar los <strong>Diplomas Oficiales Medienpass</strong> para su impresión y entrega en ceremonia.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. TEACHER GUIDE CONTENT -->
+        <div id="tab-teacher" class="tab-content w-full max-w-4xl space-y-8 hidden animate-fadeIn">
+            <div class="glass-panel rounded-3xl p-8 border border-white/60 shadow-xl">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">Guía de Operación para Docentes</h2>
+                        <p class="text-xs text-slate-500">Capacitación KMK, Banco de Fichas Klett y Monitoreo de Alumnos en Tiempo Real</p>
+                    </div>
+                </div>
+
+                <div class="space-y-8 text-slate-600 text-sm leading-relaxed">
+                    
+                    <div class="space-y-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center mr-2">1</span>
+                            Inicio de Sesión y Verificación de Materia
+                        </h3>
+                        <p>
+                            Accede a través de <code class="bg-slate-100 px-2 py-0.5 rounded font-mono">/teacher/login</code> utilizando tus credenciales docentes. Al ingresar, el sistema identificará automáticamente tu especialidad (Alemán, Inglés o Español) y te asignará los recursos curriculares adecuados.
+                        </p>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center mr-2">2</span>
+                            Taller de Competencias KMK y Test de Certificación
+                        </h3>
+                        <p>
+                            En la sección de <strong>Capacitación (`/teacher/training`)</strong>, encontrarás un taller interactivo basado en las 6 competencias del marco KMK. Estudia los ejemplos de aplicación para primaria y secundaria, y luego presenta el <strong>Test de Conocimientos</strong>. Necesitas un mínimo del <strong>75%</strong> de aciertos para obtener tu certificación docente institucional.
+                        </p>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center mr-2">3</span>
+                            Uso del Banco de Fichas Interactivas (Klett)
+                        </h3>
+                        <p>
+                            El <strong>Banco de Fichas (`/teacher/worksheets`)</strong> te brinda acceso a hojas de trabajo oficiales de la editorial Klett. El sistema filtra automáticamente las fichas en el idioma de tu materia. Puedes descargarlas y utilizarlas directamente en el aula. Si necesitas traducir una ficha en formato Word, la plataforma incluye una guía rápida para hacerlo usando las herramientas de Microsoft Office.
+                        </p>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center mr-2">4</span>
+                            Monitoreo de Alumnos en Tiempo Real (Retos 0-6)
+                        </h3>
+                        <p>
+                            Desde la barra superior, haz clic en <span class="bg-blue-600 text-white px-2.5 py-1 rounded-lg text-xs font-semibold"><i class="fas fa-chart-line mr-1"></i> Monitoreo Retos (0-6)</span> para acceder al panel de seguimiento en vivo (`/teacher/progress`):
+                        </p>
+                        <ul class="list-disc pl-5 space-y-2 text-xs text-slate-600">
+                            <li><strong>Filtrado por Klasse:</strong> Escribe el nombre de tu clase (ej. <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono">4A</code>) en el recuadro de búsqueda para cargar al instante a tus alumnos ordenados por apellido.</li>
+                            <li><strong>Matriz de Avance:</strong> Observa qué alumnos ya completaron cada reto (del 0 al 6). Las celdas completadas muestran un botón <span class="bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded font-bold text-[10px]">📝 Ver</span>.</li>
+                            <li><strong>Clasificación por Estrellas:</strong> La columna de estatus calcula el promedio de las autoevaluaciones del alumno y le asigna un color: 🟢 <strong>Aprobado</strong> (≥4⭐), 🟡 <strong>En proceso</strong> (2-3⭐), o 🔴 <strong>Debe mejorar</strong> (1⭐).</li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center mr-2">5</span>
+                            Revisión de Evidencias y Enlaces Adjuntos (Modal)
+                        </h3>
+                        <p>
+                            Al hacer clic en el botón <span class="bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded font-bold text-[10px]">📝 Ver</span> de cualquier reto, se abrirá un modal flotante. Aquí podrás leer exactamente lo que el alumno escribió. Si el estudiante adjuntó un enlace de OneDrive o Teams, el modal mostrará un botón funcional <span class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">🔗 Abrir enlace adjunto</span> para acceder directamente a su trabajo.
+                        </p>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center mr-2">6</span>
+                            Impresión de Cuadernillos y Reporte de Novedades
+                        </h3>
+                        <p>
+                            Si necesitas un respaldo físico o en PDF de las preguntas de los retos, haz clic en <span class="bg-purple-600 text-white px-2.5 py-1 rounded-lg text-xs font-semibold"><i class="fas fa-file-pdf mr-1"></i> Imprimir Retos (0-6)</span> para generar un cuadernillo unificado. Además, si experimentas fallos con el proyector, internet o los equipos de los alumnos, utiliza la <strong>Bitácora de Novedades (`/teacher/bitacora`)</strong> para solicitar asistencia técnica inmediata al equipo de sistemas.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. STUDENT GUIDE CONTENT -->
+        <div id="tab-student" class="tab-content w-full max-w-4xl space-y-8 hidden animate-fadeIn">
+            <div class="glass-panel rounded-3xl p-8 border border-white/60 shadow-xl">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">Guía de Operación para Estudiantes</h2>
+                        <p class="text-xs text-slate-500">Creación de Perfil, Retos Medienpass y Autoevaluación con Estrellas</p>
+                    </div>
+                </div>
+
+                <div class="space-y-8 text-slate-600 text-sm leading-relaxed">
+                    
+                    <div class="space-y-3">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center mr-2">1</span>
+                            Ingreso a la Plataforma
+                        </h3>
+                        <p>
+                            Entra a la página de inicio de sesión (<code class="bg-slate-100 px-2 py-0.5 rounded font-mono">/login</code>). Selecciona tu Klasse (ej. <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono">4A</code>) y busca tu nombre en la lista. ¡No necesitas recordar contraseñas complicadas! El sistema guardará tu sesión de forma segura.
+                        </p>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center mr-2">2</span>
+                            Tu Perfil y Reto 0 ("Este soy yo")
+                        </h3>
+                        <p>
+                            Al ingresar por primera vez, llegarás a la página de tu perfil (`/profile`). Aquí realizarás el <strong>Reto 0</strong>:
+                        </p>
+                        <ul class="list-disc pl-5 space-y-2 text-xs text-slate-600">
+                            <li><strong>Elige tu Avatar:</strong> Explora la librería de avatares organizados por categorías (animales, profesiones, fantasía) y selecciona el que mejor te represente.</li>
+                            <li><strong>Inventario Digital:</strong> Marca qué dispositivos tecnológicos utilizas en casa y en el colegio (laptop, tablet, smartphone).</li>
+                            <li><strong>Cuestionario Diagnóstico:</strong> Contesta las 20 preguntas sobre ciudadanía digital. Puedes usar el <strong>Modo Práctica</strong> para leer explicaciones y aprender antes de activar el <strong>Modo Evaluación</strong>. ¡Necesitas 16 aciertos para aprobar!</li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center mr-2">3</span>
+                            Resolviendo los Retos 1 al 6
+                        </h3>
+                        <p>
+                            Una vez aprobado el Reto 0, podrás acceder a los <strong>Retos 1 al 6</strong> desde tu panel principal. Cada reto está vinculado a tus materias (Alemán, Inglés o Español):
+                        </p>
+                        <ul class="list-disc pl-5 space-y-2 text-xs text-slate-600">
+                            <li><strong>Responder Preguntas:</strong> Lee con atención cada pregunta y escribe tus respuestas en los recuadros de texto.</li>
+                            <li><strong>Adjuntar Enlaces:</strong> Si tu profesor te pidió hacer una presentación en Teams o un documento en OneDrive, copia el enlace y pégalo en el campo correspondiente.</li>
+                            <li><strong>Subir Productos Multimedia:</strong> Si creaste un video, podcast o imagen digital, utiliza el botón de carga multimedia para guardarlo en tu portafolio.</li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center mr-2">4</span>
+                            Autoevaluación con Estrellas (1 a 5)
+                        </h3>
+                        <p>
+                            Al final de cada reto (del 1 al 6), encontrarás un componente interactivo de 5 estrellas acompañado de un mensaje especial: <em>"Estimado estudiante tu autoevaluación será analizada por Inteligencia Artificial y por tu profesor asigna tus estrellas y si no estas seguro vuelve a revisar"</em>. Haz clic en las estrellas para calificar tu propio esfuerzo (5 estrellas = ¡Excelente trabajo!, 3 estrellas = Buen trabajo, 1 estrella = Puedo mejorar).
+                        </p>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-100 pt-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center mr-2">5</span>
+                            Tu Pasaporte y Diploma Oficial Medienpass
+                        </h3>
+                        <p>
+                            A medida que completes tus retos y asignes tus estrellas, verás cómo se llena tu pasaporte digital. Al completar todos los retos exitosamente, el sistema desbloqueará tu <strong>Diploma Oficial Medienpass</strong>. Podrás visualizarlo en pantalla completa, descargarlo en PDF e imprimirlo para celebrar tu logro como ciudadano digital responsable.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="glass-panel mt-auto py-6 px-6 border-t border-white/50 text-center text-xs text-slate-500">
+        <p>Medienpass App &copy; 2026 Deutsche Schule. Manual de Usuario Oficial.</p>
+    </footer>
+
+    <!-- Tab Switching Script -->
+    <script>
+        function switchTab(role) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            // Remove active class from buttons
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('text-slate-600');
+                el.classList.remove('text-white');
+            });
+            
+            // Show selected content
+            document.getElementById(`tab-${role}`).classList.remove('hidden');
+            // Activate button
+            const activeBtn = document.getElementById(`btn-${role}`);
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('text-slate-600');
+            activeBtn.classList.add('text-white');
+        }
+    </script>
+</body>
+</html>

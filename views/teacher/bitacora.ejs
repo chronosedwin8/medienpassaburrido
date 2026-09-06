@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitácora de Novedades — MedienPass</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; margin: 0; padding: 0; }
+        .bitacora-header {
+            background: linear-gradient(135deg, #1e1b4b, #4338ca);
+            color: white; padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .bitacora-header h1 { margin: 0; font-size: 1.4em; }
+        .bitacora-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        
+        .card { background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .card h2 { margin: 0 0 16px; color: #1e1b4b; }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-weight: 600; color: #475569; margin-bottom: 6px; font-size: 0.9em; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 10px 14px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 1em;
+            box-sizing: border-box;
+        }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-group textarea:focus, .form-group input:focus { border-color: #4f46e5; outline: none; }
+        
+        .btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.95em; }
+        .btn-primary { background: #4f46e5; color: white; }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-success { background: #059669; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th { background: #f8fafc; padding: 12px; text-align: left; font-size: 0.8em; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+        tr:hover { background: #fafbfe; }
+        
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: 600; }
+        .badge-abierto { background: #fee2e2; color: #991b1b; }
+        .badge-proceso { background: #fef3c7; color: #92400e; }
+        .badge-resuelto { background: #d1fae5; color: #065f46; }
+        
+        .priority-high { background: #ef4444; color: white; }
+        .priority-medium { background: #f59e0b; color: white; }
+        .priority-low { background: #10b981; color: white; }
+        
+        .filter-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-bar select, .filter-bar input { padding: 8px 14px; border: 2px solid #e5e7eb; border-radius: 8px; }
+        
+        .back-link { color: rgba(255,255,255,0.8); text-decoration: none; }
+        .back-link:hover { color: white; }
+        
+        .toast { position: fixed; bottom: 24px; right: 24px; background: #059669; color: white; padding: 14px 24px; border-radius: 12px; display: none; z-index: 1000; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 16px; padding: 24px; max-width: 500px; width: 90%; }
+        .modal h3 { margin: 0 0 16px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="bitacora-header">
+        <div>
+            <h1>⚠️ Bitácora de Novedades — MedienPass</h1>
+            <span>Reporte de incidencias técnicas</span>
+        </div>
+        <div>
+            <a href="/teacher/troubleshooting" class="back-link" style="margin-right: 20px;"><i class="fas fa-book"></i> Guía Troubleshooting</a>
+            <a href="/teacher/training" class="back-link"><i class="fas fa-arrow-left"></i> Volver al Portal</a>
+        </div>
+    </div>
+
+    <div class="bitacora-container">
+        <!-- Formulario para nueva novedad -->
+        <div class="card">
+            <h2><i class="fas fa-plus-circle"></i> Reportar Novedad</h2>
+            <form id="incidentForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Salón/Aula *</label>
+                        <select name="classroom" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="C11">C11</option>
+                            <option value="C12">C12</option>
+                            <option value="Chomsky">Salón Chomsky</option>
+                            <option value="AM1">Aula Móvil 1</option>
+                            <option value="AM2">Aula Móvil 2</option>
+                            <option value="Biblioteca">Biblioteca</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Dispositivo</label>
+                        <select name="device_type">
+                            <option value="">Seleccionar...</option>
+                            <option value="laptop">Laptop</option>
+                            <option value="tablet">Tablet</option>
+                            <option value="proyector">Proyector</option>
+                            <option value="audifonos">Audífonos</option>
+                            <option value="teclado">Teclado</option>
+                            <option value="mouse">Mouse</option>
+                            <option value="cargador">Cargador</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridad</label>
+                        <select name="priority">
+                            <option value="baja">Baja</option>
+                            <option value="media" selected>Media</option>
+                            <option value="alta">Alta</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descripción de la novedad *</label>
+                    <textarea name="description" required placeholder="Describe la novedad o falla observada..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Enviar Reporte</button>
+            </form>
+        </div>
+
+        <!-- Lista de novedades -->
+        <div class="card">
+            <h2><i class="fas fa-list"></i> Novedades Recientes</h2>
+            
+            <div class="filter-bar">
+                <select id="filterStatus" onchange="loadIncidents()">
+                    <option value="">Todos los estados</option>
+                    <option value="open">Abiertos</option>
+                    <option value="in_progress">En Proceso</option>
+                    <option value="resolved">Resueltos</option>
+                </select>
+                <select id="filterClassroom" onchange="loadIncidents()">
+                    <option value="">Todos los salones</option>
+                    <option value="C11">C11</option>
+                    <option value="C12">C12</option>
+                    <option value="Chomsky">Chomsky</option>
+                    <option value="AM1">AM1</option>
+                    <option value="AM2">AM2</option>
+                    <option value="Biblioteca">Biblioteca</option>
+                </select>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Salón</th>
+                        <th>Dispositivo</th>
+                        <th>Descripción</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="incidentsTableBody">
+                    <tr><td colspan="7" style="text-align:center; color:#64748b;">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal para cambiar estado -->
+    <div class="modal" id="statusModal">
+        <div class="modal-content">
+            <h3>Cambiar Estado de Novedad</h3>
+            <input type="hidden" id="modalIncidentId">
+            <div class="form-group">
+                <label>Nuevo Estado</label>
+                <select id="newStatus">
+                    <option value="open">Abierto</option>
+                    <option value="in_progress">En Proceso</option>
+                    <option value="resolved">Resuelto</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeModal()" style="background:#e2e8f0;">Cancelar</button>
+                <button class="btn btn-success" onclick="updateStatus()"><i class="fas fa-save"></i> Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const teacherData = <%- JSON.stringify(teacher || {}) %>;
+
+        function showToast(msg, isError) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.background = isError ? '#ef4444' : '#059669';
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+
+        document.getElementById('incidentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {
+                classroom: formData.get('classroom'),
+                device_type: formData.get('device_type') || null,
+                priority: formData.get('priority'),
+                description: formData.get('description'),
+                reporter_id: teacherData.id
+            };
+
+            try {
+                const resp = await fetch('/api/incidents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    showToast('Novedad reportada correctamente');
+                    e.target.reset();
+                    loadIncidents();
+                } else {
+                    showToast(result.message || 'Error al reportar', true);
+                }
+            } catch (e) {
+                showToast('Error de conexión', true);
+            }
+        });
+
+        async function loadIncidents() {
+            const status = document.getElementById('filterStatus').value;
+            const classroom = document.getElementById('filterClassroom').value;
+            let url = '/api/incidents';
+            const params = [];
+            if (status) params.push('status=' + status);
+            if (classroom) params.push('classroom=' + classroom);
+            if (params.length) url += '?' + params.join('&');
+
+            try {
+                const resp = await fetch(url);
+                const result = await resp.json();
+                const tbody = document.getElementById('incidentsTableBody');
+                
+                if (!result.success || !result.incidents.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#64748b;">No hay novedades</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = result.incidents.map(i => `
+                    <tr>
+                        <td>${new Date(i.created_at).toLocaleDateString('es')}</td>
+                        <td>${i.classroom}</td>
+                        <td>${i.device_type || '—'}</td>
+                        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">${i.description}</td>
+                        <td><span class="badge priority-${i.priority}">${i.priority.toUpperCase()}</span></td>
+                        <td><span class="badge badge-${i.status === 'open' ? 'abierto' : i.status === 'in_progress' ? 'proceso' : 'resuelto'}">${i.status === 'open' ? 'Abierto' : i.status === 'in_progress' ? 'En Proceso' : 'Resuelto'}</span></td>
+                        <td><button class="btn btn-sm" style="background:#4f46e5; color:white;" onclick="openStatusModal('${i.id}', '${i.status}')"><i class="fas fa-edit"></i></button></td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading incidents:', e);
+            }
+        }
+
+        function openStatusModal(id, currentStatus) {
+            document.getElementById('modalIncidentId').value = id;
+            document.getElementById('newStatus').value = currentStatus;
+            document.getElementById('statusModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('statusModal').classList.remove('active');
+        }
+
+        async function updateStatus() {
+            const id = document.getElementById('modalIncidentId').value;
+            const status = document.getElementById('newStatus').value;
+
+            try {
+                const resp = await fetch('/api/incidents/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    showToast('Estado actualizado');
+                    closeModal();
+                    loadIncidents();
+                } else {
+                    showToast('Error al actualizar', true);
+                }
+            } catch (e) {
+                showToast('Error de conexión', true);
+            }
+        }
+
+        loadIncidents();
+    </script>
+</body>
+</html>

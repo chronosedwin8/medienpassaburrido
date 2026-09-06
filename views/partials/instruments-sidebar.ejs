@@ -1,0 +1,368 @@
+<!-- Instruments Sidebar Partial - Accordion Style with Auto-Collapse & Vertical Scrollbar -->
+<aside id="instrumentsSidebar" class="w-full lg:w-80 bg-gradient-to-b from-[#0f0c29] via-[#1e1b4b] to-[#161439] text-[#e2e8f0] rounded-2xl p-4 shadow-2xl border border-indigo-900/40 flex flex-col justify-between shrink-0 sticky top-20 left-0 self-start max-h-[calc(100vh-6rem)] overflow-y-auto sidebar-scroll-wrapper">
+
+    <style>
+        .sidebar-scroll-wrapper::-webkit-scrollbar {
+            width: 8px;
+        }
+        .sidebar-scroll-wrapper::-webkit-scrollbar-track {
+            background: rgba(15, 12, 41, 0.9);
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .sidebar-scroll-wrapper::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #6366f1, #3b82f6);
+            border-radius: 9999px;
+            border: 2px solid rgba(15, 12, 41, 0.9);
+        }
+        .sidebar-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #818cf8, #60a5fa);
+        }
+    </style>
+
+    <div class="space-y-3">
+        <!-- Sidebar Brand Header -->
+        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+            <div class="flex items-center gap-2.5">
+                <span class="text-xl">🏫</span>
+                <div class="flex flex-col">
+                    <span class="font-extrabold text-sm tracking-wider bg-gradient-to-r from-amber-400 via-pink-400 to-indigo-400 bg-clip-text text-transparent">MEDIENPASS</span>
+                    <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest" id="sidebarSubTitle">Modo Estudiante</span>
+                </div>
+            </div>
+            <span class="text-[9px] bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded-md border border-indigo-500/30 uppercase tracking-wider">Docente</span>
+        </div>
+
+        <!-- Scroll Indicator Hint -->
+        <div class="flex items-center justify-between text-[9px] text-indigo-300/70 bg-indigo-950/40 px-2 py-1 rounded border border-indigo-800/30 font-mono">
+            <span><i class="fa-solid fa-arrows-up-down"></i> Menú con Scroll</span>
+            <span>Arriba / Abajo</span>
+        </div>
+
+        <!-- ACCORDION 1: KLASSE (GRADO) -->
+        <div class="border border-white/10 rounded-xl overflow-hidden bg-black/20">
+            <button onclick="toggleSidebarAccordion('acc-klasse')" class="w-full flex items-center justify-between p-2.5 text-xs font-extrabold text-slate-200 hover:text-white transition bg-white/5 hover:bg-white/10">
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-layer-group text-indigo-400"></i>
+                    <span>1. Klasse (Grado)</span>
+                </span>
+                <div class="flex items-center gap-1.5">
+                    <span id="sidebarGradeActiveLabel" class="text-[9px] bg-indigo-500/30 text-indigo-200 px-1.5 py-0.5 rounded font-bold uppercase">Klasse 5</span>
+                    <i class="fas fa-chevron-down text-[10px] text-slate-400 transition-transform duration-300" id="icon-acc-klasse"></i>
+                </div>
+            </button>
+            <div id="acc-klasse" class="hidden p-3 pt-2 space-y-2 border-t border-white/5 animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-slate-400">Selecciona el grado:</span>
+                    <button onclick="changeGrade(null)" class="text-[10px] text-amber-400 hover:text-amber-300 font-semibold" title="Deseleccionar grado">
+                        <i class="fa-solid fa-xmark"></i> Limpiar
+                    </button>
+                </div>
+                <select id="sidebarGradeSelect" onchange="changeGrade(this.value ? parseInt(this.value, 10) : null); collapseSidebarAccordion('acc-klasse');" 
+                        class="w-full bg-[#0f0c29] border border-indigo-500/40 rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-indigo-400 cursor-pointer shadow-inner">
+                    <option value="">-- Sin seleccionar --</option>
+                    <option value="2">Klasse 2 - Básico</option>
+                    <option value="3">Klasse 3 - Básico + 1</option>
+                    <option value="4">Klasse 4 - Intermedio</option>
+                    <option value="5" selected>Klasse 5 - Intermedio + 1</option>
+                    <option value="6">Klasse 6 - Avanzado</option>
+                    <option value="7">Klasse 7 - Avanzado + 1</option>
+                    <option value="8">Klasse 8 - Avanzado + 2</option>
+                    <option value="9">Klasse 9 - Avanzado + 3</option>
+                    <option value="10">Klasse 10 - Avanzado + 4</option>
+                    <option value="11">Klasse 11 - Avanzado + 5</option>
+                    <option value="12">Klasse 12 - Avanzado + 6</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ACCORDION 2: IDIOMAS GLOBAL -->
+        <div class="border border-white/10 rounded-xl overflow-hidden bg-black/20">
+            <button onclick="toggleSidebarAccordion('acc-idiomas')" class="w-full flex items-center justify-between p-2.5 text-xs font-extrabold text-slate-200 hover:text-white transition bg-white/5 hover:bg-white/10">
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-globe text-indigo-400"></i>
+                    <span>2. Idiomas (Global)</span>
+                </span>
+                <div class="flex items-center gap-1.5">
+                    <span id="sidebarLangActiveLabel" class="text-[9px] bg-indigo-500/30 text-indigo-200 px-1.5 py-0.5 rounded font-bold uppercase">ES</span>
+                    <i class="fas fa-chevron-down text-[10px] text-slate-400 transition-transform duration-300" id="icon-acc-idiomas"></i>
+                </div>
+            </button>
+            <div id="acc-idiomas" class="hidden p-3 pt-2 space-y-2 border-t border-white/5 animate-fade-in">
+                <p class="text-[10px] text-slate-400">Cambia el idioma global de todos los retos:</p>
+                <div class="grid grid-cols-3 gap-1.5" id="sidebarLangSelector">
+                    <button onclick="changeLang('es'); collapseSidebarAccordion('acc-idiomas');" id="sidebar-btn-lang-es" 
+                            class="py-1.5 px-2 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1 bg-indigo-600/35 border-l-4 border-l-indigo-400 border-indigo-500/40 text-white shadow-sm">
+                        <span>🇪🇸</span> ES
+                    </button>
+                    <button onclick="changeLang('de'); collapseSidebarAccordion('acc-idiomas');" id="sidebar-btn-lang-de" 
+                            class="py-1.5 px-2 rounded-xl border border-transparent text-xs font-medium transition flex items-center justify-center gap-1 text-slate-300 hover:bg-white/10 hover:text-white">
+                        <span>🇩🇪</span> DE
+                    </button>
+                    <button onclick="changeLang('en'); collapseSidebarAccordion('acc-idiomas');" id="sidebar-btn-lang-en" 
+                            class="py-1.5 px-2 rounded-xl border border-transparent text-xs font-medium transition flex items-center justify-center gap-1 text-slate-300 hover:bg-white/10 hover:text-white">
+                        <span>🇬🇧</span> EN
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACCORDION 3: ASIGNATURA -->
+        <div class="border border-white/10 rounded-xl overflow-hidden bg-black/20">
+            <button onclick="toggleSidebarAccordion('acc-asignatura')" class="w-full flex items-center justify-between p-2.5 text-xs font-extrabold text-slate-200 hover:text-white transition bg-white/5 hover:bg-white/10">
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-book text-indigo-400"></i>
+                    <span>3. Asignatura</span>
+                </span>
+                <div class="flex items-center gap-1.5">
+                    <span id="sidebarSubjectActiveLabel" class="text-[9px] bg-indigo-500/30 text-indigo-200 px-1.5 py-0.5 rounded font-bold uppercase">Alemán</span>
+                    <i class="fas fa-chevron-down text-[10px] text-slate-400 transition-transform duration-300" id="icon-acc-asignatura"></i>
+                </div>
+            </button>
+            <div id="acc-asignatura" class="hidden p-3 pt-2 space-y-2 border-t border-white/5 animate-fade-in">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[10px] text-slate-400">Materias disponibles:</span>
+                    <button onclick="changeSubject(null); collapseSidebarAccordion('acc-asignatura');" class="text-[10px] text-amber-400 hover:text-amber-300 font-semibold" title="Deseleccionar asignatura">
+                        <i class="fa-solid fa-xmark"></i> Limpiar
+                    </button>
+                </div>
+                <div class="space-y-1.5" id="sidebarSubjectSelector">
+                    <!-- Filled dynamically by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ACCORDION 4: MODALIDAD DE RETOS -->
+        <div class="border border-white/10 rounded-xl overflow-hidden bg-black/20">
+            <button onclick="toggleSidebarAccordion('acc-modalidad')" class="w-full flex items-center justify-between p-2.5 text-xs font-extrabold text-slate-200 hover:text-white transition bg-white/5 hover:bg-white/10">
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-sliders text-indigo-400"></i>
+                    <span>4. Modalidad</span>
+                </span>
+                <div class="flex items-center gap-1.5">
+                    <span id="sidebarModeActiveLabel" class="text-[9px] bg-indigo-500/30 text-indigo-200 px-1.5 py-0.5 rounded font-bold uppercase">AUTOMÁTICA</span>
+                    <i class="fas fa-chevron-down text-[10px] text-slate-400 transition-transform duration-300" id="icon-acc-modalidad"></i>
+                </div>
+            </button>
+            <div id="acc-modalidad" class="hidden p-3 pt-2 space-y-3 border-t border-white/5 animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-slate-400">Modos de edición:</span>
+                    <button onclick="switchInstrumentMode(null); collapseSidebarAccordion('acc-modalidad');" class="text-[10px] text-amber-400 hover:text-amber-300 font-semibold" title="Deseleccionar modalidad">
+                        <i class="fa-solid fa-xmark"></i> Limpiar
+                    </button>
+                </div>
+                <div class="space-y-2">
+                    <!-- OPTION 1: AUTOMÁTICA -->
+                    <button onclick="switchInstrumentMode('auto'); collapseSidebarAccordion('acc-modalidad');" id="btn-mode-auto" 
+                            class="w-full text-left px-3 py-2 rounded-xl border transition-all duration-200 flex items-start gap-2 bg-indigo-600/25 border-l-4 border-l-indigo-500 border-indigo-500/40 text-white shadow-lg shadow-indigo-950/50">
+                        <div class="w-5 h-5 rounded-lg bg-indigo-500/30 text-indigo-300 flex items-center justify-center text-xs shrink-0 mt-0.5">⚡</div>
+                        <div>
+                            <h4 class="font-extrabold text-xs text-white leading-tight">AUTOMÁTICA</h4>
+                            <p class="text-[9px] text-slate-300">Sugerido por la plataforma.</p>
+                        </div>
+                    </button>
+
+                    <!-- OPTION 2: EDITABLE -->
+                    <button onclick="switchInstrumentMode('editable');" id="btn-mode-editable" 
+                            class="w-full text-left px-3 py-2 rounded-xl border transition-all duration-200 flex items-start gap-2 bg-white/5 border-l-4 border-l-transparent border-white/5 text-slate-300 hover:bg-white/10 hover:text-white">
+                        <div class="w-5 h-5 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs shrink-0 mt-0.5">✏️</div>
+                        <div>
+                            <h4 class="font-extrabold text-xs text-white leading-tight">EDITABLE</h4>
+                            <p class="text-[9px] text-slate-400">Editar / Guardar preguntas.</p>
+                        </div>
+                    </button>
+
+                    <!-- OPTION 3: IA -->
+                    <button onclick="switchInstrumentMode('ai');" id="btn-mode-ai" 
+                            class="w-full text-left px-3 py-2 rounded-xl border transition-all duration-200 flex items-start gap-2 bg-white/5 border-l-4 border-l-transparent border-white/5 text-slate-300 hover:bg-white/10 hover:text-white">
+                        <div class="w-5 h-5 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs shrink-0 mt-0.5">🤖</div>
+                        <div>
+                            <h4 class="font-extrabold text-xs text-white leading-tight">LA IA TE AYUDA</h4>
+                            <p class="text-[9px] text-slate-400">Generar preguntas con IA.</p>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Panel 2 (Editable Actions) -->
+                <div id="sidebarPanelEditable" class="hidden bg-amber-500/10 rounded-xl p-3 border border-amber-500/30 space-y-2 animate-fade-in">
+                    <h5 class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-pen-to-square"></i> Acciones del Editor
+                    </h5>
+                    <div class="space-y-1.5 text-xs">
+                        <button onclick="addNewQuestionToEditor()" class="w-full py-1.5 px-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 rounded-lg font-bold transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus text-xs"></i> Añadir Pregunta
+                        </button>
+                        <button onclick="saveCustomInstrumentToServer(); collapseSidebarAccordion('acc-modalidad');" class="w-full py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg font-extrabold transition flex items-center justify-center gap-2 shadow-md">
+                            <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel 3 (AI Generator Prompt con Guardar y Deshacer) -->
+                <div id="sidebarPanelAI" class="hidden bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/30 space-y-2 animate-fade-in">
+                    <div class="flex items-center justify-between border-b border-emerald-500/20 pb-1.5">
+                        <h5 class="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Asistente IA (Lectura Coherente)
+                        </h5>
+                        <span class="text-[8px] bg-emerald-500/30 text-emerald-200 font-mono px-1 rounded">POST /api/instruments/generate-ai</span>
+                    </div>
+                    <div class="space-y-2">
+                        <textarea id="aiPromptInput" rows="2" 
+                                  placeholder="Ej: Ajustar preguntas al reto activo con enfoque interactivo..." 
+                                  class="w-full p-2 bg-[#0f0c29] border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-emerald-500 resize-none"></textarea>
+                        
+                        <button onclick="generateInstrumentWithAI()" id="btnGenerateAI" class="w-full py-2 px-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-md">
+                            <i class="fa-solid fa-robot"></i> Generar / Ajustar con IA
+                        </button>
+
+                        <!-- Botones Explícitos Guardar y Deshacer -->
+                        <div class="grid grid-cols-2 gap-1.5 pt-1">
+                            <button onclick="saveCustomInstrumentToServer(); collapseSidebarAccordion('acc-modalidad');" class="py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm">
+                                <i class="fa-solid fa-floppy-disk"></i> Guardar
+                            </button>
+                            <button onclick="undoAICustomization()" class="py-1.5 px-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm">
+                                <i class="fa-solid fa-rotate-left"></i> Deshacer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACCORDION 5: NAVEGACIÓN DE RETOS -->
+        <div class="border border-white/10 rounded-xl overflow-hidden bg-black/20">
+            <button onclick="toggleSidebarAccordion('acc-retos')" class="w-full flex items-center justify-between p-2.5 text-xs font-extrabold text-slate-200 hover:text-white transition bg-white/5 hover:bg-white/10">
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-th-large text-indigo-400"></i>
+                    <span>5. Navegación de Retos</span>
+                </span>
+                <div class="flex items-center gap-1.5">
+                    <span id="sidebarRetoActiveLabel" class="text-[9px] bg-indigo-500/30 text-indigo-200 px-1.5 py-0.5 rounded font-bold uppercase">Reto 0</span>
+                    <i class="fas fa-chevron-down text-[10px] text-slate-400 transition-transform duration-300" id="icon-acc-retos"></i>
+                </div>
+            </button>
+            <div id="acc-retos" class="hidden p-3 pt-2 space-y-2 border-t border-white/5 animate-fade-in">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[10px] text-slate-400">Selecciona el reto individual:</span>
+                    <button onclick="selectRetoFilter(null); collapseSidebarAccordion('acc-retos');" class="text-[10px] text-amber-400 hover:text-amber-300 font-semibold" title="Deseleccionar reto">
+                        <i class="fa-solid fa-xmark"></i> Limpiar
+                    </button>
+                </div>
+                
+                <div class="space-y-1.5" id="retoFilterGrid">
+                    <!-- Reto 0 Intro -->
+                    <button onclick="selectRetoFilter(0); collapseSidebarAccordion('acc-retos');" id="btn-reto-0" 
+                            class="btn-reto-filter w-full px-3 py-2 rounded-lg border transition-all flex items-center justify-between bg-indigo-600/35 border-l-4 border-l-indigo-400 border-indigo-500/40 text-white font-bold text-xs shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-user-circle text-indigo-300"></i>
+                            <span>Reto 0 - Diagnóstico (Intro)</span>
+                        </div>
+                        <span class="text-[9px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-bold">Intro</span>
+                    </button>
+
+                    <!-- Retos 1 al 6 -->
+                    <button onclick="selectRetoFilter(1); collapseSidebarAccordion('acc-retos');" id="btn-reto-1" 
+                            class="btn-reto-filter w-full px-3 py-2 rounded-lg border border-transparent text-xs font-medium transition-all flex items-center justify-between text-slate-300 hover:bg-white/10 hover:text-white">
+                        <div class="flex items-center gap-2"><i class="fas fa-search text-slate-400"></i> <span>Reto 1 - Búsqueda</span></div>
+                    </button>
+
+                    <button onclick="selectRetoFilter(2); collapseSidebarAccordion('acc-retos');" id="btn-reto-2" 
+                            class="btn-reto-filter w-full px-3 py-2 rounded-lg border border-transparent text-xs font-medium transition-all flex items-center justify-between text-slate-300 hover:bg-white/10 hover:text-white">
+                        <div class="flex items-center gap-2"><i class="fas fa-comments text-slate-400"></i> <span>Reto 2 - Comunicación</span></div>
+                    </button>
+
+                    <button onclick="selectRetoFilter(3); collapseSidebarAccordion('acc-retos');" id="btn-reto-3" 
+                            class="btn-reto-filter w-full px-3 py-2 rounded-lg border border-transparent text-xs font-medium transition-all flex items-center justify-between text-slate-300 hover:bg-white/10 hover:text-white">
+                        <div class="flex items-center gap-2"><i class="fas fa-palette text-slate-400"></i> <span>Reto 3 - Producción</span></div>
+                    </button>
+
+                    <button onclick="selectRetoFilter(4); collapseSidebarAccordion('acc-retos');" id="btn-reto-4" 
+                            class="btn-reto-filter w-full px-3 py-2 rounded-lg border border-transparent text-xs font-medium transition-all flex items-center justify-between text-slate-300 hover:bg-white/10 hover:text-white">
+                        <div class="flex items-center gap-2"><i class="fas fa-shield-alt text-slate-400"></i> <span>Reto 4 - Seguridad</span></div>
+                    </button>
+
+                    <button onclick="selectRetoFilter(5); collapseSidebarAccordion('acc-retos');" id="btn-reto-5" 
+                            class="btn-reto-filter w-full px-3 py-2 rounded-lg border border-transparent text-xs font-medium transition-all flex items-center justify-between text-slate-300 hover:bg-white/10 hover:text-white">
+                        <div class="flex items-center gap-2"><i class="fas fa-cogs text-slate-400"></i> <span>Reto 5 - Resolución</span></div>
+                    </button>
+
+                    <button onclick="selectRetoFilter(6); collapseSidebarAccordion('acc-retos');" id="btn-reto-6" 
+                            class="btn-reto-filter w-full px-3 py-2 rounded-lg border border-transparent text-xs font-medium transition-all flex items-center justify-between text-slate-300 hover:bg-white/10 hover:text-white">
+                        <div class="flex items-center gap-2"><i class="fas fa-brain text-slate-400"></i> <span>Reto 6 - Análisis</span></div>
+                    </button>
+                </div>
+
+                <!-- Botón Imprimir Cuadernillo PDF -->
+                <button onclick="printPDF()" class="w-full mt-3 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-file-pdf text-sm"></i> Imprimir Cuadernillo PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- ACCORDION 6: SECUENCIA DE REVISIÓN PERSISTENTE -->
+        <div class="border border-white/10 rounded-xl overflow-hidden bg-black/20">
+            <button onclick="toggleSidebarAccordion('acc-secuencia')" class="w-full flex items-center justify-between p-2.5 text-xs font-extrabold text-slate-200 hover:text-white transition bg-white/5 hover:bg-white/10">
+                <span class="flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-emerald-400"></i>
+                    <span>6. Secuencia de Revisión</span>
+                </span>
+                <div class="flex items-center gap-1.5">
+                    <span id="reviewLangBadge" class="text-[9px] bg-emerald-500/20 text-emerald-300 font-extrabold px-1.5 py-0.5 rounded uppercase">ES</span>
+                    <i class="fas fa-chevron-down text-[10px] text-slate-400 transition-transform duration-300" id="icon-acc-secuencia"></i>
+                </div>
+            </button>
+            <div id="acc-secuencia" class="hidden p-3 pt-2 space-y-3 border-t border-white/5 animate-fade-in">
+                <p class="text-[10px] text-slate-400 leading-tight">
+                    Marca los retos revisados para el idioma activo y guarda manualmente para habilitarlos.
+                </p>
+
+                <!-- Sequence Tracker Grid -->
+                <div class="bg-black/30 border border-white/10 rounded-xl p-2.5 space-y-1.5" id="reviewSequenceList">
+                    <!-- Filled dynamically by JS -->
+                </div>
+
+                <!-- Botón Explícito de Guardado -->
+                <button onclick="saveReviewSequence()" id="btnSaveReviewSeq" class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> <span>Guardar Secuencia de Revisión</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer / Active Status -->
+    <div class="border-t border-white/10 pt-3 space-y-2 text-[11px] text-slate-400 mt-4">
+        <div class="flex items-center justify-between">
+            <span>Modo activo:</span>
+            <span id="labelCurrentMode" class="font-bold text-indigo-300">AUTOMÁTICA</span>
+        </div>
+        <button onclick="resetInstrumentToDefault()" class="w-full py-1.5 text-[11px] font-semibold text-slate-400 hover:text-rose-400 transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-rotate-left text-[10px]"></i> Restablecer al Sistema
+        </button>
+    </div>
+</aside>
+
+<script>
+    function toggleSidebarAccordion(id) {
+        const body = document.getElementById(id);
+        const icon = document.getElementById(`icon-${id}`);
+        if (!body) return;
+
+        const isHidden = body.classList.contains('hidden');
+        if (isHidden) {
+            body.classList.remove('hidden');
+            if (icon) icon.style.transform = 'rotate(180deg)';
+        } else {
+            body.classList.add('hidden');
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    function collapseSidebarAccordion(id) {
+        const body = document.getElementById(id);
+        const icon = document.getElementById(`icon-${id}`);
+        if (body) {
+            body.classList.add('hidden');
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+    }
+</script>

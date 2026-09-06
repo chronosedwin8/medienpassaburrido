@@ -1,0 +1,486 @@
+<%- include('partials/header') %>
+
+<!-- Welcome Modal Overlay -->
+<div id="welcomeModal" class="welcome-modal-overlay" style="display: none;">
+    <div class="welcome-modal-card">
+        <div class="welcome-modal-icon">✨</div>
+        <h2 class="welcome-modal-title" data-i18n="welcomeTitle">BIENVENIDO A TU MEDIEN PASS</h2>
+        <p class="welcome-modal-text" data-i18n="welcomeModalText">"POR FAVOR SELECCIONA TU IDIOMA SEGÚN LA ASIGNATURA A DESARROLLAR"</p>
+        <button id="closeWelcomeModal" class="welcome-modal-btn" data-i18n="accept">Aceptar</button>
+    </div>
+</div>
+
+    <!-- ═══ Early Script: define functions before buttons use them ═══ -->
+        <script>
+        // ─── Dashboard Language Switching ───
+        function switchDashLang(lang, preventLoop) {
+            // Update language tab buttons (if any remain)
+            document.querySelectorAll('.lang-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+            });
+
+            // Call full language switch (updates data-i18n, data-lang-content, etc.)
+            if (window.langUtils && !preventLoop) {
+                window.langUtils.switchLang(lang);
+            }
+
+            // Update subject pill sub-names (show secondary language)
+            document.querySelectorAll('[data-lang-sub]').forEach(el => {
+                try {
+                    const names = JSON.parse(el.getAttribute('data-lang-sub'));
+                    if (lang === 'de') el.textContent = names.es || '';
+                    else if (lang === 'en') el.textContent = names.es || '';
+                    else el.textContent = names.de || '';
+                } catch (e) { /* ignore */ }
+            });
+
+            // Update subject pill main names
+            document.querySelectorAll('.subject-name-main[data-lang-content]').forEach(el => {
+                try {
+                    const names = JSON.parse(el.getAttribute('data-lang-content'));
+                    el.textContent = names[lang] || names.de || '';
+                } catch (e) { /* ignore */ }
+            });
+        }
+
+        // ─── Subject Filtering (from header pills) ───
+        function filterSubject(subject) {
+            document.querySelectorAll('.subject-pill').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-subject') === subject);
+            });
+            if (subject === 'all') {
+                card.style.display = '';
+            } else {
+                card.style.display = card.getAttribute('data-subject') === subject ? '' : 'none';
+            }
+        }
+    </script>
+
+    <!-- ═══ New Premium Dashboard Controls ═══ -->
+    <div class="dashboard-top-row">
+        <!-- Welcome Card -->
+        <div class="welcome-card-premium">
+            <div class="welcome-card-left">
+                <h1 class="welcome-greeting">👋 <span data-i18n="hello">Hallo</span>, <span class="username-highlight"><%= student.username %></span>! <span class="full-name"><%= student.first_name %> <%= student.last_name %></span></h1>
+                <p class="welcome-subtext" data-i18n="welcome">Willkommen zu deinem MedienPass</p>
+            </div>
+            <% if (student.first_name && student.last_name) { %>
+                <div class="student-info-tag">
+                    <%= student.first_name.toUpperCase() %> <%= student.last_name.toUpperCase() %> — KLASSE <%= student.class_name %>
+                </div>
+            <% } else { %>
+                <div class="student-info-tag">
+                    <%= student.username.toUpperCase() %> — KLASSE <%= student.class_name %>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Year Selector -->
+        <div class="year-card-premium">
+            <div class="year-header">
+                <span class="year-icon">📅</span>
+                <span class="year-title" data-i18n="schoolYear">Schuljahr</span>
+            </div>
+            <select id="yearSelect" class="premium-year-combo" onchange="window.location.href='/?year='+this.value">
+                <% schoolYears.forEach(year=> { %>
+                    <option value="<%= year %>" <%=currentYear===year ? 'selected' : '' %>>
+                        20<%= year.substring(0,2) %> - 20<%= year.substring(2) %>
+                    </option>
+                <% }) %>
+            </select>
+        </div>
+    </div>
+
+    <!-- ═══ Subject Dropdown Selector ═══ -->
+    <div class="large-subject-select-container">
+        <label for="subjectCombo" class="subject-combo-label">
+            <i class="fas fa-graduation-cap"></i> SELECCIONA LA ASIGNATURA A TRABAJAR
+        </label>
+        <select id="subjectCombo" class="large-subject-combo">
+            <option value="" disabled selected>-- SELECCIONA LA ASIGNATURA A TRABAJAR --</option>
+            <% if (typeof subjects !== 'undefined' && subjects) { %>
+                <% subjects.forEach(sub => { %>
+                    <% const isEnabled = (typeof enabledSubjects !== 'undefined' && enabledSubjects[sub.id] === false) ? false : true; %>
+                    <option value="<%= sub.id %>" <%= !isEnabled ? 'disabled' : '' %>>
+                        <%= sub.icon %> <%= sub.name.es %> <%= !isEnabled ? '(No habilitada)' : '' %>
+                    </option>
+                <% }); %>
+            <% } %>
+        </select>
+    </div>
+
+    <!-- Placeholder when no subject is selected -->
+        <div id="noSubjectSelectedPlaceholder" class="no-subject-placeholder">
+            <div class="placeholder-icon">📚</div>
+            <p class="placeholder-main">Por favor selecciona la asignatura en la que vas a trabajar.</p>
+            <p class="placeholder-sub">Bitte wähle das Fach aus, an dem du arbeiten möchtest. / Please select the subject you want to work on.</p>
+        </div>
+        <!-- Combo de retos -->
+        <div class="challenge-combo-container" id="retoComboContainer" style="display: none; margin-top: 30px;">
+            <label for="retoCombo" class="subject-combo-label">
+                <i class="fas fa-bullseye"></i> SELECCIONA EL RETO A TRABAJAR
+            </label>
+            <select id="retoCombo" class="large-subject-combo">
+                <option value="" disabled selected>-- SELECCIONA EL RETO A TRABAJAR --</option>
+                <option value="0">Reto 0: Este soy yo / Das bin ich</option>
+                <option value="1">Reto 1</option>
+                <option value="2">Reto 2</option>
+                <option value="3">Reto 3</option>
+                <option value="4">Reto 4</option>
+                <option value="5">Reto 5</option>
+                <option value="6">Reto 6</option>
+            </select>
+        </div>
+
+    <!-- ═══ Challenges Container ═══ -->
+    <div class="challenges-grid" id="challengesContainer" style="display: none;">
+        <!-- Reto 0: Este soy yo -->
+        <div class="challenge-card-wrapper" id="wrapper-reto-0" style="display: none; width: 100%;">
+            <div class="challenge-subpanel" id="subpanel-reto-0" style="display: block; width: 100%;">
+                <div class="subpanel-content" style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+                    <a href="/profile" class="pastel-sub-activity-btn" id="card-profile">
+                        <div class="sub-btn-content">
+                            <span class="sub-btn-icon">👤</span>
+                            <div class="sub-btn-info">
+                                <span class="sub-btn-title" data-i18n="reto0Title">Este soy yo / Das bin ich</span>
+                                <span class="sub-btn-progress-text" id="status-reto-0">Pendiente</span>
+                            </div>
+                        </div>
+                        <div class="sub-btn-progress-container">
+                            <div class="sub-btn-progress-fill" id="btn-progress-fill-0" style="width: 0%;"></div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Retos 1-6 -->
+        <% for (let lvl = 1; lvl <= 6; lvl++) { %>
+            <% 
+               let allActsAtLvl = allResolvedActivities[lvl] || [];
+               const techActsAtLvl = (typeof tecnologiaActivities !== 'undefined' ? tecnologiaActivities : []).filter(a => String(a.level) === String(lvl));
+               allActsAtLvl = [...allActsAtLvl, ...techActsAtLvl];
+            %>
+            <div class="challenge-card-wrapper" id="wrapper-reto-<%= lvl %>" style="display: none; width: 100%;">
+                <div class="challenge-subpanel" id="subpanel-reto-<%= lvl %>" style="display: block; width: 100%;">
+                    <div class="subpanel-content" style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+                        <% allActsAtLvl.forEach(activity => { %>
+                            <a href="<%= activity.subject === 'tecnologia' ? '/tecnologia/' + activity.id : '/activity/' + currentYear + '/' + activity.id %>" 
+                               class="pastel-sub-activity-btn" 
+                               id="card-<%= activity.id %>"
+                               data-subject="<%= activity.subject %>">
+                                <div class="sub-btn-content">
+                                    <span class="sub-btn-icon"><%= activity.icon || '📝' %></span>
+                                    <div class="sub-btn-info">
+                                        <span class="sub-btn-title"><%= activity.title.es || activity.title.de || activity.title %></span>
+                                        <span class="sub-btn-progress-text" id="text-<%= activity.id %>">Sin iniciar</span>
+                                    </div>
+                                </div>
+                                <div class="sub-btn-progress-container">
+                                    <div class="sub-btn-progress-fill" id="bar-<%= activity.id %>" style="width: 0%;"></div>
+                                </div>
+                            </a>
+                        <% }) %>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+    </div>
+
+    <!-- ═══ Dashboard Script ═══ -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const subjectCombo = document.getElementById('subjectCombo');
+            const retoCombo = document.getElementById('retoCombo');
+            const retoComboContainer = document.getElementById('retoComboContainer');
+            const placeholder = document.getElementById('noSubjectSelectedPlaceholder');
+            const activitiesData = <%- JSON.stringify(allActivities) %>;
+            const techActivitiesData = <%- JSON.stringify(tecnologiaActivities) %>;
+            const levelConfig = <%- JSON.stringify(levelConfig) %>;
+            const currentYear = '<%= currentYear %>';
+
+            // Store progress result globally
+            window.latestProgressResult = <%- JSON.stringify(progress) %>;
+
+            function getLevelActivities(lvl, selectedSubject) {
+                let lvlActs = activitiesData[lvl] || [];
+                if (selectedSubject === 'tecnologia') {
+                    const clonedActs = lvlActs.filter(a => a.subject === 'tecnologia');
+                    const techActs = techActivitiesData.filter(a => a.level === String(lvl));
+                    return [...clonedActs, ...techActs];
+                } else {
+                    return lvlActs.filter(a => a.subject === selectedSubject);
+                }
+            }
+
+            function isLevelCompleted(lvl, progress, selectedSubject) {
+                return getLevelCompletionPct(lvl, progress, selectedSubject) >= 100;
+            }
+
+            function getLevelCompletionPct(lvl, progress, selectedSubject) {
+                if (lvl === 0) {
+                    const prog = progress['profile'];
+                    if (!prog) return 0;
+                    let completed = 0;
+                    if (prog.fieldsCompleted > 0) completed = prog.fieldsCompleted;
+                    return Math.min(Math.round((completed / 4) * 100), 100);
+                }
+
+                let lvlActs = getLevelActivities(lvl, selectedSubject);
+
+                let totalCompleted = 0;
+                let totalFields = 0;
+
+                lvlActs.forEach(act => {
+                    const prog = progress[act.id];
+                    const fields = (act.evidence ? act.evidence.length : 0) + (act.competencies ? act.competencies.length : 0);
+                    totalFields += fields;
+                    if (prog) {
+                        totalCompleted += prog.fieldsCompleted;
+                    }
+                });
+
+                if (totalFields === 0) return 0;
+                return Math.min(Math.round((totalCompleted / totalFields) * 100), 100);
+            }
+
+            function updateProgressLabels(progress) {
+                const selectedSubject = subjectCombo.value;
+                if (!selectedSubject) return;
+
+                const lang = window.langUtils ? window.langUtils.getLang() : 'es';
+
+                // Update Reto 0 Progress
+                const profileCard = document.getElementById('card-profile');
+                const status0 = document.getElementById('status-reto-0');
+                const fill0 = document.getElementById('btn-progress-fill-0');
+                const pct0 = getLevelCompletionPct(0, progress, selectedSubject);
+                if (fill0) fill0.style.width = pct0 + '%';
+                
+                if (profileCard) {
+                    profileCard.classList.remove('sub-btn-completed', 'sub-btn-not-started');
+                }
+                
+                if (status0) {
+                    if (pct0 >= 100 || window.isProfileComplete) {
+                        status0.textContent = lang === 'es' ? 'Completado' : lang === 'de' ? 'Fertig' : 'Complete';
+                        if (profileCard) profileCard.classList.add('sub-btn-completed');
+                    } else if (pct0 > 0) {
+                        status0.textContent = pct0 + '%';
+                    } else {
+                        status0.textContent = lang === 'es' ? 'Pendiente' : lang === 'de' ? 'Ausstehend' : 'Pending';
+                        if (profileCard) profileCard.classList.add('sub-btn-not-started');
+                    }
+                }
+
+                // Update Retos 1-6 Progress (no locking)
+                for (let lvl = 1; lvl <= 6; lvl++) {
+                    let lvlActs = getLevelActivities(lvl, selectedSubject);
+
+                    // Update each sub-button directly
+                    lvlActs.forEach(act => {
+                        const subBtn = document.getElementById('card-' + act.id);
+                        const subText = document.getElementById('text-' + act.id);
+                        const subFill = document.getElementById('bar-' + act.id);
+                        const prog = progress[act.id];
+
+                        if (subBtn) {
+                            subBtn.style.pointerEvents = 'auto';
+                            subBtn.style.opacity = '1';
+                            subBtn.classList.remove('sub-btn-completed', 'sub-btn-not-started');
+                        }
+
+                        if (prog && prog.fieldsCompleted > 0) {
+                            const total = (act.evidence ? act.evidence.length : 0) + (act.competencies ? act.competencies.length : 0);
+                            const actPct = Math.min(Math.round((prog.fieldsCompleted / total) * 100), 100);
+                            if (subFill) subFill.style.width = actPct + '%';
+                            if (subText) {
+                                if (actPct >= 100) {
+                                    subText.textContent = lang === 'es' ? 'Completado' : 'Fertig';
+                                    if (subBtn) subBtn.classList.add('sub-btn-completed');
+                                } else {
+                                    subText.textContent = actPct + '%';
+                                }
+                            }
+                        } else {
+                            if (subFill) subFill.style.width = '0%';
+                            if (subText) subText.textContent = lang === 'es' ? 'Sin iniciar' : 'Nicht gestartet';
+                            if (subBtn) subBtn.classList.add('sub-btn-not-started');
+                        }
+                    });
+                }
+            }
+
+            function applyRetoFilter(selectedReto) {
+                if (selectedReto === null || selectedReto === undefined || selectedReto === '') {
+                    document.getElementById('challengesContainer').style.display = 'none';
+                    return;
+                }
+
+                document.getElementById('challengesContainer').style.display = 'flex';
+
+                const selectedSubject = subjectCombo.value;
+
+                // Hide all reto wrappers
+                for (let lvl = 0; lvl <= 6; lvl++) {
+                    const wrapper = document.getElementById('wrapper-reto-' + lvl);
+                    if (wrapper) wrapper.style.display = 'none';
+                }
+
+                // Show only the selected reto wrapper if it's valid
+                const activeWrapper = document.getElementById('wrapper-reto-' + selectedReto);
+                if (activeWrapper) {
+                    if (selectedReto === '0') {
+                        activeWrapper.style.display = 'block';
+                    } else {
+                        let lvlActs = getLevelActivities(selectedReto, selectedSubject);
+
+                        if (lvlActs.length > 0) {
+                            activeWrapper.style.display = 'block';
+                        }
+                    }
+                }
+            }
+
+            function applySubjectFilter(selectedSubject) {
+                if (!selectedSubject) {
+                    if (retoComboContainer) retoComboContainer.style.display = 'none';
+                    document.getElementById('challengesContainer').style.display = 'none';
+                    if (placeholder) placeholder.style.display = 'block';
+                    return;
+                }
+
+                if (retoComboContainer) retoComboContainer.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+
+                const lang = window.langUtils ? window.langUtils.getLang() : 'es';
+
+                // Configure retos 1-6 according to selection
+                for (let lvl = 1; lvl <= 6; lvl++) {
+                    const wrapper = document.getElementById('wrapper-reto-' + lvl);
+                    if (!wrapper) continue;
+
+                    const subpanel = document.getElementById('subpanel-reto-' + lvl);
+                    if (subpanel) {
+                        subpanel.querySelectorAll('.pastel-sub-activity-btn').forEach(subBtn => {
+                            const subSubj = subBtn.getAttribute('data-subject');
+                            if (subSubj === selectedSubject) {
+                                subBtn.style.display = 'flex';
+                            } else {
+                                subBtn.style.display = 'none';
+                            }
+                        });
+                    }
+                }
+
+                // Update retoCombo options availability
+                if (retoCombo) {
+                    const opt0 = retoCombo.querySelector('option[value="0"]');
+                    if (opt0) opt0.disabled = false;
+
+                    for (let lvl = 1; lvl <= 6; lvl++) {
+                        const opt = retoCombo.querySelector(`option[value="${lvl}"]`);
+                        if (opt) {
+                            let lvlActs = getLevelActivities(lvl, selectedSubject);
+                            opt.disabled = lvlActs.length === 0;
+                            if (lvlActs.length === 0) {
+                                opt.text = `Reto ${lvl} (No disponible)`;
+                            } else {
+                                opt.text = `Reto ${lvl}`;
+                            }
+                        }
+                    }
+
+                    // Reset reto selection if it's no longer valid for this subject
+                    const currentRetoVal = retoCombo.value;
+                    if (currentRetoVal && currentRetoVal !== '0') {
+                        let lvlActs = getLevelActivities(currentRetoVal, selectedSubject);
+                        if (lvlActs.length === 0) {
+                            retoCombo.value = '';
+                        }
+                    }
+                }
+
+                // Apply dynamic language change based on selected subject (like original logic)
+                let targetLang = 'es';
+                if (selectedSubject === 'aleman') {
+                    targetLang = 'de';
+                } else if (selectedSubject === 'ingles') {
+                    targetLang = 'en';
+                }
+
+                if (window.langUtils) {
+                    window.langUtils.switchLang(targetLang);
+                }
+
+                // Render progress based on loaded values
+                if (window.latestProgressResult) {
+                    updateProgressLabels(window.latestProgressResult);
+                }
+
+                // Apply the reto filter
+                applyRetoFilter(retoCombo.value);
+            }
+
+            if (subjectCombo) {
+                subjectCombo.addEventListener('change', (e) => {
+                    const val = e.target.value;
+                    localStorage.setItem('selectedSubject', val);
+                    applySubjectFilter(val);
+                });
+
+                const savedSubject = localStorage.getItem('selectedSubject');
+                if (savedSubject) {
+                    const opt = subjectCombo.querySelector(`option[value="${savedSubject}"]`);
+                    if (opt && !opt.disabled) {
+                        subjectCombo.value = savedSubject;
+                        applySubjectFilter(savedSubject);
+                    } else {
+                        applySubjectFilter('');
+                    }
+                } else {
+                    applySubjectFilter('');
+                }
+            } else {
+                applySubjectFilter('');
+            }
+
+            if (retoCombo) {
+                retoCombo.addEventListener('change', (e) => {
+                    const val = e.target.value;
+                    localStorage.setItem('selectedReto', val);
+                    applyRetoFilter(val);
+                });
+
+                const savedReto = localStorage.getItem('selectedReto');
+                if (savedReto) {
+                    const opt = retoCombo.querySelector(`option[value="${savedReto}"]`);
+                    if (opt && !opt.disabled) {
+                        retoCombo.value = savedReto;
+                        applyRetoFilter(savedReto);
+                    }
+                }
+            }
+
+            document.addEventListener('langchange', () => {
+                if (window.latestProgressResult) {
+                    updateProgressLabels(window.latestProgressResult);
+                }
+            });
+
+            // Welcome Modal Logic
+            const welcomeModal = document.getElementById('welcomeModal');
+            const closeWelcomeModal = document.getElementById('closeWelcomeModal');
+            if (welcomeModal && !sessionStorage.getItem('welcomeModalShown')) {
+                welcomeModal.style.display = 'flex';
+            }
+            if (closeWelcomeModal) {
+                closeWelcomeModal.addEventListener('click', () => {
+                    welcomeModal.style.display = 'none';
+                    sessionStorage.setItem('welcomeModalShown', 'true');
+                });
+            }
+        });
+    </script>
+
+                <%- include('partials/footer') %>

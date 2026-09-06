@@ -1,0 +1,454 @@
+<%- include('../partials/teacher-header', { activeItem: 'training' }) %>
+<%
+// Determine language based on teacher's subject
+const subj = (teacher.subject || '').toLowerCase();
+const lang = subj === 'aleman' ? 'de' : subj === 'ingles' ? 'en' : 'es';
+
+// UI Labels
+const ui = {
+    de: {
+        workshop: 'KMK-Fortbildungsworkshop',
+        subtitle: 'Kompetenzen in der digitalen Welt — Kultusministerkonferenz',
+        intro_kmk: 'Die KMK (Kultusministerkonferenz) legt die Bildungsstandards in Deutschland fest. Dieses Rahmenwerk definiert die digitalen Kompetenzen, die Schüler für eine sichere und aktive Teilnahme an der digitalen Welt benötigen. Unten finden Sie klare Definitionen der einzelnen Kompetenzen sowie praktische Beispiele für Ihren Unterricht.',
+        instructions: 'Lesen Sie jede Kompetenz, sehen Sie sich die praktischen Beispiele an und laden Sie die Arbeitsblätter herunter.',
+        welcome: 'Willkommen',
+        evaluation: 'Bewertung',
+        logout: 'Abmelden',
+        competencies: 'Kompetenzen',
+        example_primary: 'Beispiel für die Grundschule',
+        example_secondary: 'Beispiel für Sek I',
+        example_practical: 'Praktisches Beispiel',
+        apply: 'So wenden Sie es in Ihrem Unterricht an',
+        worksheets: 'Arbeitsblätter',
+        cta_question: 'Haben Sie alle Kompetenzen, Beispiele und Ressourcen überprüft? Zeit Ihr Wissen zu zertifizieren!',
+        cta_button: 'Workshop abgeschlossen — Zur Bewertung',
+        primary: 'Grundschule',
+        sekI: 'Sek I',
+        worksheets_note: ''
+    },
+    en: {
+        workshop: 'KMK Training Workshop',
+        subtitle: 'Competencies in the Digital World — Kultusministerkonferenz',
+        intro_kmk: 'The KMK (Standing Conference of the Ministers of Education) sets educational standards in Germany. This framework defines the digital competencies students need to safely and effectively participate in the digital world. Below you will find clear definitions of each competency along with practical examples for your classroom.',
+        instructions: 'Read each competency, review the practical examples, and download the worksheets to apply with your students.',
+        welcome: 'Welcome',
+        evaluation: 'Evaluation',
+        logout: 'Log Out',
+        competencies: 'Competencies',
+        example_primary: 'Example for Primary School',
+        example_secondary: 'Example for Secondary (Sek I)',
+        example_practical: 'Practical Example',
+        apply: 'How to Apply in Your Class',
+        worksheets: 'Worksheets',
+        cta_question: 'Have you reviewed all competencies, examples, and resources? Time to certify your knowledge!',
+        cta_button: 'Workshop completed — Go to Evaluation',
+        primary: 'Primary',
+        sekI: 'Sek I',
+        worksheets_note: '📌 Note: The original worksheets are from the German publisher Klett and are in German. The descriptions below summarize the content in English so you can adapt the activities for your classroom. <br><br><strong>IF YOU WISH TO USE THESE RESOURCES IN YOUR LANGUAGE, FOLLOW THESE STEES:</strong> Download the document and open it in Word. Use the "Translate Document" option to translate it to your required language while maintaining the structure.'
+    },
+    es: {
+        workshop: 'Taller de Capacitación KMK',
+        subtitle: 'Competencias en el Mundo Digital — Kultusministerkonferenz',
+        intro_kmk: 'La KMK (Conferencia de Ministros de Educación de Alemania) establece los estándares educativos. Este marco define las competencias digitales que los estudiantes necesitan para participar de forma activa y segura en el mundo digital. A continuación, encontrarás definiciones claras de cada una de las competencias y ejemplos prácticos.',
+        instructions: 'Lee cada competencia, revisa los ejemplos prácticos y descarga las hojas de trabajo para aplicar con tus estudiantes.',
+        welcome: 'Bienvenido/a',
+        evaluation: 'Evaluación',
+        logout: 'Cerrar Sesión',
+        competencies: 'Competencias',
+        example_primary: 'Ejemplo para Primaria',
+        example_secondary: 'Ejemplo para Secundaria (Sek I)',
+        example_practical: 'Ejemplo Práctico',
+        apply: 'Cómo Aplicarlo en tu Clase',
+        worksheets: 'Hojas de Trabajo',
+        cta_question: '¿Ya revisaste todas las competencias, ejemplos y recursos? ¡Es momento de certificar tu conocimiento!',
+        cta_button: 'He completado el taller — Ir a la Evaluación',
+        primary: 'Primaria',
+        sekI: 'Secundaria (Sek I)',
+        worksheets_note: '📌 Nota: Las hojas de trabajo originales son de la editorial alemana Klett y están en alemán. Las descripciones a continuación resumen el contenido en español para que puedas adaptar las actividades en tu clase. <br><br><strong>SI USTED DESEA USAR ESTOS RECURSOS EN SU IDIOMA REALICE LOS SIGUIENTES PASOS:</strong> DESCARGUE EL DOCUMENTO Y ÁBRALO EN WORD Y CON LA OPCIÓN TRADUCIR DOCUMENTO PUEDE PASARLO AL IDIOMA REQUERIDO GUARDANDO LA ESTRUCTURA.'
+    }
+};
+const t = ui[lang];
+
+const ui_content = {};
+Object.keys(ui.de).forEach(k => {
+    ui_content[k] = { de: ui.de[k], en: ui.en[k], es: ui.es[k] };
+});
+
+const encodeContent = (obj) => {
+    if (!obj) return '{}';
+    return JSON.stringify(obj).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+};
+
+// KMK Areas data
+const areas = [
+    {
+        num: 1, color: '#4f46e5', grad: '#6366f1', emoji: '🔍',
+        title: { de: 'Suchen, Verarbeiten und Aufbewahren', en: 'Search, Process and Store', es: 'Buscar, Procesar y Almacenar' },
+        comps: {
+            de: [
+                '<strong>1.1 Suchen und Filtern:</strong> Suchmaschinen gezielt nutzen, Informationen mit Schlüsselwörtern finden.',
+                '<strong>1.2 Auswerten und Bewerten:</strong> Quellen vergleichen, Fakten von Meinungen unterscheiden.',
+                '<strong>1.3 Speichern und Abrufen:</strong> Dateien in Ordnern strukturieren, Cloud nutzen (OneDrive/Teams).'
+            ],
+            en: [
+                '<strong>1.1 Search and Filter:</strong> Use search engines effectively, find information with keywords.',
+                '<strong>1.2 Analyze and Evaluate:</strong> Compare sources, distinguish facts from opinions.',
+                '<strong>1.3 Save and Retrieve:</strong> Structure files in folders, use cloud storage (OneDrive/Teams).'
+            ],
+            es: [
+                '<strong>1.1 Buscar y filtrar:</strong> Usar navegadores y motores de búsqueda para localizar información con palabras clave.',
+                '<strong>1.2 Analizar y evaluar:</strong> Comparar fuentes, verificar autoría y distinguir hechos de opiniones.',
+                '<strong>1.3 Guardar y organizar:</strong> Estructurar archivos en carpetas, usar la nube (OneDrive/Teams).'
+            ]
+        },
+        ex_primary: {
+            de: 'Schüler suchen "bedrohte Tiere in Kolumbien" im Browser und notieren: Tiername, interessante Fakten und den Link der Quelle. Am Ende vergleichen sie: Haben alle die gleichen Informationen gefunden?',
+            en: 'Students search "endangered animals in Colombia" in a browser and note: animal name, a fun fact, and the source link. They compare: Did everyone find the same information?',
+            es: 'Pide a los estudiantes que busquen "animales en peligro en Colombia" en un navegador. Deben anotar: nombre del animal, dato curioso y enlace. Al final comparan: ¿todos encontraron lo mismo?'
+        },
+        ex_secondary: {
+            de: 'Schüler recherchieren ein aktuelles Thema (z.B. Klimawandel), finden 3 verschiedene Quellen, bewerten deren Zuverlässigkeit und organisieren die Informationen in einer PowerPoint-Präsentation.',
+            en: 'Students research a current topic (e.g., climate change), find 3 different sources, evaluate reliability, and organize information in a PowerPoint presentation with references.',
+            es: 'Los alumnos investigan un tema actual (ej. cambio climático), encuentran 3 fuentes, evalúan confiabilidad y organizan la información en una presentación de PowerPoint con referencias.'
+        },
+        apply: {
+            de: ['<strong>Suchoperatoren</strong> lehren: Anführungszeichen für exakte Phrasen, Minus zum Ausschließen.', 'Eine <strong>Umfrage</strong> mit Schülern durchführen und Daten in einem gemeinsamen Teams-Dokument speichern.', '<strong>Ordnerstruktur</strong> üben: Fach > Thema > Dateien in OneDrive.', 'Google-Bildersuche vergleichen: Ist die Quelle zuverlässig? Wurde das Bild bearbeitet?'],
+            en: ['Teach <strong>search operators</strong>: quotes for exact phrases, minus sign to exclude.', 'Conduct a <strong>classroom survey</strong> collecting data into a shared Teams document.', 'Practice <strong>folder organization</strong>: Subject > Topic > Files in OneDrive.', 'Compare Google Images results: Is the source reliable? Was the image edited?'],
+            es: ['Enseña <strong>operadores de búsqueda</strong>: comillas para frases exactas, signo menos para excluir.', 'Haz una <strong>encuesta con los estudiantes</strong> y guarda datos en un documento compartido en Teams.', 'Practica la <strong>organización de carpetas</strong>: Materia > Tema > Archivos en OneDrive.', 'Compara resultados de Google Imágenes: ¿la fuente es confiable? ¿La imagen fue editada?']
+        },
+        resources: [
+            { name: { de: 'Eine Umfrage durchführen', en: 'Conducting a survey', es: 'Realizar una encuesta' }, desc: { de: 'Erstelle Fragebogen, sammle Daten und werte Ergebnisse aus.', en: 'Create a questionnaire, collect data from classmates, and analyze results in a table.', es: 'Crea un cuestionario, recopila datos de los compañeros y analiza resultados en una tabla.' }, lvl: 'primary', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Eine_Umfrage_Durchfuehren_01.pdf' },
+            { name: { de: 'Eine Umfrage durchführen', en: 'Conducting a survey', es: 'Realiza una encuesta' }, desc: { de: 'Editierbares Arbeitsblatt zur Umfrage.', en: 'Editable worksheet version for the survey activity.', es: 'Versión editable de la hoja de trabajo para la actividad de encuesta.' }, lvl: 'primary', fmt: 'DOCX', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Eine_Umfrage_durchfuehren_01.docx' },
+            { name: { de: 'Bildersuche im Internet', en: 'Image search on the Internet', es: 'Búsqueda de imágenes en Internet' }, desc: { de: 'Bilder im Internet finden, Quellen prüfen und korrekt verwenden.', en: 'Find images online, verify sources, and learn to use them correctly with proper attribution.', es: 'Encuentra imágenes en internet, verifica las fuentes y aprende a usarlas correctamente con atribución.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Bildersuche_im_Internet.pdf' },
+            { name: { de: 'Diagramm zu Internetangeboten', en: 'Internet offers diagram', es: 'Evaluando ofertas por Internet' }, desc: { de: 'Diagramme über Internetnutzung lesen und auswerten.', en: 'Read and interpret diagrams about internet usage patterns and online offers.', es: 'Lee e interpreta diagramas sobre patrones de uso de internet y ofertas en línea.' }, lvl: 'sekI', fmt: 'DOCX', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Diagramm_zu_Internetangeboten_auswerten.docx' },
+            { name: { de: 'Diagramm zu Internetangeboten', en: 'Internet offers diagram', es: 'Evaluación ofertas de Internet' }, desc: { de: 'PDF-Version: Diagramme auswerten.', en: 'PDF version: evaluate internet usage diagrams.', es: 'Versión PDF: evalúa diagramas de uso de internet.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Diagramm_zu_Internetangeboten_auswerten.pdf' },
+            { name: { de: 'In der Bibliothek und im Internet', en: 'In the library and on the Internet', es: 'En la biblioteca y en Internet' }, desc: { de: 'Vergleich von Bibliothek und Internet als Informationsquellen.', en: 'Compare the library and the internet as information sources: advantages, disadvantages, reliability.', es: 'Compara la biblioteca e internet como fuentes de información: ventajas, desventajas, confiabilidad.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_In_der_Bibliothek_und_im_Internet.pdf' }
+        ]
+    },
+    {
+        num: 2, color: '#0ea5e9', grad: '#38bdf8', emoji: '📡',
+        title: { de: 'Kommunizieren und Kooperieren', en: 'Communicate and Cooperate', es: 'Comunicar y Cooperar' },
+        comps: {
+            de: ['<strong>2.1 Interagieren:</strong> Kommunikation über E-Mail, Chats und Plattformen wie Teams.', '<strong>2.2 Teilen:</strong> Digitale Inhalte verantwortungsvoll veröffentlichen.', '<strong>2.3 Zusammenarbeiten:</strong> Gemeinsam an Dokumenten und Projekten mit digitalen Tools arbeiten.', '<strong>2.4 Netiquette:</strong> Höflichkeitsregeln in der digitalen Kommunikation.', '<strong>2.5 Gesellschaftliche Teilhabe:</strong> Positive Beteiligung in digitalen Gemeinschaften.'],
+            en: ['<strong>2.1 Interact:</strong> Communicate using email, chats, and platforms like Teams.', '<strong>2.2 Share:</strong> Publish digital content responsibly.', '<strong>2.3 Collaborate:</strong> Work on shared documents and group projects with digital tools.', '<strong>2.4 Netiquette:</strong> Respect rules of courtesy in digital communication.', '<strong>2.5 Participate in society:</strong> Engage positively in digital communities.'],
+            es: ['<strong>2.1 Interactuar:</strong> Comunicarse usando correo, chats y plataformas como Teams.', '<strong>2.2 Compartir:</strong> Publicar contenidos digitales respetando las normas.', '<strong>2.3 Colaborar:</strong> Trabajar en documentos compartidos y proyectos grupales.', '<strong>2.4 Netiqueta:</strong> Respetar reglas de cortesía en la comunicación digital.', '<strong>2.5 Participar en la sociedad:</strong> Involucrarse positivamente en comunidades digitales.']
+        },
+        ex_primary: {
+            de: 'Schüler schreiben eine formelle E-Mail an den Lehrer über Outlook: Begrüßung, Textkörper mit korrekter Rechtschreibung und Verabschiedung. Dann üben sie die Textformatierung in Word.',
+            en: 'Students write a formal email to the teacher using Outlook: greeting, body with correct spelling, and sign-off. Then they practice text formatting in Word (bold, italic, font size).',
+            es: 'Los estudiantes escriben un correo electrónico formal al profesor usando Outlook. Luego practican formatear un texto en Word (negrita, cursiva, tamaño de letra).'
+        },
+        ex_secondary: {
+            de: 'Ein Debatte wird in einem Teams-Kanal organisiert. Schüler argumentieren unter Einhaltung der Netiquette. Es wird das Phänomen Cybermobbing mit realen Fällen analysiert.',
+            en: 'A debate is organized in a Teams channel. Students argue following Netiquette rules. The phenomenon of cyberbullying is analyzed with real cases.',
+            es: 'Se organiza un debate en un canal de Teams. Los alumnos argumentan usando Netiqueta: sin mayúsculas sostenidas, respetando turnos. Se analiza el ciberacoso con casos reales.'
+        },
+        apply: {
+            de: ['<strong>E-Mail</strong> üben: Jeder Schüler sendet eine formelle Nachricht.', 'Ein <strong>kollaboratives Dokument</strong> in Teams erstellen.', 'Einen <strong>"Netiquette-Vertrag"</strong> mit Regeln erstellen.', 'Ein fiktives Social-Media-Profil analysieren: Welche Informationen sind sicher?'],
+            en: ['Practice <strong>email</strong>: each student sends a formal message.', 'Create a <strong>collaborative document</strong> in Teams.', 'Establish a <strong>"Netiquette Contract"</strong> with class rules.', 'Analyze a fictional social media profile: what information is safe to share?'],
+            es: ['Practica el <strong>correo electrónico</strong>: cada alumno envía un mensaje formal.', 'Crea un <strong>documento colaborativo</strong> en Teams donde todo el grupo edita.', 'Establece un <strong>"Contrato de Netiqueta"</strong> con reglas.', 'Analiza un perfil de red social ficticio: ¿qué información es segura compartir?']
+        },
+        resources: [
+            { name: { de: 'Eine Email schreiben', en: 'Writing an email', es: 'Escribe un correo electrónico' }, desc: { de: 'Aufbau einer E-Mail üben: Anrede, Text, Grußformel.', en: 'Practice email structure: greeting, body, signature. Learn formal vs. informal tone.', es: 'Practica la estructura del correo: saludo, cuerpo, despedida. Aprende tono formal vs. informal.' }, lvl: 'primary', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Eine_Email_schreiben.pdf' },
+            { name: { de: 'Text am Computer schreiben 1', en: 'Writing text on computer 1', es: 'Escribir texto en el ordenador 1' }, desc: { de: 'Grundlagen der Textverarbeitung am Computer.', en: 'Learn basic word processing: typing, saving, and formatting simple texts on the computer.', es: 'Aprende procesamiento de textos básico: escribir, guardar y formatear textos simples en la computadora.' }, lvl: 'primary', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Einen_Text_am_Computer_schreiben_01.pdf' },
+            { name: { de: 'Text am Computer schreiben 1', en: 'Writing text on computer 1', es: 'Escribir texto en el ordenador 1' }, desc: { de: 'Editierbare Version.', en: 'Editable version for classroom use.', es: 'Versión editable para uso en el aula.' }, lvl: 'primary', fmt: 'DOCX', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Einen_Text_am_Computer_schreiben_01.docx' },
+            { name: { de: 'Text formatieren', en: 'Formatting text', es: 'Formateando un texto' }, desc: { de: 'Textformatierung üben: fett, kursiv, Schriftgröße.', en: 'Practice text formatting: bold, italic, font size, alignment, and paragraph spacing.', es: 'Practica formato de texto: negrita, cursiva, tamaño de fuente, alineación y espaciado.' }, lvl: 'primary', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Einen_Text_formatieren.pdf' },
+            { name: { de: 'Sicheres Profil', en: 'Safe profile', es: 'Perfil seguro' }, desc: { de: 'Sicheres Online-Profil erstellen: welche Daten teilen?', en: 'Create a safe online profile: which personal data to share, which to keep private.', es: 'Crea un perfil seguro en línea: qué datos compartir y cuáles mantener privados.' }, lvl: 'primary', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Sicheres_Profil.pdf' },
+            { name: { de: 'Chatten und Bloggen', en: 'Chatting and blogging', es: 'Charlando y blogueando' }, desc: { de: 'Regeln für sicheres Chatten und Bloggen.', en: 'Rules for safe chatting and blogging: appropriate behavior, risks, and privacy settings.', es: 'Reglas para chatear y bloguear de forma segura: comportamiento apropiado, riesgos y privacidad.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Chatten_und_bloggen.pdf' },
+            { name: { de: 'Soziale Netzwerke und Chats', en: 'Social networks and chats', es: 'Redes sociales y chats' }, desc: { de: 'Umgang mit sozialen Netzwerken und Chatfunktionen.', en: 'Understanding social networks and chats: benefits, risks, and responsible usage guidelines.', es: 'Comprender redes sociales y chats: beneficios, riesgos y pautas de uso responsable.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Soziale_Netzwerke_und_Chats.pdf' },
+            { name: { de: 'Von Mobbing zu Cybermobbing', en: 'From bullying to cyberbullying', es: 'Del acoso escolar al ciberacoso' }, desc: { de: 'Unterschiede zwischen Mobbing und Cybermobbing erkennen.', en: 'Identify differences between bullying and cyberbullying. Learn prevention strategies and how to seek help.', es: 'Identifica diferencias entre acoso y ciberacoso. Aprende estrategias de prevención y cómo pedir ayuda.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Von_Mobbing_zu_Cyber_Mobbing.pdf' },
+            { name: { de: 'Was zeigt ihr im Netz?', en: 'What do you show online?', es: '¿Qué se muestra en la red?' }, desc: { de: 'Reflektieren, welche persönlichen Informationen online geteilt werden.', en: 'Reflect on what personal information you share online and the consequences of oversharing.', es: 'Reflexiona sobre qué información personal compartes en línea y las consecuencias de compartir de más.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Was_zeigt_ihr_im_Netz.pdf' }
+        ]
+    },
+    {
+        num: 3, color: '#8b5cf6', grad: '#a78bfa', emoji: '🎨',
+        title: { de: 'Produzieren und Präsentieren', en: 'Produce and Present', es: 'Producir y Presentar' },
+        comps: {
+            de: ['<strong>3.1 Entwickeln und Produzieren:</strong> Digitale Inhalte wie Präsentationen, Videos und Audios erstellen.', '<strong>3.2 Veröffentlichen:</strong> Eigene Produktionen auf geeigneten Plattformen teilen.', '<strong>3.3 Urheberrecht:</strong> Lizenzen respektieren, Quellen zitieren, Creative Commons kennen.'],
+            en: ['<strong>3.1 Develop and Produce:</strong> Create digital content like presentations, videos, and audio.', '<strong>3.2 Publish and Share:</strong> Share your own productions on appropriate platforms.', '<strong>3.3 Copyright:</strong> Respect licenses, cite sources, know Creative Commons.'],
+            es: ['<strong>3.1 Desarrollar y producir:</strong> Crear contenidos digitales como presentaciones, videos y audios.', '<strong>3.2 Publicar y compartir:</strong> Difundir producciones propias en plataformas apropiadas.', '<strong>3.3 Derechos de autor:</strong> Respetar licencias, citar fuentes y conocer Creative Commons.']
+        },
+        ex_primary: { de: 'Schüler erstellen eine kurze Präsentation zu einem Thema und lernen, Bilder mit Creative-Commons-Lizenz zu suchen und korrekt zu zitieren.', en: 'Students create a short presentation on a topic and learn to search for images with Creative Commons licenses and cite them correctly.', es: 'Los alumnos crean una presentación sobre un tema y aprenden a buscar imágenes con licencia Creative Commons y citarlas correctamente.' },
+        ex_secondary: { de: 'Schüler drehen ein 2-Minuten-Erklärvideo, bearbeiten es und überprüfen die Urheberrechte aller verwendeten Bilder.', en: 'Students shoot a 2-minute explainer video, edit it, and verify copyright for all images used.', es: 'Los alumnos graban un video explicativo de 2 minutos, lo editan y verifican los derechos de autor de las imágenes usadas.' },
+        apply: {
+            de: ['<strong>Erklärvideo</strong>-Projekt: Jede Gruppe dreht und bearbeitet ein kurzes Video.', 'Ein <strong>Hörspiel oder Podcast</strong> erstellen: Drehbuch schreiben und mit Soundeffekten aufnehmen.', '<strong>Urheberrecht</strong> lehren: Google-Bildersuche mit Creative-Commons-Filter.', '<strong>Quellenangabe</strong> üben: Autor, Titel, URL, Abrufdatum.'],
+            en: ['<strong>Explainer video</strong> project: each group records and edits a short video.', 'Create a <strong>radio play or podcast</strong>: write a script and record with sound effects.', 'Teach <strong>copyright</strong>: Google image search with Creative Commons filter.', 'Practice <strong>citing sources</strong>: Author, Title, URL, Date accessed.'],
+            es: ['Proyecto de <strong>video explicativo</strong>: cada grupo graba y edita un video corto.', 'Crea una <strong>radionovela o podcast</strong>: los alumnos escriben un guion y lo graban.', 'Enseña <strong>derechos de autor</strong>: busca imágenes con filtro Creative Commons.', 'Practica la <strong>citación de fuentes</strong>: Autor, Título, URL, Fecha.']
+        },
+        resources: [
+            { name: { de: 'Ein Erklärvideo drehen', en: 'Shooting an explainer video', es: 'Rodando un vídeo explicativo' }, desc: { de: 'Anleitung zum Erstellen eines kurzen Erklärvideos.', en: 'Step-by-step guide to creating a short explainer video: script, recording, and editing tips.', es: 'Guía paso a paso para crear un video explicativo corto: guion, grabación y consejos de edición.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV__Ein_Erklaervideo_drehen.pdf' },
+            { name: { de: 'Ein Erklärvideo drehen', en: 'Shooting an explainer video', es: 'Graba un vídeo explicativo' }, desc: { de: 'Editierbare Version.', en: 'Editable version for classroom adaptation.', es: 'Versión editable para adaptar en el aula.' }, lvl: 'sekI', fmt: 'DOCX', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Ein_Erklaervideo_drehen.docx' },
+            { name: { de: 'Ein eigenes Hörspiel gestalten', en: 'Create your own radio play', es: 'Crea tu propia radionovela' }, desc: { de: 'Anleitung für ein eigenes Hörspiel mit Drehbuch und Soundeffekten.', en: 'Guide to producing a radio play: write a script, record voices, and add sound effects.', es: 'Guía para producir una radionovela: escribe un guion, graba voces y añade efectos de sonido.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Ein_eigenes_Hoerspiel_gestalten.pdf' },
+            { name: { de: 'Urheberrecht kennenlernen', en: 'Understanding copyright', es: 'Derechos de autor y personales' }, desc: { de: 'Grundlagen des Urheberrechts und Persönlichkeitsrechts.', en: 'Basics of copyright and personal rights: what you can use, share, and what requires permission.', es: 'Conceptos básicos de derechos de autor y personales: qué puedes usar, compartir y qué requiere permiso.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Urheber_Persoenlichkeitsrecht_kennenlernen.pdf' },
+            { name: { de: 'Zitieren und Quellen angeben', en: 'Citing and sourcing', es: 'Citando y citando fuentes' }, desc: { de: 'Richtig zitieren und Quellen korrekt angeben.', en: 'Learn to cite properly: author, title, URL, and access date for digital and print sources.', es: 'Aprende a citar correctamente: autor, título, URL y fecha de acceso para fuentes digitales e impresas.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Zitieren_und_Quellen_angeben.pdf' }
+        ]
+    },
+    {
+        num: 4, color: '#f59e0b', grad: '#fbbf24', emoji: '🛡️',
+        title: { de: 'Schützen und sicher Agieren', en: 'Protect and Act Safely', es: 'Proteger y Actuar con Seguridad' },
+        comps: {
+            de: ['<strong>4.1 Sicher in digitalen Umgebungen:</strong> Risiken erkennen, Geräte schützen (Passwörter, Antivirus).', '<strong>4.2 Persönliche Daten schützen:</strong> Kontrolle über geteilte Daten.', '<strong>4.3 Gesundheit schützen:</strong> Bildschirmzeit, Ergonomie und digitales Wohlbefinden.', '<strong>4.4 Umwelt schützen:</strong> Bewusstsein für Energieverbrauch und Geräte-Recycling.'],
+            en: ['<strong>4.1 Digital safety:</strong> Identify online risks, protect devices (passwords, antivirus).', '<strong>4.2 Privacy:</strong> Control what personal data is shared and with whom.', '<strong>4.3 Health:</strong> Manage screen time, ergonomic posture, and digital well-being.', '<strong>4.4 Environment:</strong> Awareness of energy consumption and device recycling.'],
+            es: ['<strong>4.1 Seguridad digital:</strong> Identificar riesgos en línea y proteger dispositivos.', '<strong>4.2 Privacidad:</strong> Controlar qué datos personales se comparten.', '<strong>4.3 Salud:</strong> Tiempo de pantalla, postura ergonómica y bienestar digital.', '<strong>4.4 Medio ambiente:</strong> Conciencia del consumo energético y reciclaje.']
+        },
+        ex_primary: { de: 'Zeigen Sie eine gefälschte Website (Phishing) und eine echte. Fragen: "Wie erkennst du die sichere?" HTTPS-Schloss, korrekte Domain. Dann erstellt jeder ein sicheres Passwort: 12+ Zeichen.', en: 'Show a fake website (phishing) and a real one. Ask: "How do you know which is safe?" HTTPS lock, correct domain. Each student creates a strong password: 12+ characters.', es: 'Muestra una web falsa (phishing) y una real. Pregunta: "¿Cómo sabes cuál es segura?" Candado HTTPS, dominio correcto. Cada alumno crea una contraseña segura: 12+ caracteres.' },
+        ex_secondary: { de: 'Debatte über digitale Fußabdrücke: Was passiert, wenn du ein Foto veröffentlichst? Kann es vollständig gelöscht werden? Erstellt ein Poster mit Sicherheitsregeln.', en: 'Debate about digital footprints: What happens when you post a photo? Can it be completely deleted? Create a poster with digital safety rules.', es: 'Debate sobre huella digital: ¿Qué pasa cuando publicas una foto? ¿Se puede borrar? Crea un póster con reglas de seguridad digital.' },
+        apply: {
+            de: ['Aktivität <strong>"Mein PC-Arbeitsplatz"</strong>: sauberer, organisierter Desktop.', '<strong>Digitaler Fußabdruck</strong>: Was passiert, wenn man ein Foto veröffentlicht?', '<strong>Poster mit Sicherheitsregeln</strong> für den Computerraum erstellen.', '<strong>Aktive Pausen</strong>: alle 30 Min Bildschirmzeit, 5 Min Übungen.'],
+            en: ['Activity <strong>"My PC Workstation"</strong>: clean, organized desktop.', '<strong>Digital footprint</strong> debate: What happens when you post a photo?', 'Create a <strong>digital safety rules poster</strong> for the computer room.', '<strong>Active breaks</strong>: every 30 min of screen time, 5 min of exercises.'],
+            es: ['Actividad <strong>"Mi estación de trabajo PC"</strong>: escritorio limpio y organizado.', 'Debate sobre <strong>huella digital</strong>: ¿qué pasa cuando publicas una foto?', 'Crea un <strong>póster de reglas de seguridad</strong> digital para el aula.', 'Practica <strong>pausas activas</strong>: cada 30 min de pantalla, 5 min de ejercicios.']
+        },
+        resources: [
+            { name: { de: 'Mein PC-Arbeitsplatz', en: 'My PC workstation', es: 'Mi estación de trabajo PC' }, desc: { de: 'Einen sauberen, organisierten PC-Arbeitsplatz einrichten.', en: 'Set up a clean, organized PC workstation: files, desktop, and basic hardware care.', es: 'Configura una estación de trabajo PC limpia y organizada: archivos, escritorio y cuidado del hardware.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Mein_PC_Arbeitsplatz.pdf' },
+            { name: { de: 'Sicher im Internet verhalten', en: 'Behaving safely online', es: 'Comportarse seguro en Internet' }, desc: { de: 'Regeln für sicheres Verhalten im Internet.', en: 'Rules for safe internet behavior: strong passwords, recognizing scams, and protecting personal data.', es: 'Reglas para un comportamiento seguro en Internet: contraseñas fuertes, reconocer estafas y proteger datos.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_So_verhaeltst_du_dich.pdf' },
+            { name: { de: 'Gefahren Kommunikation Internet', en: 'Internet communication dangers', es: 'Peligros comunicación Internet' }, desc: { de: 'Gefahren der Online-Kommunikation erkennen und vermeiden.', en: 'Identify and avoid dangers in online communication: phishing, identity theft, and harassment.', es: 'Identifica y evita peligros en la comunicación en línea: phishing, robo de identidad y acoso.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Gefahren_Kommunikation_im_Internet.pdf' },
+            { name: { de: 'Gefahren Kommunikation Internet', en: 'Internet communication dangers', es: 'Peligros comunicación Internet' }, desc: { de: 'Editierbare Version.', en: 'Editable version for classroom adaptation.', es: 'Versión editable para adaptar en el aula.' }, lvl: 'sekI', fmt: 'DOCX', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Gefahren_Kommunikation_im_Internet.docx' }
+        ]
+    },
+    {
+        num: 5, color: '#ef4444', grad: '#f87171', emoji: '❓',
+        title: { de: 'Problemlösen und Handeln', en: 'Problem Solving and Action', es: 'Resolución de Problemas y Acción' },
+        comps: {
+            de: ['<strong>5.1 Technische Probleme lösen:</strong> Grundlegende Software-/Hardwarefehler diagnostizieren.', '<strong>5.2 Werkzeuge nutzen:</strong> Das richtige digitale Werkzeug je nach Bedarf wählen.', '<strong>5.3 Eigene Defizite erkennen:</strong> Sich selbst einschätzen und digitale Fähigkeiten verbessern.', '<strong>5.4 Digitale Werkzeuge zum Lernen:</strong> Tutorials und Dokumentation nutzen.', '<strong>5.5 Algorithmen verstehen:</strong> Logische Sequenzen und Computational Thinking.'],
+            en: ['<strong>5.1 Solve technical problems:</strong> Diagnose basic software/hardware errors.', '<strong>5.2 Use appropriate tools:</strong> Choose the right digital tool for each need.', '<strong>5.3 Identify own weaknesses:</strong> Self-assess and improve digital skills.', '<strong>5.4 Digital tools for learning:</strong> Use tutorials and documentation.', '<strong>5.5 Understand algorithms:</strong> Logical sequences and computational thinking.'],
+            es: ['<strong>5.1 Resolver problemas técnicos:</strong> Diagnosticar errores básicos en software y hardware.', '<strong>5.2 Herramientas adecuadas:</strong> Elegir la herramienta digital correcta.', '<strong>5.3 Identificar debilidades propias:</strong> Autoevaluarse y mejorar habilidades.', '<strong>5.4 Medios para aprender:</strong> Usar tutoriales y documentación.', '<strong>5.5 Algoritmos básicos:</strong> Secuencias lógicas y pensamiento computacional.']
+        },
+        ex_primary: { de: 'Szenario: "Der Projektor funktioniert nicht." Schüler folgen einem Flussdiagramm: Eingeschaltet? → Kabel angeschlossen? → Richtige Quelle? Dann programmieren sie in Scratch.', en: 'Scenario: "The projector doesn\'t work." Students follow a flowchart: Is it on? → Cable connected? → Correct source? Then they program a simple sequence in Scratch.', es: 'Escenario: "El proyector no funciona." Los alumnos siguen un diagrama de flujo: ¿Encendido? → ¿Cable conectado? → ¿Fuente correcta? Luego programan en Scratch.' },
+        ex_secondary: null,
+        apply: {
+            de: ['<strong>Grafische Objektkarten</strong> erstellen: Prozesse Schritt für Schritt zeichnen.', '<strong>Trial and Error</strong>: Technische Probleme mit logischen Fragen lösen.', '<strong>Grundlegende Programmierung</strong> mit Scratch, code.org oder EOS.', 'Werkzeuge vergleichen: Wann nutzt man Word vs. PowerPoint vs. Excel?'],
+            en: ['Create <strong>graphic object cards</strong>: draw processes step by step.', 'Practice <strong>trial and error</strong>: solve technical problems with logical questions.', 'Introduce <strong>basic programming</strong> with Scratch, code.org or EOS.', 'Compare tools: When to use Word vs. PowerPoint vs. Excel?'],
+            es: ['Crea <strong>tarjetas de objetos gráficos</strong> donde dibujan un proceso paso a paso.', 'Practica <strong>"ensayo-error"</strong>: resuelven problemas guiados por preguntas lógicas.', 'Introduce <strong>programación básica</strong> con Scratch, code.org o EOS.', 'Compara herramientas: ¿cuándo usar Word vs. PowerPoint vs. Excel?']
+        },
+        resources: [
+            { name: { de: 'Grafische Objekte - Anleitung', en: 'Graphic objects - Instructions', es: 'Objetos gráficos - Instrucciones' }, desc: { de: 'Anleitung zum Erstellen grafischer Objektkarten.', en: 'Instructions for creating graphic object cards: draw processes step by step using visual templates.', es: 'Instrucciones para crear tarjetas de objetos gráficos: dibuja procesos paso a paso con plantillas visuales.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_Grafische_Objekte_Objektkarte_Anleitung.pdf' },
+            { name: { de: 'Grafische Objekte - Blanko', en: 'Graphic objects - Blank', es: 'Objetos gráficos - En blanco' }, desc: { de: 'Leere Vorlage zum Ausfüllen.', en: 'Blank template for students to fill in their own graphic object cards.', es: 'Plantilla en blanco para que los estudiantes completen sus propias tarjetas de objetos.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_Grafische_Objekte_Objektkarte_Blanko.pdf' },
+            { name: { de: 'Freihandskizze vs. Fotografie', en: 'Freehand sketch vs. Photography', es: 'Plantilla copia vs. fotografía' }, desc: { de: 'Vergleich von Freihandskizze und Fotografie als Dokumentationsformen.', en: 'Compare freehand sketching vs. photography as documentation methods: advantages of each approach.', es: 'Compara el dibujo a mano alzada vs. la fotografía como métodos de documentación: ventajas de cada uno.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Freihandskizze_vs_Fotografie.pdf' },
+            { name: { de: 'Programmierumgebung EOS', en: 'EOS programming environment', es: 'Entorno de programación EOS' }, desc: { de: 'Einführung in die Programmierumgebung EOS.', en: 'Introduction to the EOS programming environment: basic commands, sequences, and first programs.', es: 'Introducción al entorno de programación EOS: comandos básicos, secuencias y primeros programas.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_Programmierumgebung_EOS.PDF' }
+        ]
+    },
+    {
+        num: 6, color: '#059669', grad: '#34d399', emoji: '🧠',
+        title: { de: 'Analysieren und Reflektieren', en: 'Analyze and Reflect', es: 'Analizar y Reflexionar' },
+        comps: {
+            de: ['<strong>6.1 Medien analysieren:</strong> Verstehen, wie Medieninhalte erstellt werden und mit welcher Absicht.', '<strong>6.2 Kritisch reflektieren:</strong> Einfluss der Medien auf Meinungen und Entscheidungen bewerten.', '<strong>6.3 Fake News:</strong> Desinformation, Deepfakes und manipulierte Inhalte erkennen.', '<strong>6.4 Mediennutzung:</strong> Eigenen Medienkonsum reflektieren und gesunde Gewohnheiten entwickeln.'],
+            en: ['<strong>6.1 Analyze media:</strong> Understand how media content is created and with what intent.', '<strong>6.2 Critical reflection:</strong> Evaluate the impact of media on opinions and decisions.', '<strong>6.3 Fake news:</strong> Identify disinformation, deepfakes, and manipulated content.', '<strong>6.4 Media use:</strong> Reflect on your own media consumption and build healthy habits.'],
+            es: ['<strong>6.1 Analizar medios:</strong> Entender cómo se crean los contenidos mediáticos y con qué intención.', '<strong>6.2 Reflexionar críticamente:</strong> Evaluar el impacto de los medios en las opiniones.', '<strong>6.3 Noticias falsas:</strong> Identificar desinformación, deepfakes y contenido manipulado.', '<strong>6.4 Uso de medios:</strong> Reflexionar sobre el propio consumo mediático.']
+        },
+        ex_primary: {
+            de: 'Schüler führen ein Medientagebuch: eine Woche lang notieren, welche Medien sie nutzen, wie lange und wofür. Dann vergleichen: "Gibt es ein Gleichgewicht zwischen Bildschirmen und Aktivitäten im Freien?"',
+            en: 'Students keep a media diary for one week: note which media they used each day, for how long, and why. Then the class shares results: "Is there a balance between screens and outdoor activities?"',
+            es: 'Los alumnos hacen un diario de medios durante una semana: anotan qué medios usaron, cuánto tiempo y para qué. Al final reflexionan: "¿Existe un equilibrio entre pantallas y actividades al aire libre?"'
+        },
+        ex_secondary: {
+            de: 'Zwei Nachrichten über dasselbe Ereignis präsentieren: eine echte und eine falsche. Schüler untersuchen mit der SIFT-Technik: Stop, Investigate, Find better sources, Trace claims.',
+            en: 'Present two news stories about the same event: one real and one fake. Students investigate using the SIFT technique: Stop, Investigate, Find better sources, Trace claims.',
+            es: 'Presenta dos noticias sobre el mismo evento: una real y una falsa. Los alumnos investigan cuál es fake news usando la técnica SIFT: Stop, Investigate, Find better sources, Trace claims.'
+        },
+        apply: {
+            de: ['Projekt <strong>"Medien früher und heute"</strong>: Kommunikation der Großeltern vs. heute.', 'Workshop <strong>Fake News erkennen</strong>: Schlagzeilen analysieren und mit unabhängigen Quellen prüfen.', 'Umfrage <strong>"Welches Medium nutzt du?"</strong>: Daten sammeln und Diagramme erstellen.', 'Debatte: <strong>"Mein Leben gehört mir"</strong> – Wer kontrolliert, was wir in sozialen Medien sehen?'],
+            en: ['Project <strong>"Media past and present"</strong>: compare how grandparents communicated vs. today.', '<strong>Fake news detection</strong> workshop: analyze headlines and verify with independent sources.', 'Survey <strong>"What media do you use?"</strong>: collect class data and create charts.', 'Debate: <strong>"My life belongs to me"</strong> – Who controls what we see on social media?'],
+            es: ['Proyecto <strong>"Medios ayer y hoy"</strong>: comparan cómo se comunicaban sus abuelos vs. hoy.', 'Taller de <strong>detección de fake news</strong>: analizar titulares y verificar con fuentes independientes.', 'Encuesta <strong>"¿Qué medio usas?"</strong>: recopilar datos y crear gráficos.', 'Debate: <strong>"Mi vida me pertenece"</strong> — ¿Quién controla qué vemos en redes sociales?']
+        },
+        resources: [
+            { name: { de: 'Immer on', en: 'Always on', es: 'Siempre activada' }, desc: { de: 'Reflexion über ständige Erreichbarkeit und Bildschirmzeit.', en: 'Reflect on being always connected: screen time habits, digital well-being, and finding balance.', es: 'Reflexiona sobre estar siempre conectado: hábitos de pantalla, bienestar digital y encontrar equilibrio.' }, lvl: 'primary', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Immer_on.pdf' },
+            { name: { de: 'Immer on', en: 'Always on', es: 'Siempre activada' }, desc: { de: 'Editierbare Version.', en: 'Editable version for classroom adaptation.', es: 'Versión editable para adaptar en el aula.' }, lvl: 'primary', fmt: 'DOCX', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Immer_on.docx' },
+            { name: { de: 'Medien früher', en: 'Media in the past', es: 'Medios en el pasado' }, desc: { de: 'Wie haben Menschen früher kommuniziert? Vergleich mit heute.', en: 'How did people communicate in the past? Compare old media (letters, radio) with modern digital tools.', es: 'Cómo se comunicaban las personas antes? Compara medios antiguos (cartas, radio) con herramientas digitales.' }, lvl: 'primary', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Medien_frueher.pdf' },
+            { name: { de: 'Medien früher und heute', en: 'Media past and present', es: 'Medios pasado y hoy' }, desc: { de: 'Vergleich der Mediennutzung von früher und heute.', en: 'Compare media usage then and now: timeline of communication evolution and its impact on daily life.', es: 'Compara el uso de medios antes y ahora: línea temporal de la evolución comunicativa y su impacto.' }, lvl: 'primary', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Medien_frueher_und_heute_01.pdf' },
+            { name: { de: 'Medien früher und heute', en: 'Media past and present', es: 'Medios pasado y hoy' }, desc: { de: 'Editierbare Version.', en: 'Editable version for classroom adaptation.', es: 'Versión editable para adaptar en el aula.' }, lvl: 'primary', fmt: 'DOCX', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Medien_frueher_und_heute_01.docx' },
+            { name: { de: 'Mediennutzung', en: 'Media use', es: 'Uso de medios' }, desc: { de: 'Eigene Mediennutzung dokumentieren und analysieren.', en: 'Document and analyze your own media use: create a media diary and identify patterns.', es: 'Documenta y analiza tu propio uso de medios: crea un diario de medios e identifica patrones.' }, lvl: 'primary', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Mediennutzung.pdf' },
+            { name: { de: 'Mediennutzung - Teste dich selbst', en: 'Media use - Test yourself', es: 'Uso de medios - Pruébate' }, desc: { de: 'Selbsttest zur Mediennutzung.', en: 'Self-assessment quiz on media usage habits: test your knowledge and awareness.', es: 'Cuestionario de autoevaluación sobre hábitos de uso de medios: prueba tu conocimiento.' }, lvl: 'primary', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Mediennutzung_Teste_dich_selbst.pdf' },
+            { name: { de: 'Welches Medium nutzt du?', en: 'What media do you use?', es: '¿Qué medio usas?' }, desc: { de: 'Umfrage über bevorzugte Medien der Schüler.', en: 'Survey about preferred media: collect class data on which devices and apps students use most.', es: 'Encuesta sobre medios preferidos: recopila datos del grupo sobre qué dispositivos y apps usan más.' }, lvl: 'primary', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/GS_KV_Welche_Medien_nutzt_du.pdf' },
+            { name: { de: 'Fake News untersuchen', en: 'Investigating fake news', es: 'Investigando noticias falsas' }, desc: { de: 'Methoden zur Erkennung von Fake News lernen und anwenden.', en: 'Learn methods to detect fake news: analyze headlines, check sources, and verify images.', es: 'Aprende métodos para detectar noticias falsas: analiza titulares, verifica fuentes y comprueba imágenes.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Fake_News_untersuchen_erkennen.pdf' },
+            { name: { de: 'Mediennutzung reflektieren', en: 'Reflecting on media use', es: 'Reflexionando uso de medios' }, desc: { de: 'Eigene Mediengewohnheiten reflektieren und beschreiben.', en: 'Reflect on and describe your media habits: how much time, what content, and what impact.', es: 'Reflexiona y describe tus hábitos mediáticos: cuánto tiempo, qué contenido y qué impacto tienen.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Mediennutzung_reflektieren_beschreiben.pdf' },
+            { name: { de: 'Mein Leben gehört mir', en: 'My life belongs to me', es: 'Mi vida me pertenece' }, desc: { de: 'Datenschutz und Privatsphäre: Wer bestimmt, was über dich online steht?', en: 'Privacy and data protection: who decides what information about you is online? Your digital rights.', es: 'Privacidad y protección de datos: ¿quién decide qué información tuya está en línea? Tus derechos digitales.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Mein_Leben_gehoert_mir.pdf' },
+            { name: { de: 'Meine Medienwelt', en: 'My media world', es: 'Mi mundo mediático' }, desc: { de: 'Reflexion über die eigene Medienwelt und deren Einfluss.', en: 'Reflect on your personal media world: map all the media you use and evaluate their influence on you.', es: 'Reflexiona sobre tu mundo mediático personal: mapea todos los medios que usas y evalúa su influencia.' }, lvl: 'sekI', fmt: 'PDF', url: 'https://www.klett.de/inhalt/media_fast_path/145/SekI_KV_Meine_Medienwelt.pdf' }
+        ]
+    }
+];
+
+const navColors = ['#4f46e5','#0ea5e9','#8b5cf6','#f59e0b','#ef4444','#059669'];
+const areaLabel = lang === 'de' ? 'Kompetenz' : lang === 'en' ? 'Competency' : 'Competencia';
+%>
+
+<style>
+.kmk-module{max-width:1000px;margin:0 auto;padding:20px}.kmk-intro{background:linear-gradient(135deg,#1e1b4b,#312e81);color:#fff;border-radius:16px;padding:30px;text-align:center;margin-bottom:30px}.kmk-intro h1{font-size:1.8em;margin-bottom:8px}.kmk-intro p{opacity:.85;font-size:1.05em}.kmk-area{background:#fff;border-radius:14px;margin-bottom:24px;box-shadow:0 4px 15px rgba(0,0,0,.06);overflow:hidden}.kmk-area-header{padding:20px 24px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px}.kmk-area-header h2{margin:0;font-size:1.25em;flex:1}.kmk-area-header .badge{background:rgba(255,255,255,.25);padding:4px 12px;border-radius:20px;font-size:.8em}.kmk-area-header .toggle-icon{font-size:1.2em;transition:transform .3s}.kmk-area.open .toggle-icon{transform:rotate(180deg)}.kmk-area-body{display:none;padding:24px}.kmk-area.open .kmk-area-body{display:block}.kmk-section{margin-bottom:20px}.kmk-section h3{font-size:1.05em;color:#1e293b;margin-bottom:10px;display:flex;align-items:center;gap:8px}.kmk-section h3 i{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75em}.competency-list{list-style:none;padding:0;margin:0 0 16px}.competency-list li{padding:8px 12px;border-left:3px solid #e2e8f0;margin-bottom:6px;font-size:.92em;background:#f8fafc;border-radius:0 8px 8px 0}.example-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:12px}.example-box h4{margin:0 0 8px;color:#1e40af;font-size:.95em}.example-box p{font-size:.88em;color:#334155;margin:4px 0}.apply-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:12px}.apply-box h4{margin:0 0 8px;color:#166534;font-size:.95em}.apply-box ul{padding-left:18px;margin:0}.apply-box li{font-size:.88em;color:#334155;margin:4px 0}.resources-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;margin-top:10px}.resource-link{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;text-decoration:none;color:#334155;font-size:.82em;transition:all .2s}.resource-link:hover{border-color:#818cf8;background:#f5f3ff;transform:translateY(-1px)}.r-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.7em;color:#fff;flex-shrink:0}.r-icon.pdf{background:#ef4444}.r-icon.docx{background:#2563eb}.r-tag{font-size:.7em;padding:2px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;flex-shrink:0;margin-left:auto}.nav-strip{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}.nav-strip a{padding:8px 16px;border-radius:10px;text-decoration:none;color:#fff;font-size:.85em;font-weight:600;transition:transform .2s,box-shadow .2s}.nav-strip a:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.2)}.bottom-cta{text-align:center;margin:30px 0}.bottom-cta button{font-size:1.15em;padding:14px 28px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:600;transition:all .3s}.bottom-cta button:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(16,185,129,.3)}.teacher-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}.teacher-topbar .welcome{font-size:.95em;color:#64748b}.teacher-topbar .logout-btn{padding:6px 14px;background:#fee2e2;color:#ef4444;border:none;border-radius:8px;cursor:pointer;font-size:.85em;text-decoration:none}.lang-badge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:.75em;font-weight:600;color:white;margin-left:8px}
+html[lang="de"] .worksheet-note-box { display: none !important; }
+</style>
+
+<div class="kmk-module">
+    <div class="teacher-topbar">
+        <span class="welcome"><i class="fas fa-chalkboard-teacher"></i> <span data-lang-content="<%- encodeContent(ui_content.welcome) %>"><%= t.welcome %></span>, <%= teacher.last_name %>
+            <span class="lang-badge" style="background:<%= lang==='de'?'#dc2626':lang==='en'?'#0ea5e9':'#ea580c' %>"><%= lang.toUpperCase() %></span>
+        </span>
+        <div>
+            <a href="/teacher/worksheets" style="padding:6px 14px;background:#fef08a;color:#854d0e;border-radius:8px;text-decoration:none;font-size:.85em;margin-right:8px"><i class="fas fa-print"></i> <span data-i18n="navWorksheets">Banco de Fichas</span></a>
+            <a href="/teacher/evaluation" style="padding:6px 14px;background:#eff6ff;color:#3b82f6;border-radius:8px;text-decoration:none;font-size:.85em;margin-right:8px"><i class="fas fa-tasks"></i> <span data-i18n="navEval"><%= t.evaluation %></span></a>
+            <a href="/teacher/progress" style="padding:6px 14px;background:#3b82f6;color:white;border-radius:8px;text-decoration:none;font-size:.85em;margin-right:8px"><i class="fas fa-chart-line"></i> Monitoreo Retos (0-6)</a>
+            <a href="/teacher/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> <span data-i18n="logoutTitle"><%= t.logout %></span></a>
+        </div>
+    </div>
+
+    <div class="kmk-intro">
+        <h1>📘 <span data-lang-content="<%- encodeContent(ui_content.workshop) %>"><%= t.workshop %></span></h1>
+        <p data-lang-content="<%- encodeContent(ui_content.subtitle) %>" style="font-weight:600; margin-bottom:15px"><%= t.subtitle %></p>
+        <p data-lang-content="<%- encodeContent(ui_content.intro_kmk) %>" style="font-size:0.95em; line-height:1.5; margin-bottom:15px"><%= t.intro_kmk %></p>
+        <p style="font-size:.85em;margin-top:10px;opacity:.7" data-lang-content="<%- encodeContent(ui_content.instructions) %>"><%= t.instructions %></p>
+    </div>
+
+    <div style="margin-bottom: 40px; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,.08); padding: 24px; border: 1px solid #e2e8f0;">
+        <div style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; padding: 18px; border-radius: 12px; font-weight: 800; font-size: 1.3em; margin-bottom: 24px; text-transform: uppercase; text-align: center; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);">
+            <i class="fas fa-exclamation-triangle" style="margin-right: 8px; font-size: 1.2em; vertical-align: middle;"></i> 
+            <span style="vertical-align: middle;">Importante: Leer antes de iniciar el taller</span>
+        </div>
+        
+        <div style="position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 400px; max-height: 85vh; background: #334155; border-radius: 12px; overflow: hidden; border: 4px solid #cbd5e1; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+            <iframe id="pdfViewer" src="/Digital_Citizenship_Blueprint.pdf#toolbar=0&navpanes=0&view=Fit" width="100%" height="100%" style="border: none; display: block;"></iframe>
+        </div>
+    </div>
+
+
+
+    <h2 style="font-size: 1.5em; font-weight: 800; color: #1e1b4b; margin-top: 35px; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;" data-lang-content="<%- encodeContent({ de: 'KMK-Kompetenzen verstehen - Praktische Beispiele Teil I', en: 'Understanding KMK Competencies - Practical Examples Part I', es: 'Comprendiendo las competencias KMK - Ejemplos prácticos parte I' }) %>">
+        Comprendiendo las competencias KMK - Ejemplos prácticos parte I
+    </h2>
+
+    <div class="nav-strip">
+        <% areas.forEach((a,i) => { %>
+            <a href="#area<%= a.num %>" style="background:<%= navColors[i] %>" onclick="openArea('area<%= a.num %>')">
+                <span data-lang-content="<%- encodeContent({ de: 'Kompetenz ' + a.num, en: 'Competency ' + a.num, es: 'Competencia ' + a.num }) %>">
+                <%= areaLabel %> <%= a.num %></span>
+            </a>
+        <% }) %>
+    </div>
+
+    <% areas.forEach((a, idx) => { %>
+    <div class="kmk-area<%= idx===0?' open':'' %>" id="area<%= a.num %>">
+        <div class="kmk-area-header" style="background:linear-gradient(135deg,<%= a.color %>,<%= a.grad %>)" onclick="toggleArea(this)">
+            <span class="badge" data-lang-content="<%- encodeContent({ de: 'Kompetenz ' + a.num, en: 'Competency ' + a.num, es: 'Competencia ' + a.num }) %>"><%= areaLabel %> <%= a.num %></span>
+            <h2><%= a.emoji %> <span data-lang-content="<%- encodeContent(a.title) %>"><%= a.title[lang] %></span></h2>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="kmk-area-body">
+            <div class="kmk-section">
+                <h3><i style="background:<%= a.color %>" class="fas fa-list"></i> <span data-lang-content="<%- encodeContent(ui_content.competencies) %>"><%= t.competencies %></span></h3>
+                <ul class="competency-list" data-lang-content="<%- encodeContent({ de: a.comps.de.map(c=>'<li>'+c+'</li>').join(''), en: a.comps.en.map(c=>'<li>'+c+'</li>').join(''), es: a.comps.es.map(c=>'<li>'+c+'</li>').join('') }) %>">
+                    <% a.comps[lang].forEach(c => { %><li><%- c %></li><% }) %>
+                </ul>
+            </div>
+            <div class="kmk-section">
+                <% if(a.ex_primary) { %>
+                <div class="example-box">
+                    <h4>💡 <span data-lang-content="<%- encodeContent(ui_content.example_primary) %>"><%= t.example_primary %></span></h4>
+                    <p data-lang-content="<%- encodeContent(a.ex_primary) %>"><%= a.ex_primary[lang] %></p>
+                </div>
+                <% } %>
+                <% if(a.ex_secondary) { %>
+                <div class="example-box">
+                    <h4>💡 <span data-lang-content="<%- encodeContent(ui_content.example_secondary) %>"><%= t.example_secondary %></span></h4>
+                    <p data-lang-content="<%- encodeContent(a.ex_secondary) %>"><%= a.ex_secondary[lang] %></p>
+                </div>
+                <% } %>
+            </div>
+            <div class="kmk-section">
+                <div class="apply-box">
+                    <h4>🎯 <span data-lang-content="<%- encodeContent(ui_content.apply) %>"><%= t.apply %></span></h4>
+                    <ul data-lang-content="<%- encodeContent({ de: a.apply.de.map(t=>'<li>'+t+'</li>').join(''), en: a.apply.en.map(t=>'<li>'+t+'</li>').join(''), es: a.apply.es.map(t=>'<li>'+t+'</li>').join('') }) %>">
+                        <% a.apply[lang].forEach(tip => { %><li><%- tip %></li><% }) %>
+                    </ul>
+                </div>
+            </div>
+            <div class="kmk-section">
+                <h3><i style="background:<%= a.color %>" class="fas fa-file-download"></i> <span data-lang-content="<%- encodeContent(ui_content.worksheets) %>"><%= t.worksheets %></span></h3>
+                <div class="worksheet-note-box" style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.85em;color:#854d0e">
+                    <span data-lang-content="<%- encodeContent(ui_content.worksheets_note) %>"><%= t.worksheets_note %></span>
+                </div>
+                <div class="resources-grid">
+                    <% a.resources.forEach(r => { %>
+                    <a href="<%= r.url %>" target="_blank" class="resource-link" style="flex-direction:column;align-items:flex-start;gap:4px">
+                        <div style="display:flex;align-items:center;gap:8px;width:100%">
+                            <span class="r-icon <%= r.fmt==='PDF'?'pdf':'docx' %>"><i class="fas fa-file-<%= r.fmt==='PDF'?'pdf':'word' %>"></i></span>
+                            <span style="flex:1" data-lang-content="<%- encodeContent(r.name) %>"><%= r.name[lang] || r.name.de %></span>
+                            <span class="r-tag">
+                                <span data-lang-content="<%- encodeContent(r.lvl==='primary' ? ui_content.primary : ui_content.sekI) %>"><%= r.lvl==='primary' ? t.primary : t.sekI %></span> · <%= r.fmt %>
+                            </span>
+                        </div>
+                        <% if(r.desc) { %>
+                        <div style="font-size:.78em;color:#64748b;padding-left:36px;line-height:1.3" data-lang-content="<%- encodeContent(r.desc) %>">📝 <%= r.desc[lang] || r.desc.de || '' %></div>
+                        <% } %>
+                    </a>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+    </div>
+    <% }) %>
+
+    <h2 style="font-size: 1.5em; font-weight: 800; color: #1e1b4b; margin-top: 35px; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;" data-lang-content="<%- encodeContent({ de: 'Praktische Beispiele Teil II: Kompetenzen in Aktion 0 bis 6', en: 'Practical Examples Part II: Competencies in Action 0 to 6', es: 'Ejemplos prácticos parte II Competencias en acción 0 al 6:' }) %>">
+        Ejemplos prácticos parte II Competencias en acción 0 al 6:
+    </h2>
+
+    <% part2Competencies.forEach((c, idx) => { %>
+    <div class="kmk-area" id="competencia<%= c.num %>">
+        <div class="kmk-area-header" style="background:linear-gradient(135deg,<%= c.color %>,<%= c.grad %>)" onclick="toggleArea(this)">
+            <span class="badge" data-lang-content="<%- encodeContent(c.badge) %>"><%= c.badge[lang] %></span>
+            <h2><%= c.emoji %> <span data-lang-content="<%- encodeContent(c.title) %>"><%= c.title[lang] %></span></h2>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="kmk-area-body">
+            <!-- Objetivo -->
+            <div class="kmk-section">
+                <h4 style="margin: 0 0 8px 0; color: <%= c.color %>; font-size: 1.1em; font-weight: 700;" data-lang-content="<%- encodeContent(c.objTitle) %>"><%= c.objTitle[lang] %></h4>
+                <p style="margin: 0; color: #334155; font-size: 1em; line-height: 1.6; background: #f8fafc; padding: 14px; border-radius: 8px;" data-lang-content="<%- encodeContent(c.objText) %>"><%= c.objText[lang] %></p>
+            </div>
+            
+            <!-- Desarrollo -->
+            <div class="kmk-section">
+                <h4 style="margin: 0 0 12px 0; color: #065f46; font-size: 1.15em; font-weight: 700; border-bottom: 2px solid #10b981; padding-bottom: 6px; display: inline-block;" data-lang-content="<%- encodeContent(c.devTitle) %>"><%= c.devTitle[lang] %></h4>
+                <p style="margin: 0 0 16px 0; color: #475569; font-size: 0.95em; line-height: 1.5;" data-lang-content="<%- encodeContent(c.devIntro) %>"><%= c.devIntro[lang] %></p>
+                <% c.devList.forEach(d => { %>
+                <div style="background: #f8fafc; border-left: 4px solid #10b981; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                    <h5 style="margin: 0 0 8px 0; color: #065f46; font-size: 1.05em; font-weight: 700;" data-lang-content="<%- encodeContent(d.title) %>"><%= d.title[lang] %></h5>
+                    <p style="margin: 0; color: #334155; font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(d.text) %>"><%= d.text[lang] %></p>
+                </div>
+                <% }) %>
+            </div>
+
+            <!-- Pistas -->
+            <div class="kmk-section">
+                <h4 style="margin: 0 0 12px 0; color: #1e1b4b; font-size: 1.15em; font-weight: 700; border-bottom: 2px solid <%= c.color %>; padding-bottom: 6px; display: inline-block;" data-lang-content="<%- encodeContent(c.hintTitle) %>"><%= c.hintTitle[lang] %></h4>
+                <p style="margin: 0 0 16px 0; color: #475569; font-size: 0.95em; line-height: 1.5;" data-lang-content="<%- encodeContent(c.hintIntro) %>"><%= c.hintIntro[lang] %></p>
+                <% c.hintsList.forEach(h => { %>
+                <div style="background: #f8fafc; border-left: 4px solid <%= c.color %>; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                    <h5 style="margin: 0 0 8px 0; color: #1e293b; font-size: 1.05em; font-weight: 700;" data-lang-content="<%- encodeContent(h.title) %>"><%= h.title[lang] %></h5>
+                    <p style="margin: 0; color: #475569; font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(h.text) %>"><%= h.text[lang] %></p>
+                </div>
+                <% }) %>
+            </div>
+
+            <!-- Evaluación -->
+            <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 20px; border-radius: 12px;">
+                <h4 style="margin: 0 0 8px 0; color: #b45309; font-size: 1.1em; font-weight: 700;" data-lang-content="<%- encodeContent(c.evalTitle) %>"><%= c.evalTitle[lang] %></h4>
+                <p style="margin: 0; color: #92400e; font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(c.evalText) %>"><%= c.evalText[lang] %></p>
+            </div>
+        </div>
+    </div>
+    <% }) %>
+
+    <div class="bottom-cta">
+        <p style="color:#64748b;margin-bottom:14px" data-lang-content="<%- encodeContent(ui_content.cta_question) %>"><%= t.cta_question %></p>
+        <button onclick="window.location.href='/teacher/evaluation'"><i class="fas fa-check-circle"></i> <span data-lang-content="<%- encodeContent(ui_content.cta_button) %>"><%= t.cta_button %></span></button>
+    </div>
+</div>
+
+<script>
+function toggleArea(h){h.parentElement.classList.toggle('open')}
+function openArea(id) {
+    document.querySelectorAll('.kmk-area').forEach(el => el.classList.remove('open'));
+    const target = document.getElementById(id);
+    if(target) target.classList.add('open');
+}
+</script>
+<%- include('../partials/glossary') %>
+
+<%- include('../partials/footer') %>

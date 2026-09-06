@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Troubleshooting — MedienPass</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; margin: 0; padding: 0; }
+        .header {
+            background: linear-gradient(135deg, #1e1b4b, #4338ca);
+            color: white; padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header h1 { margin: 0; font-size: 1.4em; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        
+        .search-box {
+            background: white; border-radius: 12px; padding: 20px; margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .search-box input {
+            width: 100%; padding: 14px 20px; border: 2px solid #e2e8f0; border-radius: 10px;
+            font-size: 1.1em; box-sizing: border-box;
+        }
+        .search-box input:focus { border-color: #4f46e5; outline: none; }
+        
+        .category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        
+        .category-card {
+            background: white; border-radius: 16px; overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .category-header {
+            padding: 16px 20px; color: white; font-weight: 600; font-size: 1.1em;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .category-header i { font-size: 1.3em; }
+        .cat-red { background: #dc2626; }
+        .cat-blue { background: #0ea5e9; }
+        .cat-purple { background: #7c3aed; }
+        .cat-orange { background: #ea580c; }
+        .cat-green { background: #059669; }
+        
+        .category-content { padding: 16px; }
+        
+        .problem-item {
+            border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 10px; overflow: hidden;
+        }
+        .problem-header {
+            padding: 12px 16px; background: #f8fafc; cursor: pointer; display: flex;
+            justify-content: space-between; align-items: center;
+        }
+        .problem-header:hover { background: #f1f5f9; }
+        .problem-header h4 { margin: 0; font-size: 0.95em; color: #1e293b; }
+        .problem-content {
+            padding: 0 16px; max-height: 0; overflow: hidden; transition: max-height 0.3s, padding 0.3s;
+        }
+        .problem-content.open { max-height: 500px; padding: 16px; }
+        .problem-content ul { margin: 0; padding-left: 20px; color: #475569; font-size: 0.9em; }
+        .problem-content li { margin-bottom: 8px; }
+        .problem-content .step { background: #f0f9ff; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.85em; }
+        
+        .emergency-box {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            border: 2px solid #ef4444; border-radius: 16px; padding: 24px; margin-bottom: 24px;
+        }
+        .emergency-box h3 { color: #991b1b; margin: 0 0 16px; }
+        .emergency-box .btn { background: #ef4444; color: white; padding: 12px 24px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 1em; }
+        .emergency-box .btn:hover { background: #dc2626; }
+        
+        .back-link { color: rgba(255,255,255,0.8); text-decoration: none; }
+        .back-link:hover { color: white; }
+        
+        .chevron { transition: transform 0.3s; }
+        .problem-item.open .chevron { transform: rotate(180deg); }
+        
+        .contact-card {
+            background: white; border-radius: 16px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-top: 24px;
+        }
+        .contact-card h3 { margin: 0 0 16px; color: #1e1b4b; }
+        .contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+        .contact-item { display: flex; align-items: center; gap: 10px; }
+        .contact-item i { color: #4f46e5; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>🔧 Guía de Troubleshooting</h1>
+            <span>Soluciones rápidas a problemas técnicos</span>
+        </div>
+        <div>
+            <a href="/teacher/bitacora" class="back-link" style="margin-right: 20px;"><i class="fas fa-clipboard-list"></i> Ver Bitácora</a>
+            <a href="/teacher/training" class="back-link"><i class="fas fa-arrow-left"></i> Volver al Portal</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Emergency -->
+        <div class="emergency-box">
+            <h3>⚠️ ¿Problema urgente que no puedes resolver?</h3>
+            <p>Si necesitas reportar una falla técnica, utiliza la Bitácora de Novedades.</p>
+            <button onclick="window.location.href='/teacher/bitacora'" class="btn">
+                <i class="fas fa-exclamation-circle"></i> Reportar en Bitácora
+            </button>
+        </div>
+
+        <!-- Search -->
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Busca tu problema... (ej: WiFi, Teams, laptop no enciende)">
+        </div>
+
+        <!-- Categories -->
+        <div class="category-grid" id="categoriesGrid">
+            
+            <!-- Red/Conectividad -->
+            <div class="category-card" data-category="red">
+                <div class="category-header cat-red">
+                    <i class="fas fa-wifi"></i> Red y Conectividad
+                </div>
+                <div class="category-content">
+                    <div class="problem-item">
+                        <div class="problem-header" onclick="toggleProblem(this)">
+                            <h4>📶 WiFi no conecta</h4>
+                            <i class="fas fa-chevron-down chevron"></i>
+                        </div>
+                        <div class="problem-content">
+                            <div class="step">1. Verificar que el dispositivo tenga WiFi activado</div>
+                            <ul>
+                                <li>Revisar que el ícono de WiFi no esté desactivado</li>
+                                <li>Asegurarse de estar en la red correcta (DSB_WLAN o similar)</li>
+                            </ul>
+                            <div class="step">2. Olvidar red y reconectar</div>
+                            <ul>
+                                <li>Ir a Configuración > WiFi</li>
+                                <li>Olvidar la red guardada</li>
+                                <li>Volver a conectarte ingresando la contraseña</li>
+                            </ul>
+                            <div class="step">3. Reiniciar el dispositivo</div>
+                            <ul>
+                                <li>Apagar completamente y volver a encender</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="problem-item">
+                        <div class="problem-header" onclick="toggleProblem(this)">
+                            <h4>💬 Teams no abre sesión</h4>
+                            <i class="fas fa-chevron-down chevron"></i>
+                        </div>
+                        <div class="problem-content">
+                            <div class="step">1. Verificar credenciales Office 365</div>
+                            <ul>
+                                <li>Usuario: nombre@colegioaleman.edu.co</li>
+                                <li>Contraseña: la misma del correo institucional</li>
+                            </ul>
+                            <div class="step">2. Limpiar caché de Teams</div>
+                            <ul>
+                                <li>Cerrar Teams completamente</li>
+                                <li>Ir a %appdata%\Microsoft\Teams</li>
+                                <li>Eliminar carpeta "Cache"</li>
+                                <li>Volver a abrir Teams</li>
+                            </ul>
+                            <div class="step">3. Probar en navegador</div>
+                            <ul>
+                                <li>Ir a teams.microsoft.com</li>
+                                <li>Si funciona ahí, reinstalar la app</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="problem-item">
+                        <div class="problem-header" onclick="toggleProblem(this)">
+                            <h4>☁️ OneDrive no sincroniza</h4>
+                            <i class="fas fa-chevron-down chevron"></i>
+                        </div>
+                        <div class="problem-content">
+                            <div class="step">1. Verificar conexión a internet</div>
+                            <ul>
+                                <li>Abrir cualquier página web</li>
+                            </ul>
+                            <div class="step">2. Reiniciar sincronización</div>
+                            <ul>
+                                <li>Click derecho en ícono de OneDrive</li>
+                                <li>Seleccionar "Configuración"</li>
+                                <li>Pestaña "Cuenta" > "Desconectar"</li>
+                                <li>Volver a agregar cuenta</li>
+                            </ul>
+                            <div class="step">3. Espacio en disco</div>
+                            <ul>
+                                <li>Verificar que haya espacio disponible</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hardware -->
+            <div class="category-card" data-category="hardware">
+                <div class="category-header cat-blue">
+                    <i class="fas fa-laptop"></i> Hardware
+                </div>
+                <div class="category-content">
+                    <div class="problem-item">
+                        <div class="problem-header" onclick="toggleProblem(this)">
+                            <h4>🔌 Laptop no enciende</h4>
+                            <i class="fas fa-chevron-down chevron"></i>
+                        </div>
+                        <div class="problem-content">
+                            <div class="step">1. Verificar cargador</div>
+                            <ul>
+                                <li>Confirmar que el cargador esté conectado</li>
+                                <li>Revisar que el indicador de carga encienda</li>
+                                <li>Probar con otro cargador si es posible</li>
+                            </ul>
+                            <div class="step">2. Forzar reinicio</div>
+                            <ul>
+                                <li>Mantener presionado el botón de encendido 10 segundos</li>
+                                <li>Soltar y presionar normalmente</li>
+                            </ul>
+                            <div class="step">3. Batería baja</div>
+                            <ul>
+                                <li>Dejar cargando mínimo 15 minutos</li>
+                                <li>Intentar encender de nuevo</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="problem-item">
+                        <div class="problem-header" onclick="toggleProblem(this)">
+                            <h4>🖥️ Pantalla negra</h4>
+                            <i class="fas fa-chevron-down chevron"></i>
+                        </div>
+                        <div class="problem-content">
+                            <div class="step">1. Brillo al mínimo</div>
+                            <ul>
+                                <li>Presionar Fn + tecla de brillo (+) varias veces</li>
+                            </ul>
+                            <div class="step">2. Teclado no responde</div>
+                            <ul>
+                                <li>Mantener presionado Alt + Ctrl + Del</li>
+                                <li>Si abre administrador de tareas, reiniciar</li>
+                            </ul>
+                            <div class="step">3. Apagar y encender</div>
+                            <ul>
+                                <li>Mantener botón de encendido 10 segundos</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="problem-item">
+                        <div class="problem-header" onclick="toggleProblem(this)">
+                            <h4>🎧 Audífonos no funcionan</h4>
+                            <i class="fas fa-chevron-down chevron"></i>
+                        </div>
+                        <div class="problem-content">
+                            <div class="step">1. Verificar conexión</div>
+                            <ul>
+                                <li>Si son USB, probar en otro puerto</li>
+                                <li>Si son Bluetooth, verificar que estén pareados</li>
+                            </ul>
+                            <div class="step">2. Dispositivo de audio</div>
+                            <ul>
+                                <li>Click derecho en ícono de sonido</li>
+                                <li>Configuración de sonido > Salida de audio</li>
+                                <li>Seleccionar los audífonos</li>
+                            </ul>
+                            <div class="step">3. Reiniciar</div>
+                            <ul>
+                                <li>Apagar y encender los audífonos</li>
+                                <li>Reconectar Bluetooth si es necesario</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Software -->
+            <div class="category-card" data-category="software">
+                <div class="category-header cat-purple">
+                    <i class="fas fa-code"></i> Software y Aplicaciones
+                </div>
+                <div class="category-content">
+                    <div class="problem-item">
+                        <div class="problem-header" onclick="toggleProblem(this)">
+                            <h4>❌ App no responde</h4>
+                            <i class="fas fa-chevron-down chevron"></i>
+                        </div>
+                        <div class="problem-content">
+                            <div class="step">1. Forzar cierre</div>
+                            <ul>
+                                <li>Presionar Ctrl + Shift + Esc</li>
+                                <li>Buscar la app en procesos</li>
+                                <li>Click en "Finalizar tarea"</li>
+                            </ul>
+                            <div class="step">2. Reiniciar la app</div>
+                            <ul>
+                                <li>Cerrar completamente</li>
+                                <li>Esperar 30 segundos</li>
+                                <li>Abrir de nuevo</li>
+                            </ul>
+                            <div class="step">3. Reiniciar el PC</div>
+                            <ul>
+                                <li>Si el problema persiste</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="problem-item">
+                        <div class="problem-header" onclick="toggleProblem(this)">
+                            <h4>🔑 Error de login Office 365</h4>
+                            <i class="fas fa-chevron-down chevron"></i>
+                        </div>
+                        <div class="problem-content">
+                            <div class="step">1. Verificar credenciales</div>
+                            <ul>
+                                <li>Usuario debe ser: nombre@colegioaleman.edu.co</li>
+                                <li>Contraseña es la del correo institucional</li>
+                            </ul>
+                            <div class="step">2. Contraseña expirada</div>
+                            <ul>
+                                <li>Contactar a soporte TI</li>
+                                <li>No intentar múltiples veces</li>
+                            </ul>
+                            <div class="step">3. Cuenta bloqueada</div>
+                            <ul>
+                                <li>Esperar 30 minutos e intentar de nuevo</li>
+                                <li>Reportar en bitácora si persiste</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="problem-item">
+                        <div class="problem-header" onclick="toggleProblem(this)">
+                            <h4>📓 Class Notebook no carga</h4>
+                            <i class="fas fa-chevron-down chevron"></i>
+                        </div>
+                        <div class="problem-content">
+                            <div class="step">1. Verificar conexión a internet</div>
+                            <ul>
+                                <li>Abrir teams.microsoft.com</li>
+                            </ul>
+                            <div class="step">2. Limpiar caché de Teams</div>
+                            <ul>
+                                <li>Cerrar Teams</li>
+                                <li>Borrar carpeta %appdata%\Microsoft\Teams\Cache</li>
+                                <li>Abrir Teams de nuevo</li>
+                            </ul>
+                            <div class="step">3. Verificar permisos</div>
+                            <ul>
+                                <li>Contactar al docente para verificar acceso</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio/Video -->
+            <div class="category-card" data-category="av">
+                <div class="category-header cat-orange">
+                    <i class="fas fa-volume-up"></i> Audio y Video
+                </div>
+                <div class="category-content">
+                    <div class="problem-item">
+                        <div class="problem-header" onclick="toggleProblem(this)">
+                            <h4>🎤 Micrófono no funciona</h4>
+                            <i class="fas fa-chevron-down chevron"></i>
+                        </div>
+                        <div class="problem-content">
+                            <div class="step">1. Verificar en Teams</div>
+                            <ul>
+                                <li>Durante una llamada, click en ...</li>
+                                <li>Configuración de dispositivo</li>
+                                <li>Seleccionar micrófono correcto</li>
+                            </ul>
+                            <div class="step">2. Permisos de Windows</div>
+                            <ul>
+                                <li>Configuración > Privacidad > Micrófono</li>
+                                <li>Aplicaciones，允许访问</li>
+                            </ul>
+                            <div class="step">3. Probar en otra app</div>
+                            <ul>
+                                <li>Abrir Grabadora de voz</li>
+                                <li>Si no funciona, es problema de hardware</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="problem-item">
+                        <div class="problem-header" onclick="toggleProblem(this)">
+                            <h4>📹 Cámara no funciona</h4>
+                            <i class="fas fa-chevron-down chevron"></i>
+                        </div>
+                        <div class="problem-content">
+                            <div class="step">1. Indicador LED</div>
+                            <ul>
+                                <li>Si el LED está apagado, reiniciar</li>
+                            </ul>
+                            <div class="step">2. Permisos</div>
+                            <ul>
+                                <li>Configuración > Privacidad > Cámara</li>
+                                <li>Aplicaciones，允许访问</li>
+                            </ul>
+                            <div class="step">3. Probar en otra app</div>
+                            <ul>
+                                <li>Abrir app de Cámara de Windows</li>
+                                <li>Si no funciona, el problema es hardware</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Contact -->
+        <div class="contact-card">
+            <h3>📞 Contacto de Soporte Técnico</h3>
+            <div class="contact-grid">
+                <div class="contact-item">
+                    <i class="fas fa-user"></i>
+                    <span>Luis Carlos Acero</span>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-user"></i>
+                    <span>María Eugenia Román</span>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <span>soporte@colegioaleman.edu.co</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleProblem(header) {
+            const item = header.closest('.problem-item');
+            const content = item.querySelector('.problem-content');
+            content.classList.toggle('open');
+            item.classList.toggle('open');
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const search = e.target.value.toLowerCase();
+            const items = document.querySelectorAll('.problem-item');
+            
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(search) ? 'block' : 'none';
+            });
+
+            document.querySelectorAll('.category-card').forEach(card => {
+                const visibleItems = card.querySelectorAll('.problem-item:not([style*="display: none"])');
+                const hasVisible = Array.from(visibleItems).some(i => i.style.display !== 'none');
+                if (!hasVisible && search) {
+                    card.style.display = 'none';
+                } else {
+                    card.style.display = 'block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

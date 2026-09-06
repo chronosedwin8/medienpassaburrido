@@ -1,0 +1,41 @@
+                                        <% if (activity.teachersBySubject && activity.teachersBySubject.length> 0) { %>
+                                            <div class="section teachers-by-subject-section">
+                                                <h2><i class="fas fa-chalkboard-teacher"></i>
+                                                    <span data-i18n="myTeachers">Meine Lehrer*innen / Mis
+                                                        Profesores</span>
+                                                </h2>
+                                                <div class="teachers-grid">
+                                                    <% activity.teachersBySubject.forEach(t=> { %>
+                                                        <div class="teacher-card"
+                                                            style="border-color: <%= t.subjectColor %>">
+                                                            <div class="teacher-card-header"
+                                                                style="background: <%= t.subjectColor %>15">
+                                                                <span class="teacher-subject-icon">
+                                                                    <%= t.subjectIcon %>
+                                                                </span>
+                                                                <span class="teacher-subject-name"
+                                                                    data-lang-content="<%- JSON.stringify(t.subjectName).replace(/"/g, '&quot;') %>">
+                                                                    <span class="lang-line lang-primary">
+                                                                        <%= t.subjectName.de %>
+                                                                    </span>
+                                                                </span>
+                                                            </div>
+                                                            <div class="teacher-card-input">
+                                                                <input type="text" id="<%= t.fieldId %>"
+                                                                    name="<%= t.fieldId %>"
+                                                                    list="teacher_datalist"
+                                                                    data-lang-content="<%- JSON.stringify(t.label).replace(/"/g, '&quot;') %>"
+                                                                    placeholder="Name / Nombre"
+                                                                    value="<%= (typeof teacherConfig !== 'undefined' && teacherConfig[t.subjectId]) ? teacherConfig[t.subjectId] : 'NO APLICA' %>">
+                                                            </div>
+                                                        </div>
+                                                        <% }) %>
+                                                </div>
+                                                <datalist id="teacher_datalist">
+                                                    <option value="NO APLICA">
+                                                    <% if(typeof allTeachers !== 'undefined') { allTeachers.forEach(function(teacher) { %>
+                                                        <option value="<%= teacher %>">
+                                                    <% }); } %>
+                                                </datalist>
+                                            </div>
+                                            <% } %>
