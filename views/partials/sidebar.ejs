@@ -215,19 +215,27 @@
     <div class="sidebar-footer">
         <div class="user-profile">
             <div class="user-avatar">
-                <% 
-                   let initials = 'A';
-                   let fullName = 'Admin';
-                   if (context === 'teacher' && typeof teacher !== 'undefined') {
-                       initials = ((teacher.first_name || '').charAt(0) + (teacher.last_name || '').charAt(0)).toUpperCase() || 'P';
-                       fullName = (teacher.first_name || '') + ' ' + (teacher.last_name || '');
+                <%
+                   // Identidad y rol reales de la sesion firmada, en vez del
+                   // "Admin / Administrador" fijo que habia aqui.
+                   const sess = (typeof user !== 'undefined' && user) ? user : null;
+                   let fullName = sess
+                       ? ([sess.firstName, sess.lastName].filter(Boolean).join(' ') || sess.name || sess.email || 'Usuario')
+                       : 'Usuario';
+                   if (!sess && context === 'teacher' && typeof teacher !== 'undefined') {
+                       fullName = ((teacher.first_name || '') + ' ' + (teacher.last_name || '')).trim() || 'Docente';
                    }
+                   const parts = fullName.trim().split(/\s+/);
+                   let initials = ((parts[0] || '').charAt(0) + (parts[1] || '').charAt(0)).toUpperCase() || 'U';
+                   const roleText = (typeof roleLabel === 'function')
+                       ? roleLabel(typeof lang !== 'undefined' ? lang : 'es')
+                       : (context === 'admin' ? 'Administrador' : 'Docente');
                 %>
                 <%= initials %>
             </div>
             <div class="user-info">
                 <span class="user-name"><%= fullName %></span>
-                <span class="user-role"><%= context === 'admin' ? 'Administrador' : 'Docente' %></span>
+                <span class="user-role"><%= roleText %></span>
             </div>
         </div>
         <a href="<%= context === 'admin' ? '/admin/logout' : '/teacher/logout' %>" class="menu-link" style="margin: 0; padding: 10px 8px; border: none; border-radius: 6px; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: flex; align-items: center; justify-content: center; gap: 8px;">

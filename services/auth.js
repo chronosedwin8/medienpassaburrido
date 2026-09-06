@@ -219,6 +219,13 @@ function loadSession(req, res, next) {
     res.locals.isStaff = !!(user && user.kind === 'staff');
     res.locals.isStudent = !!(user && user.kind === 'student');
     res.locals.can = permission => !!(user && can(user.role, permission));
+
+    // Etiqueta del rol en el idioma de la interfaz, para mostrarla tal cual.
+    res.locals.roleLabel = (lang) => {
+        if (!user) return '';
+        const labels = config.roles().labels[user.role];
+        return (labels && (labels[lang] || labels.es)) || user.role;
+    };
     next();
 }
 

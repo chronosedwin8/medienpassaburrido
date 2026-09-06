@@ -14,7 +14,7 @@ const curLang = typeof lang !== 'undefined' ? lang : 'es';
 
         <nav class="mp-nav" aria-label="Principal">
             <% links.forEach(function (l) { %>
-                <a class="mp-nav__link" href="<%= l.href %>"<%= active === l.key ? ' aria-current="page"' : '' %>><%= l.label %></a>
+                <a class="mp-nav__link" href="<%= l.href %>"<%- active === l.key ? ' aria-current="page"' : '' %>><%= l.label %></a>
             <% }); %>
         </nav>
 
@@ -22,7 +22,7 @@ const curLang = typeof lang !== 'undefined' ? lang : 'es';
 
         <nav class="mp-langs" aria-label="Idioma">
             <% langs.forEach(function (l) { %>
-                <a class="mp-langs__item" href="?lang=<%= l %>"<%= curLang === l ? ' aria-current="true"' : '' %>><%= l %></a>
+                <a class="mp-langs__item" href="?lang=<%= l %>"<%- curLang === l ? ' aria-current="true"' : '' %>><%= l %></a>
             <% }); %>
         </nav>
 
