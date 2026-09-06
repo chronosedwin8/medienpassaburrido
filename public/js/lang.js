@@ -1,174 +1,92 @@
 /**
- * lang.js - Language Switcher for MedienPass App
- * 
- * Display rules (updated):
- * - DE selected: Show German (primary) + Spanish (secondary)
- * - EN selected: Show English (primary) + Spanish (secondary)
- * - ES selected / Tecnología: Show ONLY Spanish
+ * lang.js — Puente entre el idioma del servidor y el código del navegador.
+ *
+ * QUÉ HACÍA ANTES Y POR QUÉ SE CAMBIÓ
+ *
+ * Este archivo mantenía su propio estado de idioma en localStorage, con
+ * `DEFAULT_LANG = 'de'`. Al cargar (desde partials/footer.ejs) hacía tres
+ * cosas que peleaban con el servidor:
+ *
+ *   1. En un navegador nuevo localStorage está vacío, así que asumía alemán.
+ *   2. Escribía la cookie `lang` con ese valor, PISANDO la elección real de la
+ *      persona: alguien entraba eligiendo español y la cookie acababa en "de".
+ *   3. Reescribía todos los [data-i18n] del DOM, deshaciendo el HTML que el
+ *      servidor ya había generado en el idioma correcto.
+ *
+ * Resultado: el selector de idioma "no hacía nada". El servidor respondía bien
+ * y este script lo revertía medio segundo después.
+ *
+ * AHORA el idioma lo decide el servidor (services/i18n.js) y lo publica en
+ * window.__lang. Aquí solo queda lo que otras vistas necesitan para consultarlo.
  */
-
 (function () {
     'use strict';
 
-    const STORAGE_KEY = 'medienpass_lang';
-    const DEFAULT_LANG = 'de';
+    var IDIOMAS = ['es', 'de', 'en'];
 
+    /** El idioma que el servidor ya resolvió y usó para pintar la página. */
     function getLang() {
-        return localStorage.getItem(STORAGE_KEY) || DEFAULT_LANG;
+        var l = window.__lang;
+        return IDIOMAS.indexOf(l) !== -1 ? l : 'es';
     }
 
-    function setLang(lang) {
-        localStorage.setItem(STORAGE_KEY, lang);
-        document.cookie = `lang=${lang};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
-    }
-
-    // Get display text based on language rules
-    function getDisplayText(textObj, lang) {
-        if (!textObj || typeof textObj === 'string') return textObj || '';
-        if (typeof textObj !== 'object') return String(textObj);
-        lang = lang || getLang();
-
-        const isTechSection = document.body && document.body.getAttribute('data-section') === 'tecnologia';
-
-        if (lang === 'es' || isTechSection) {
-            // Spanish mode (or Tech Section): show ONLY Spanish
-            return textObj.es || textObj.de || '';
-        } else if (lang === 'en') {
-            // English mode: primary English + secondary Spanish
-            const primary = textObj.en || textObj.de || '';
-            const secondary = textObj.es || '';
-            if (primary && secondary && primary !== secondary) {
-                return primary + '\n' + secondary;
-            }
-            return primary || secondary;
-        } else {
-            // German mode: primary German + secondary Spanish
-            const primary = textObj.de || '';
-            const secondary = textObj.es || '';
-            if (primary && secondary && primary !== secondary) {
-                return primary + '\n' + secondary;
-            }
-            return primary || secondary;
-        }
-    }
-
-    function getPrimaryText(textObj, lang) {
-        if (!textObj || typeof textObj === 'string') return textObj || '';
-        if (typeof textObj !== 'object') return String(textObj);
-        lang = lang || getLang();
-        return textObj[lang] || textObj.de || '';
-    }
-
-    // Get multilingual HTML with proper formatting
-    function getDisplayHTML(textObj, lang) {
-        if (!textObj || typeof textObj === 'string') return textObj || '';
-        if (typeof textObj !== 'object') return String(textObj);
-        lang = lang || getLang();
-
-        const isTechSection = document.body && document.body.getAttribute('data-section') === 'tecnologia';
-
-        if (lang === 'es' || isTechSection) {
-            // Spanish mode (or Tech Section): show ONLY Spanish
-            const es = textObj.es || textObj.de || '';
-            return `<span class="lang-line lang-primary">${es}</span>`;
-        } else if (lang === 'en') {
-            // English mode: English primary + Spanish secondary (small below)
-            const primary = textObj.en || textObj.de || '';
-            const secondary = textObj.es || '';
-            let html = `<span class="lang-line lang-primary">${primary}</span>`;
-            if (secondary && secondary !== primary) {
-                html += `<br><span class="lang-line lang-secondary" style="font-size:0.7em; opacity:0.8;">${secondary}</span>`;
-            }
-            return html;
-        } else {
-            // German mode: German primary + Spanish secondary (in parentheses)
-            const primary = textObj.de || '';
-            const secondary = textObj.es || '';
-            let html = `<span class="lang-line lang-primary">${primary}</span>`;
-            if (secondary && secondary !== primary) {
-                html += ` <span class="lang-line lang-secondary" style="font-size:0.9em; opacity:0.9;">(${secondary})</span>`;
-            }
-            return html;
-        }
-    }
-
-    function updateUI(lang) {
-        lang = lang || getLang();
-        const t = window.i18n ? window.i18n[lang] : {};
-
-        // Update simple i18n text
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (t[key]) {
-                el.textContent = t[key];
-            }
-        });
-
-        // Update placeholders
-        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-            const key = el.getAttribute('data-i18n-placeholder');
-            if (t[key]) {
-                el.placeholder = t[key];
-            }
-        });
-
-        // Update select option text (data-i18n-option)
-        document.querySelectorAll('[data-i18n-option]').forEach(el => {
-            const key = el.getAttribute('data-i18n-option');
-            if (t[key]) {
-                el.textContent = t[key];
-            }
-        });
-
-        // Update multilingual content blocks
-        document.querySelectorAll('[data-lang-content]').forEach(el => {
-            try {
-                const textObj = JSON.parse(el.getAttribute('data-lang-content'));
-                el.innerHTML = getDisplayHTML(textObj, lang);
-            } catch (e) { /* ignore */ }
-        });
-
-        // Update button active states
-        document.querySelectorAll('.lang-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
-        });
-
-        document.documentElement.lang = lang;
-        document.dispatchEvent(new CustomEvent('langchange', { detail: { lang } }));
-    }
-
+    /**
+     * Cambia de idioma pidiéndoselo al servidor, que es quien manda.
+     * Antes lo hacía en el navegador y se perdía al recargar.
+     */
     function switchLang(lang) {
-        setLang(lang);
-        document.body.classList.add('lang-transitioning');
-        updateUI(lang);
-        setTimeout(() => {
-            document.body.classList.remove('lang-transitioning');
-        }, 300);
+        if (IDIOMAS.indexOf(lang) === -1 || lang === getLang()) return;
+        var url = new URL(window.location.href);
+        url.searchParams.set('lang', lang);
+        window.location.href = url.toString();
     }
 
-    function init() {
-        const lang = getLang();
-        setLang(lang);
-
-        document.querySelectorAll('.lang-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const newLang = btn.getAttribute('data-lang');
-                switchLang(newLang);
-            });
-        });
-
-        updateUI(lang);
+    /** Texto de un objeto multilingüe, con el idioma vigente. */
+    function getPrimaryText(textObj, lang) {
+        if (!textObj) return '';
+        if (typeof textObj === 'string') return textObj;
+        if (typeof textObj !== 'object') return String(textObj);
+        var l = lang || getLang();
+        return textObj[l] || textObj.es || textObj.de || textObj.en || '';
     }
+
+    /**
+     * Igual que getPrimaryText, pero añadiendo el español como apoyo cuando la
+     * interfaz está en alemán o inglés (la regla pedagógica del colegio).
+     */
+    function getDisplayText(textObj, lang) {
+        var l = lang || getLang();
+        var principal = getPrimaryText(textObj, l);
+        if (l === 'es' || !textObj || typeof textObj !== 'object') return principal;
+        var apoyo = textObj.es;
+        return (apoyo && apoyo !== principal) ? principal + '\n' + apoyo : principal;
+    }
+
+    function getDisplayHTML(textObj, lang) {
+        var l = lang || getLang();
+        var principal = getPrimaryText(textObj, l);
+        var html = '<span class="lang-line lang-primary">' + principal + '</span>';
+        if (l !== 'es' && textObj && typeof textObj === 'object' &&
+            textObj.es && textObj.es !== principal) {
+            html += '<span class="lang-line lang-secondary">' + textObj.es + '</span>';
+        }
+        return html;
+    }
+
+    // Ya no hay updateUI(): el servidor entrega el HTML traducido. Se deja el
+    // nombre para no romper llamadas antiguas, pero no toca el DOM.
+    function updateUI() { /* el servidor ya lo hizo */ }
+    function setLang() { /* la cookie la escribe el servidor */ }
+    function init() { /* nada que inicializar */ }
 
     window.langUtils = {
-        getLang, setLang, switchLang,
-        getDisplayText, getDisplayHTML, getPrimaryText,
-        updateUI, init
+        getLang: getLang,
+        setLang: setLang,
+        switchLang: switchLang,
+        getDisplayText: getDisplayText,
+        getDisplayHTML: getDisplayHTML,
+        getPrimaryText: getPrimaryText,
+        updateUI: updateUI,
+        init: init
     };
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
 })();

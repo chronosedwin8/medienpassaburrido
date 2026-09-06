@@ -211,6 +211,18 @@
         <% } %>
     </nav>
 
+    <!-- Idioma: el personal no tenia forma de cambiarlo desde la interfaz,
+         aunque el servidor ya respetaba ?lang=. Son enlaces, asi que funcionan
+         sin JavaScript igual que en el area del estudiante. -->
+    <% if (typeof languages !== 'undefined' && languages) { %>
+    <nav class="sidebar-langs" aria-label="Idioma">
+        <% languages.forEach(function (l) { %>
+            <a class="sidebar-langs__item <%= lang === l ? 'is-active' : '' %>"
+               href="?lang=<%= l %>" hreflang="<%= l %>"><%= l.toUpperCase() %></a>
+        <% }); %>
+    </nav>
+    <% } %>
+
     <!-- Sidebar Footer / User Section -->
     <div class="sidebar-footer">
         <div class="user-profile">

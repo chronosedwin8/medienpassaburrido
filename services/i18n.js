@@ -15,6 +15,7 @@ const fs = require('fs');
 const fsp = require('fs').promises;
 const path = require('path');
 const config = require('./config');
+const session = require('./session');
 
 const I18N_DIR = path.join(__dirname, '..', 'config', 'i18n');
 
@@ -107,14 +108,38 @@ function resolve(req, user) {
 /** Middleware: expone lang, t() y pick() a todas las vistas. */
 function middleware(req, res, next) {
     const lang = resolve(req, req.user);
+    const cambioExplicito = req.query && isSupported(req.query.lang);
 
-    // Si llega ?lang=, se recuerda la elección
-    if (req.query && req.query.lang && isSupported(req.query.lang)) {
-        res.cookie('lang', req.query.lang, {
+    if (cambioExplicito) {
+        const elegido = req.query.lang;
+
+        // Se recuerda en el navegador...
+        res.cookie('lang', elegido, {
             maxAge: 365 * 24 * 60 * 60 * 1000,
             sameSite: 'lax',
             path: '/'
         });
+
+        // ...y TAMBIÉN en la sesión firmada.
+        //
+        // Sin esto el cambio duraba una sola petición: la sesión guardaba el
+        // idioma elegido al entrar y, como tiene prioridad sobre la cookie, en
+        // la página siguiente volvía a mandar el de siempre. El botón parecía
+        // no hacer nada.
+        //
+        // Se conserva la caducidad original para que cambiar de idioma no
+        // alargue la sesión por la puerta de atrás.
+        if (req.user && req.user.lang !== elegido) {
+            const restanteMs = (req.user.exp || 0) - Date.now();
+            if (restanteMs > 0) {
+                const actualizada = { ...req.user, lang: elegido };
+                delete actualizada.iat;
+                delete actualizada.exp;
+                session.attach(res, actualizada, restanteMs / 3600000);
+                req.user.lang = elegido;
+                res.locals.user = req.user;
+            }
+        }
     }
 
     req.lang = lang;

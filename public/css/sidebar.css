@@ -407,3 +407,34 @@ body {
         padding-left: 0 !important;
     }
 }
+
+/* ── Selector de idioma del personal ──────────────────────────
+   Sobre el degradado oscuro del menu, asi que sus colores son fijos:
+   los tokens de texto estan pensados para fondo claro. */
+.sidebar-langs {
+    display: flex;
+    gap: 4px;
+    margin: 0 16px 10px;
+    padding: 3px;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 8px;
+}
+.sidebar-langs__item {
+    flex: 1;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 5px;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    color: #b9b9cc;
+    text-decoration: none;
+    transition: background .15s ease, color .15s ease;
+}
+.sidebar-langs__item:hover { color: #e8e8f0; background: rgba(255,255,255,.06); }
+.sidebar-langs__item.is-active { background: #818cf8; color: #0f1220; }
+.sidebar-langs__item:focus-visible { outline: 2px solid #818cf8; outline-offset: 2px; }
+
+/* Con el menu plegado no cabe: se oculta. */
+.sidebar.collapsed .sidebar-langs { display: none; }
