@@ -1,11 +1,12 @@
 <%- include('partials/header') %>
 
     <div class="navigation-bar">
+
         <a href="/<%= section === 'tecnologia' ? '' : '?year=' + currentYear %>" class="back-link">
-            <i class="fas fa-arrow-left"></i> <span data-i18n="back">Zurück</span>
+            <i class="fas fa-arrow-left"></i> <span data-i18n="back"><%= t('back') %></span>
         </a>
         <button onclick="window.print()" class="print-btn">
-            <i class="fas fa-print"></i> <span data-i18n="print">Drucken</span>
+            <i class="fas fa-print"></i> <span data-i18n="print"><%= t('print') %></span>
         </button>
     </div>
 
@@ -15,13 +16,13 @@
         </div>
         <h1 data-lang-content='<%- JSON.stringify(activity.title) %>'>
             <span class="lang-line lang-primary">
-                <%= activity.title.de %>
+                <%= display(activity.title).primary %>
             </span>
         </h1>
         <% if (activity.subtitle) { %>
             <p class="subtitle" data-lang-content='<%- JSON.stringify(activity.subtitle) %>'>
                 <span class="lang-line lang-primary">
-                    <%= activity.subtitle.de %>
+                    <%= display(activity.subtitle).primary %>
                 </span>
             </p>
         <% } %>
@@ -124,7 +125,7 @@
                     <div class="accordion-content" style="display: block;">
                         <p class="panel-description" data-lang-content='{"es": "👤 Elige tu avatar favorito. Tu identidad digital es muy valiosa; no compartas fotos reales en sitios públicos de internet.", "de": "👤 Wähle deinen Lieblingsavatar. Deine digitale Identität ist sehr wertvoll; teile keine echten Fotos auf öffentlichen Websites.", "en": "👤 Choose your favorite avatar. Your digital identity is very valuable; do not share real photos on public websites."}'><span class="lang-line lang-primary">👤 Elige tu avatar favorito. Tu identidad digital es muy valiosa; no compartas fotos reales en sitios públicos de internet.</span></p>
                         <div class="section" style="text-align: center;">
-                                <h2><i class="fas fa-camera"></i> <span data-i18n="profilePictureTitle">Mein Profilbild</span>
+                                <h2><i class="fas fa-camera"></i> <span data-i18n="profilePictureTitle"><%= t('profilePictureTitle') %></span>
                                 </h2>
 
                                 <div class="avatar-selector-container" id="avatarSelectorContainer">
@@ -273,7 +274,7 @@
                         <p class="panel-description" data-lang-content='{"es": "🏫 Aquí están las materias y los profesores que te van a ayudar a desarrollar tu Medienpass.", "de": "🏫 Hier sind die Fächer und Lehrer, die dir helfen werden, deinen Medienpass zu entwickeln.", "en": "🏫 Here are the subjects and teachers who will help you develop your Medienpass."}'><span class="lang-line lang-primary">🏫 Aquí están las materias y los profesores que te van a ayudar a desarrollar tu Medienpass.</span></p>
                         <div class="section teachers-by-subject-section">
                                                 <h2><i class="fas fa-chalkboard-teacher"></i>
-                                                    <span data-i18n="myTeachers">Meine Lehrer*innen / Mis Profesores</span>
+                                                    <span data-i18n="myTeachers"><%= t('myTeachers') %></span>
                                                 </h2>
                                                 <div class="teachers-grid">
                                                     <% activity.teachersBySubject.forEach(t=> { %>
@@ -672,7 +673,7 @@
                         </div>
                         <div id="reto0-eval-save-footer" class="save-actions" style="display: none; text-align: center; margin-top: 20px; margin-bottom: 20px;">
                             <button type="button" class="save-btn" id="saveBtnQuiz" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; display: inline-block;">
-                                <i class="fas fa-cloud-upload-alt"></i> <span data-i18n="save">Speichern</span>
+                                <i class="fas fa-cloud-upload-alt"></i> <span data-i18n="save"><%= t('save') %></span>
                             </button>
                             <div class="save-status" id="saveStatusQuiz" style="margin-top: 8px;"></div>
                         </div>
@@ -707,7 +708,7 @@
 
         <% if (activity.competencies && activity.competencies.length> 0) { %>
             <div class="section">
-                <h2><i class="fas fa-star"></i> <span data-i18n="competenciesTitle">Kompetenzen & Erfolge</span></h2>
+                <h2><i class="fas fa-star"></i> <span data-i18n="competenciesTitle"><%= t('competenciesTitle') %></span></h2>
                 <p class="instruction" data-i18n="competenciesInstruction">Markiere die Fähigkeiten, die du beherrscht:
                 </p>
                 <div class="competency-list">
@@ -771,8 +772,7 @@
                                                             </span>
                                                         </label>
                                                         <textarea id="<%= item.id %>" name="<%= item.id %>" rows="2"
-                                                            data-i18n-placeholder="answerPlaceholder"
-                                                            placeholder="Deine Antwort hier..."></textarea>
+                                                            data-i18n-placeholder="answerPlaceholder" placeholder="<%= t('answerPlaceholder') %>"></textarea>
                                                     </div>
                                                     <% } else { %>
                                                         <div class="cg-evidence-field">
@@ -783,8 +783,7 @@
                                                                 </span>
                                                             </label>
                                                             <input type="text" id="<%= item.id %>" name="<%= item.id %>"
-                                                                data-i18n-placeholder="answerPlaceholder"
-                                                                placeholder="Deine Antwort hier...">
+                                                                data-i18n-placeholder="answerPlaceholder" placeholder="<%= t('answerPlaceholder') %>">
                                                         </div>
                                                         <% } %>
                                                             <% }) %>
@@ -812,7 +811,7 @@
                         <div class="cg-total-summary">
                             <span class="cg-total-label">
                                 <i class="fas fa-star" style="color: #f59e0b;"></i>
-                                <span data-i18n="totalStarsCollected">Ich habe insgesamt gesammelt:</span>
+                                <span data-i18n="totalStarsCollected"><%= t('totalStarsCollected') %></span>
                             </span>
                             <span class="cg-total-value" id="cgTotalValue">0</span>
                             <span class="cg-total-of">/ <%= activity.stars %></span>
@@ -827,13 +826,13 @@
 
                                 <% if (activity.evidence && activity.evidence.length > 0 && activity.id !== 'profile') { %>
                                     <div class="section">
-                                        <h2><i class="fas fa-file-alt"></i> <span data-i18n="evidenceTitle">Nachweise / Evidenz</span></h2>
+                                        <h2><i class="fas fa-file-alt"></i> <span data-i18n="evidenceTitle"><%= t('evidenceTitle') %></span></h2>
                                         <% activity.evidence.forEach(item=> { %>
                                             <div class="form-group">
+                                                <% const _lbl = display(item.label); %>
                                                 <label for="<%= item.id %>" data-lang-content="<%- JSON.stringify(item.label).replace(/"/g, '&quot;') %>">
-                                                    <span class="lang-line lang-primary">
-                                                        <%= (item.label && item.label.de) || (item.label && item.label.es) || '' %>
-                                                    </span>
+                                                    <span class="lang-line lang-primary"><%= _lbl.primary %></span>
+                                                    <% if (_lbl.support) { %><span class="lang-line lang-secondary"><%= _lbl.support %></span><% } %>
                                                 </label>
 
                                                 <% if (item.practice_explanation) { %>
@@ -843,9 +842,9 @@
                                                 <% } %>
 
                                                 <% if (item.type === 'text') { %>
-                                                    <input type="text" id="<%= item.id %>" name="<%= item.id %>" data-i18n-placeholder="answerPlaceholder" placeholder="Deine Antwort hier...">
+                                                    <input type="text" id="<%= item.id %>" name="<%= item.id %>" data-i18n-placeholder="answerPlaceholder" placeholder="<%= t('answerPlaceholder') %>">
                                                 <% } else if (item.type === 'textarea') { %>
-                                                    <textarea id="<%= item.id %>" name="<%= item.id %>" rows="<%= item.rows || 3 %>" data-i18n-placeholder="answerPlaceholder" placeholder="Deine Antwort hier..."></textarea>
+                                                    <textarea id="<%= item.id %>" name="<%= item.id %>" rows="<%= item.rows || 3 %>" data-i18n-placeholder="answerPlaceholder" placeholder="<%= t('answerPlaceholder') %>"></textarea>
                                                 <% } else if (item.type === 'number') { %>
                                                     <input type="number" id="<%= item.id %>" name="<%= item.id %>" inputmode="numeric"
                                                            <%= item.min !== undefined ? 'min=' + item.min : '' %>
@@ -874,7 +873,7 @@
                                                         <option value="">-</option>
                                                         <% (item.options || []).forEach((opt, optIdx) => { %>
                                                             <option value="<%= opt.value !== undefined ? opt.value : optIdx %>"
-                                                                    data-correct="<%= opt.correct ? 'true' : 'false' %>"><%= opt.de || opt.es || opt %></option>
+                                                                    data-correct="<%= opt.correct ? 'true' : 'false' %>"><%= (typeof opt === 'object') ? display(opt).primary : opt %></option>
                                                         <% }) %>
                                                     </select>
                                                 <% } else if (item.type === 'ordering') { %>
@@ -885,7 +884,7 @@
                                                                        name="<%= item.id %>__<%= opt.value !== undefined ? opt.value : optIdx %>"
                                                                        aria-label="Posicion"
                                                                        onchange="if(typeof updateStarSummary === 'function') updateStarSummary()">
-                                                                <span class="lang-line lang-primary"><%= opt.de || opt.es || opt %></span>
+                                                                <span class="lang-line lang-primary"><%= (typeof opt === 'object') ? display(opt).primary : opt %></span>
                                                             </li>
                                                         <% }) %>
                                                     </ol>
@@ -902,7 +901,7 @@
                                                                        onchange="if(typeof updateStarSummary === 'function') updateStarSummary()"
                                                                        style="cursor:pointer; width:18px; height:18px;">
                                                                 <label for="<%= safeId %>" style="display:inline; font-weight:normal; cursor:pointer; margin:0;">
-                                                                    <span class="lang-line lang-primary"><%= (typeof opt === 'object') ? (optLabel.de || optLabel.es || '') : opt %></span>
+                                                                    <span class="lang-line lang-primary"><%= (typeof opt === 'object') ? display(optLabel).primary : opt %></span>
                                                                 </label>
                                                             </div>
                                                         <% }) %>
@@ -917,10 +916,9 @@
                                                             <div class="radio-item" style="margin-bottom:8px; display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="document.getElementById('<%= safeId %>').checked = true; if(typeof updateStarSummary === 'function') updateStarSummary();">
                                                                 <input type="radio" id="<%= safeId %>" name="<%= item.id %>" value="<%= opt.value !== undefined ? opt.value : (opt.val !== undefined ? opt.val : optIdx) %>" data-correct="<%= opt.correct ? 'true' : 'false' %>" onchange="if(typeof updateStarSummary === 'function') updateStarSummary()" style="cursor:pointer; width:18px; height:18px;">
                                                                 <label for="<%= safeId %>" style="display:inline; font-weight:normal; cursor:pointer; margin:0;" <% if (typeof opt === 'object') { %> data-lang-content="<%- JSON.stringify(optLabel).replace(/"/g, '&quot;') %>" <% } %>>
-                                                                    <% if (typeof opt === 'object') { %>
-                                                                        <span class="lang-line lang-primary">
-                                                                            <%= optLabel.de || optLabel.es || '' %>
-                                                                        </span>
+                                                                    <% if (typeof opt === 'object') { const _o = display(optLabel); %>
+                                                                        <span class="lang-line lang-primary"><%= _o.primary %></span>
+                                                                        <% if (_o.support) { %><span class="lang-line lang-secondary"><%= _o.support %></span><% } %>
                                                                     <% } else { %>
                                                                         <%= opt %>
                                                                     <% } %>
@@ -934,7 +932,7 @@
                                                 <% if (_hintTxt) { %>
                                                     <div class="question-hint-box" style="margin-top: 8px; font-size: 0.85em; color: #475569; display: flex; align-items: start; gap: 6px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #f59e0b;">
                                                         <span style="font-size: 1.15em; line-height: 1.2;">💡</span>
-                                                        <span class="lang-line lang-primary" data-lang-content="<%- JSON.stringify(item.hint).replace(/"/g, '&quot;') %>"><%= item.hint.de || item.hint.es || '' %></span>
+                                                        <span class="lang-line lang-primary" data-lang-content="<%- JSON.stringify(item.hint).replace(/"/g, '&quot;') %>"><%= display(item.hint).primary %></span>
                                                     </div>
                                                 <% } %>
 
@@ -962,8 +960,7 @@
                                         <% if (activity.teachersBySubject && activity.teachersBySubject.length > 0 && activity.id !== 'profile') { %>
                                             <div class="section teachers-by-subject-section">
                                                 <h2><i class="fas fa-chalkboard-teacher"></i>
-                                                    <span data-i18n="myTeachers">Meine Lehrer*innen / Mis
-                                                        Profesores</span>
+                                                    <span data-i18n="myTeachers"><%= t('myTeachers') %></span>
                                                 </h2>
                                                 <div class="teachers-grid">
                                                     <% activity.teachersBySubject.forEach(t=> { %>
@@ -2718,12 +2715,25 @@
             const serverTime = serverUpdatedAt ? new Date(serverUpdatedAt).getTime() : 0;
             const localTime = localData.local_updated_at ? new Date(localData.local_updated_at).getTime() : 0;
 
-            let mergedData = {};
-            if (serverTime >= localTime) {
-                mergedData = { ...localData, ...serverData };
-            } else {
-                mergedData = { ...serverData, ...localData };
-            }
+            // Gana la fuente mas reciente, PERO un valor vacio nunca pisa a uno
+            // con contenido: un autoguardado disparado antes de que terminara la
+            // restauracion podia borrar respuestas ya enviadas.
+            const conContenido = (v) => {
+                if (v === undefined || v === null || v === '') return false;
+                if (Array.isArray(v)) return v.length > 0;
+                if (typeof v === 'object') return Object.keys(v).length > 0;
+                return true;
+            };
+
+            const reciente = serverTime >= localTime ? serverData : localData;
+            const antiguo  = serverTime >= localTime ? localData : serverData;
+
+            let mergedData = { ...antiguo };
+            Object.keys(reciente).forEach(k => {
+                if (conContenido(reciente[k]) || !conContenido(antiguo[k])) {
+                    mergedData[k] = reciente[k];
+                }
+            });
 
             // Restore field values
             inputs.forEach(input => {
@@ -2733,6 +2743,42 @@
                     } else {
                         input.value = mergedData[input.id];
                     }
+                }
+            });
+
+            // ── Restaurar los tipos que se guardan agrupados ──
+            // collectData() guarda la opcion multiple como arreglo bajo el id de
+            // la PREGUNTA y "ordenar" como { opcion: posicion }. El bucle de
+            // arriba solo mira mergedData[input.id], asi que sin esto el
+            // estudiante recargaba la pagina y perdia esas respuestas.
+            inputs.forEach(input => {
+                const name = input.name || '';
+
+                // Opcion multiple: name="pregunta[]"
+                if (input.type === 'checkbox' && name.endsWith('[]')) {
+                    const qid = name.slice(0, -2);
+                    const guardado = mergedData[qid];
+                    if (Array.isArray(guardado)) {
+                        input.checked = guardado.map(String).includes(String(input.value));
+                    }
+                    return;
+                }
+
+                // Ordenar: name="pregunta__valorOpcion"
+                if (name.indexOf('__') > 0) {
+                    const partes = name.split('__');
+                    const guardado = mergedData[partes[0]];
+                    if (guardado && typeof guardado === 'object' && !Array.isArray(guardado)) {
+                        const pos = guardado[partes[1]];
+                        if (pos !== undefined && pos !== null) input.value = pos;
+                    }
+                    return;
+                }
+
+                // Opcion unica, verdadero/falso y escala: el valor elegido se
+                // guarda bajo el id de la pregunta (el name del grupo).
+                if (input.type === 'radio' && name && mergedData[name] !== undefined) {
+                    input.checked = String(mergedData[name]) === String(input.value);
                 }
             });
 
@@ -3207,4 +3253,63 @@
                     btnEl.disabled = false;
                 }
             };
+</script>
+
+<script>
+/**
+ * Avance del reto en vivo.
+ *
+ * Cuenta preguntas RESPONDIDAS, no campos rellenos: una pregunta de opcion
+ * multiple con tres casillas es una sola pregunta, y la de ordenar necesita
+ * todas sus posiciones para contar.
+ */
+(function () {
+    const caja = document.getElementById('retoProgreso');
+    if (!caja) return;
+
+    const total = parseInt(caja.getAttribute('data-total'), 10) || 0;
+    const relleno = document.getElementById('retoProgresoRelleno');
+    const texto = document.getElementById('retoProgresoTexto');
+    const estado = document.getElementById('retoProgresoEstado');
+    const form = document.querySelector('form') || document;
+
+    function preguntaRespondida(grupo) {
+        const casillas = grupo.querySelectorAll('input[type="checkbox"]');
+        if (casillas.length) return [...casillas].some(c => c.checked);
+
+        const radios = grupo.querySelectorAll('input[type="radio"]');
+        if (radios.length) return [...radios].some(r => r.checked);
+
+        const posiciones = grupo.querySelectorAll('.mp-order__pos, input[name*="__"]');
+        if (posiciones.length) return [...posiciones].every(i => i.value !== '');
+
+        const campos = grupo.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], textarea, select');
+        return [...campos].some(c => String(c.value || '').trim() !== '');
+    }
+
+    function actualizar() {
+        const grupos = form.querySelectorAll('.form-group');
+        let hechas = 0;
+        grupos.forEach(g => { if (preguntaRespondida(g)) hechas++; });
+
+        const pct = total ? Math.round((hechas / total) * 100) : 0;
+        relleno.style.width = pct + '%';
+        relleno.classList.toggle('completo', hechas >= total && total > 0);
+        texto.textContent = hechas + ' / ' + total;
+        caja.setAttribute('aria-valuenow', hechas);
+
+        if (estado) {
+            estado.textContent = (hechas >= total && total > 0)
+                ? (window.i18n && window.i18n.es ? '' : '') + '✓'
+                : pct + '%';
+        }
+    }
+
+    form.addEventListener('input', actualizar);
+    form.addEventListener('change', actualizar);
+    document.addEventListener('DOMContentLoaded', actualizar);
+    // Tambien tras la restauracion de respuestas guardadas.
+    setTimeout(actualizar, 1200);
+    actualizar();
+})();
 </script>

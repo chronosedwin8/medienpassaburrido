@@ -70,6 +70,18 @@
                            placeholder="000000">
                 </div>
 
+                <div class="mp-field">
+                    <label class="mp-label" for="lang">
+                        <%= t('language') %>
+                        <span class="mp-label__hint">— <%= t('loginLangHint') %></span>
+                    </label>
+                    <select class="mp-select" id="lang" name="lang">
+                        <% languages.forEach(function (l) { %>
+                            <option value="<%= l %>" <%= lang === l ? 'selected' : '' %>><%= t('langName_' + l) %></option>
+                        <% }); %>
+                    </select>
+                </div>
+
                 <button type="submit" class="mp-btn mp-btn--primary mp-btn--block mp-btn--lg">
                     <%= t('loginSubmit') %>
                 </button>
@@ -80,11 +92,7 @@
             <a href="/teacher/login"><%= t('loginTeacherLink') %></a>
         </p>
 
-        <nav class="mp-langs" aria-label="Idioma" style="display:flex; justify-content:center; margin: var(--mp-4) auto 0; width: max-content;">
-            <% languages.forEach(function (l) { %>
-                <a class="mp-langs__item" href="?lang=<%= l %>"<%- lang === l ? ' aria-current="true"' : '' %>><%= l %></a>
-            <% }); %>
-        </nav>
+
     </div>
 </div>
 

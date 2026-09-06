@@ -82,9 +82,15 @@ function pick(textObj, lang) {
  *   ?lang= → cookie → idioma propio del curso del estudiante → por defecto
  */
 function resolve(req, user) {
+    // 1. Cambio explicito en esta peticion
     const fromQuery = req.query && req.query.lang;
     if (isSupported(fromQuery)) return fromQuery;
 
+    // 2. El idioma que la persona eligio al entrar, guardado en la sesion
+    //    firmada: acompaña a la persona aunque se borren las cookies del sitio.
+    if (user && isSupported(user.lang)) return user.lang;
+
+    // 3. Cookie del navegador
     const fromCookie = req.cookies && req.cookies.lang;
     if (isSupported(fromCookie)) return fromCookie;
 
@@ -116,6 +122,8 @@ function middleware(req, res, next) {
     res.locals.languages = languages();
     res.locals.t = (key, vars) => t(key, lang, vars);
     res.locals.pick = textObj => pick(textObj, lang);
+    // Un solo idioma para toda la interfaz, sin excepciones por seccion.
+    res.locals.display = textObj => display(textObj, lang);
     next();
 }
 
@@ -169,3 +177,36 @@ module.exports = {
     t, pick, resolve, middleware, bundle, all, save,
     languages, defaultLang, isSupported, missingKeys, dict, I18N_DIR
 };
+
+/* ────────────────────────────────────────────────────────────
+   Regla de presentación del colegio
+   ──────────────────────────────────────────────────────────── */
+
+/**
+ * Devuelve { primary, support } para un texto multilingüe.
+ *
+ * El idioma es UNO para toda la interfaz: el que la persona eligió. Antes había
+ * excepciones por sección (Tecnología se forzaba a español) y el intercambio se
+ * hacía en el navegador con public/js/lang.js, un archivo que además NUNCA se
+ * cargaba: el selector no hacía nada y el estudiante veía alemán con "ES"
+ * seleccionado. Ahora se resuelve en el servidor y no depende de dónde esté.
+ *
+ * En alemán e inglés se añade el español debajo como apoyo, que es la regla
+ * pedagógica del colegio; en español no hace falta.
+ */
+function display(textObj, lang) {
+    if (!textObj) return { primary: '', support: '' };
+    if (typeof textObj === 'string') return { primary: textObj, support: '' };
+
+    const language = isSupported(lang) ? lang : defaultLang();
+
+    if (language === 'es') {
+        return { primary: textObj.es || textObj.de || textObj.en || '', support: '' };
+    }
+
+    const primary = textObj[language] || textObj.es || textObj.de || textObj.en || '';
+    const support = textObj.es && textObj.es !== primary ? textObj.es : '';
+    return { primary, support };
+}
+
+module.exports.display = display;

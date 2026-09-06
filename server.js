@@ -257,6 +257,15 @@ function studentFromSession(user) {
     };
 }
 
+/** Recuerda el idioma elegido durante un año, para la próxima visita. */
+function recordarIdioma(res, lang) {
+    res.cookie('lang', lang, {
+        maxAge: 365 * 24 * 60 * 60 * 1000,
+        sameSite: 'lax',
+        path: '/'
+    });
+}
+
 // ─── Sesión firmada: carga req.user y res.locals (ver services/session.js) ───
 app.use(auth.loadSession);
 
@@ -435,6 +444,9 @@ app.post('/login', async (req, res) => {
         return res.render('login', { error: 'Selecciona tu curso / Bitte wähle deine Klasse.', klassenConfig, uniqueClasses });
     }
 
+    // El idioma se decide aqui, una vez, y vale para TODA la interfaz.
+    const idiomaElegido = i18n.isSupported(req.body.lang) ? req.body.lang : req.lang;
+
     const cleanUsername = username.trim().toLowerCase();
     const cleanClass = String(class_name || '').trim();
     const cleanCode = student_code.trim();
@@ -459,8 +471,10 @@ app.post('/login', async (req, res) => {
                 role: 'estudiante',
                 name: student.username,
                 className: student.class_name,
-                code: student.student_code
+                code: student.student_code,
+                lang: idiomaElegido
             }, appConfig.sessionConfig().studentTtlHours);
+            recordarIdioma(res, idiomaElegido);
             return res.redirect('/');
         } catch (e) {
             console.error('Login error:', e);
@@ -475,8 +489,10 @@ app.post('/login', async (req, res) => {
             role: 'estudiante',
             name: cleanUsername,
             className: cleanClass,
-            code: cleanCode
+            code: cleanCode,
+            lang: idiomaElegido
         }, appConfig.sessionConfig().studentTtlHours);
+        recordarIdioma(res, idiomaElegido);
         return res.redirect('/');
     }
 });
@@ -681,13 +697,19 @@ app.get('/tecnologia/:id', requireLogin, (req, res) => {
     if (!activity) return res.status(404).send('Activity not found');
     
     const resolvedActivity = getActivityForClass(activity, res.locals.student.class_name);
+
+    // Mismo criterio que /activity: manda lo que guardo el docente.
+    const resueltasTec = questions.paraEstudiante(resolvedActivity, res.locals.student.class_name);
+    resolvedActivity.evidence = resueltasTec.questions;
+
     const challengeToolsConfig = readChallengeToolsConfig();
-    
-    res.render('activity', { 
-        activity: resolvedActivity, 
-        student: res.locals.student, 
-        currentYear: '2526', 
+
+    res.render('activity', {
+        activity: resolvedActivity,
+        student: res.locals.student,
+        currentYear: '2526',
         section: 'tecnologia',
+        questionSource: resueltasTec.source,
         challengeToolsConfig,
         defaultAgentTools
     });

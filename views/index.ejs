@@ -61,7 +61,7 @@
         <!-- Welcome Card -->
         <div class="welcome-card-premium">
             <div class="welcome-card-left">
-                <h1 class="welcome-greeting">👋 <span data-i18n="hello">Hallo</span>, <span class="username-highlight"><%= student.username %></span>! <span class="full-name"><%= student.first_name %> <%= student.last_name %></span></h1>
+                <h1 class="welcome-greeting">👋 <span data-i18n="hello"><%= t('hello') %></span>, <span class="username-highlight"><%= student.username %></span>! <span class="full-name"><%= student.first_name %> <%= student.last_name %></span></h1>
                 <p class="welcome-subtext" data-i18n="welcome">Willkommen zu deinem MedienPass</p>
             </div>
             <% if (student.first_name && student.last_name) { %>

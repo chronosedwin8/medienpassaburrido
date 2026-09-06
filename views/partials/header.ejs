@@ -194,7 +194,106 @@
         header.shrunk .logout-btn {
             transform: scale(0.9);
         }
+
+    /* ── Cabecera compacta (añadido) ──────────────────────────
+       El titulo gigante ocupaba un tercio de la pantalla en portatiles y
+       tablets; el estudiante entraba a un reto y no veia ni una pregunta.
+       Aqui se reduce y se fija arriba para que el contenido gane sitio. */
+    header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        padding: 10px 0 !important;
+    }
+    header .header-content {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    header .hero-title {
+        font-size: 1.35rem !important;
+        margin: 0 !important;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    header .hero-icon { font-size: 1.2rem !important; }
+    header .hero-title-text { font-size: 1.35rem !important; letter-spacing: .5px !important; }
+    /* El lema y el nombre del colegio ya estan en el pie: aqui solo estorban. */
+    header .subtitle-custom,
+    header .header-subtitle { display: none !important; }
+    header .header-left { flex: 0 0 auto; }
+    header .header-lang-switch { margin-left: auto; }
+
+    /* El nombre completo en mayusculas ocupaba media barra. */
+    header .student-name-pill,
+    header .user-name-display {
+        max-width: 190px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-transform: none !important;
+    }
+
+    @media (max-width: 720px) {
+        header .hero-title-text { font-size: 1.1rem !important; }
+        header .student-name-pill,
+        header .user-name-display { max-width: 110px; }
+    }
+
+    /* ── Barra de avance del reto ─────────────────────────────
+       El estudiante no tenia forma de saber cuanto le faltaba. */
+    .reto-progreso {
+        background: rgba(255, 255, 255, .10);
+        border-top: 1px solid rgba(255, 255, 255, .15);
+        padding: 7px 0;
+        margin-top: 8px;
+    }
+    .reto-progreso__caja {
+        max-width: 1140px;
+        margin: 0 auto;
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: .8125rem;
+        color: rgba(255, 255, 255, .92);
+    }
+    .reto-progreso__barra {
+        flex: 1;
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .22);
+        overflow: hidden;
+    }
+    .reto-progreso__relleno {
+        height: 100%;
+        width: 0%;
+        border-radius: 999px;
+        background: #ffd24a;
+        transition: width 300ms cubic-bezier(.4,0,.2,1);
+    }
+    .reto-progreso__relleno.completo { background: #4ade80; }
+    .reto-progreso__texto { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 500; }
+    @media print { .reto-progreso { display: none; } }
     </style>
+    <script>
+    // Mantiene la barra de avance justo debajo de la cabecera, midiendo su
+    // altura real en lugar de confiar en un numero fijo.
+    (function () {
+        function alinearProgreso() {
+            var h = document.querySelector('header');
+            if (h) {
+                document.documentElement.style.setProperty(
+                    '--altura-cabecera', Math.round(h.getBoundingClientRect().height) + 'px');
+            }
+        }
+        window.addEventListener('DOMContentLoaded', alinearProgreso);
+        window.addEventListener('resize', alinearProgreso);
+        window.addEventListener('load', alinearProgreso);
+    })();
+    </script>
     <header>
         <div class="header-content">
             <div class="header-left">
@@ -207,9 +306,10 @@
             </div>
             
             <div class="header-lang-switch">
-                <button class="lang-btn h-lang-btn" data-lang="de" onclick="if(window.langUtils) window.langUtils.switchLang('de')">DE DE</button>
-                <button class="lang-btn h-lang-btn" data-lang="en" onclick="if(window.langUtils) window.langUtils.switchLang('en')">GB EN</button>
-                <button class="lang-btn h-lang-btn active" data-lang="es" onclick="if(window.langUtils) window.langUtils.switchLang('es')">ES ES</button>
+                <% const _lang = typeof lang !== 'undefined' ? lang : 'es'; %>
+                <a class="lang-btn h-lang-btn <%= _lang === 'de' ? 'active' : '' %>" href="?lang=de" data-lang="de" hreflang="de">DE</a>
+                <a class="lang-btn h-lang-btn <%= _lang === 'en' ? 'active' : '' %>" href="?lang=en" data-lang="en" hreflang="en">EN</a>
+                <a class="lang-btn h-lang-btn <%= _lang === 'es' ? 'active' : '' %>" href="?lang=es" data-lang="es" hreflang="es">ES</a>
             </div>
             <div class="header-right" style="display:flex;align-items:center;gap:12px;">
                 <% if (typeof teacher !== 'undefined' && teacher) { %>
@@ -251,6 +351,24 @@
                 <% } %>
             </div>
         </div>
+
+        <% if (typeof activity !== 'undefined' && activity && activity.evidence && activity.evidence.length && activity.id !== 'profile') { %>
+        <!-- Avance del reto. Va dentro de la cabecera fija para que acompane
+             al estudiante mientras responde; antes no habia forma de saber
+             cuanto faltaba. -->
+        <div class="reto-progreso no-print" id="retoProgreso"
+             data-total="<%= activity.evidence.length %>"
+             role="progressbar" aria-valuemin="0"
+             aria-valuemax="<%= activity.evidence.length %>" aria-valuenow="0">
+            <div class="reto-progreso__caja">
+                <span class="reto-progreso__texto" id="retoProgresoTexto">0 / <%= activity.evidence.length %></span>
+                <div class="reto-progreso__barra">
+                    <div class="reto-progreso__relleno" id="retoProgresoRelleno"></div>
+                </div>
+                <span class="reto-progreso__texto" id="retoProgresoEstado"></span>
+            </div>
+        </div>
+        <% } %>
     </header>
 
     <script>
