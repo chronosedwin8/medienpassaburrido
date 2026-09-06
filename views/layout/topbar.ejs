@@ -1,0 +1,33 @@
+<%
+/** Barra superior común. Variables opcionales: activeNav, navLinks */
+const links = typeof navLinks !== 'undefined' ? navLinks : [];
+const active = typeof activeNav !== 'undefined' ? activeNav : '';
+const langs = typeof languages !== 'undefined' ? languages : ['es', 'de', 'en'];
+const curLang = typeof lang !== 'undefined' ? lang : 'es';
+%>
+<header class="mp-topbar">
+    <div class="mp-container mp-topbar__inner">
+        <a class="mp-brand" href="/">
+            <span class="mp-brand__mark">M</span>
+            <span>MedienPass</span>
+        </a>
+
+        <nav class="mp-nav" aria-label="Principal">
+            <% links.forEach(function (l) { %>
+                <a class="mp-nav__link" href="<%= l.href %>"<%= active === l.key ? ' aria-current="page"' : '' %>><%= l.label %></a>
+            <% }); %>
+        </nav>
+
+        <span class="mp-spacer"></span>
+
+        <nav class="mp-langs" aria-label="Idioma">
+            <% langs.forEach(function (l) { %>
+                <a class="mp-langs__item" href="?lang=<%= l %>"<%= curLang === l ? ' aria-current="true"' : '' %>><%= l %></a>
+            <% }); %>
+        </nav>
+
+        <% if (typeof user !== 'undefined' && user) { %>
+            <a class="mp-btn mp-btn--ghost mp-btn--sm" href="<%= user.kind === 'student' ? '/logout' : '/teacher/logout' %>">Salir</a>
+        <% } %>
+    </div>
+</header>

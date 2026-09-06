@@ -6,3 +6,9 @@ despliegue/*.tar
 data/*.json.bak
 data/users.json
 config/i18n/*.tmp
+
+# Datos personales y estado de ejecución: nunca al repositorio
+data/local_activity_responses.json
+data/custom_instruments.json
+data/pending_teachers.json
+data/teacher_roles.json

@@ -1,0 +1,26 @@
+<%
+const schoolName = typeof school !== 'undefined' && school ? school : 'Colegio Alemán Barranquilla';
+%>
+    <footer class="mp-footer">
+        <div class="mp-container mp-row mp-row--between">
+            <span><%= schoolName %> — MedienPass</span>
+            <button type="button" class="mp-btn mp-btn--ghost mp-btn--sm" onclick="mpToggleTheme()" aria-label="Cambiar tema">
+                Tema
+            </button>
+        </div>
+    </footer>
+</div>
+<script>
+function mpToggleTheme() {
+    var root = document.documentElement;
+    var now = root.getAttribute('data-theme');
+    if (!now) {
+        now = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    var next = now === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('mp_theme', next); } catch (e) {}
+}
+</script>
+</body>
+</html>

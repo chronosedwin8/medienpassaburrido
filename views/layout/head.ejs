@@ -1,0 +1,36 @@
+<%
+/**
+ * Cabecera común. Sustituye a los 15 <head> duplicados que había, cada uno con
+ * su propia versión de fuentes e iconos.
+ *
+ * Variables opcionales: title, bodyClass, ageGroup ("junior" para 2.º a 4.º)
+ */
+const pageTitle = typeof title !== 'undefined' && title ? title : 'MedienPass';
+const bodyCls   = typeof bodyClass !== 'undefined' ? bodyClass : '';
+const age       = typeof ageGroup !== 'undefined' ? ageGroup : '';
+const pageLang  = typeof lang !== 'undefined' ? lang : 'es';
+%><!DOCTYPE html>
+<html lang="<%= pageLang %>"<%= age ? ' data-age="' + age + '"' : '' %>>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title><%= pageTitle %></title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/medienpass.css">
+<script>
+// Tema elegido por la persona, aplicado antes de pintar para evitar el parpadeo.
+(function () {
+    try {
+        var saved = localStorage.getItem('mp_theme');
+        if (saved === 'dark' || saved === 'light') {
+            document.documentElement.setAttribute('data-theme', saved);
+        }
+    } catch (e) {}
+})();
+</script>
+</head>
+<body class="<%= bodyCls %>">
+<div class="mp-shell">

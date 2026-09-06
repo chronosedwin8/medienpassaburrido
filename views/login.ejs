@@ -1,187 +1,91 @@
-<%- include('partials/header') %>
+<%- include('layout/head', { title: 'Entrar — MedienPass', bodyClass: 'mp-auth', lang: lang }) %>
 
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-icon">🎓</div>
-            <h2 data-i18n="loginWelcome">Willkommen!</h2>
-            <p class="login-subtitle" data-i18n="loginSubtitle">MedienPass</p>
+<style>
+/* Pantalla de acceso: una sola columna centrada, sin distracciones. */
+.mp-auth-wrap {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    padding: var(--mp-5) var(--mp-4);
+}
+.mp-auth-card { width: 100%; max-width: 400px; }
+.mp-auth-head { text-align: center; margin-bottom: var(--mp-6); }
+.mp-auth-mark {
+    width: 44px; height: 44px; margin: 0 auto var(--mp-4);
+    border-radius: var(--mp-radius);
+    background: var(--mp-accent); color: var(--mp-accent-text);
+    display: grid; place-items: center;
+    font-weight: 700; font-size: var(--mp-text-lg);
+}
+.mp-auth-title { font-size: var(--mp-text-2xl); margin-bottom: var(--mp-1); }
+.mp-auth-sub { color: var(--mp-text-faint); font-size: var(--mp-text-sm); }
+.mp-auth-foot {
+    margin-top: var(--mp-5); text-align: center;
+    font-size: var(--mp-text-sm); color: var(--mp-text-faint);
+}
+</style>
 
-            <!-- Language selector on login page -->
-            <div class="login-lang-selector">
-                <button class="login-lang-btn active" data-lang="de" onclick="switchLoginLang('de')">
-                    <span class="login-lang-flag">🇩🇪</span> DE
-                </button>
-                <button class="login-lang-btn" data-lang="en" onclick="switchLoginLang('en')">
-                    <span class="login-lang-flag">🇬🇧</span> EN
-                </button>
-                <button class="login-lang-btn" data-lang="es" onclick="switchLoginLang('es')">
-                    <span class="login-lang-flag">🇪🇸</span> ES
-                </button>
-            </div>
+<div class="mp-auth-wrap">
+    <div class="mp-auth-card">
 
-            <% if (error) { %>
-                <div class="error-alert">
-                    <i class="fas fa-exclamation-circle"></i>
+        <div class="mp-auth-head">
+            <div class="mp-auth-mark" aria-hidden="true">M</div>
+            <h1 class="mp-auth-title">MedienPass</h1>
+            <p class="mp-auth-sub"><%= t('schoolFooter') %></p>
+        </div>
+
+        <div class="mp-card">
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div class="mp-alert mp-alert--danger" role="alert" style="margin-bottom: var(--mp-4);">
                     <%= error %>
                 </div>
-                <% } %>
+            <% } %>
 
-                    <form action="/login" method="POST" class="login-form">
-                        <div class="form-group">
-                            <label for="class_name_select">
-                                <i class="fas fa-school"></i> <span data-i18n="classLabel" translate="no" class="notranslate">Klasse</span>
-                            </label>
-                            <select id="class_name_select" onchange="checkCode()">
-                                <option value="" data-i18n-option="selectClass">-- Selecciona tu clase / Wähle deine Klasse --</option>
-                                <% if (typeof uniqueClasses !== 'undefined') { %>
-                                    <% uniqueClasses.forEach(cls => { %>
-                                        <option value="<%= cls %>" translate="no" class="notranslate">Klasse <%= cls %></option>
-                                    <% }) %>
-                                <% } else { %>
-                                    <% klassenConfig.klassen.forEach(klasse=> { %>
-                                        <% klassenConfig.kurse.forEach(kurs=> { %>
-                                            <option value="<%= klasse %><%= kurs %>">Klasse <%= klasse %><%= kurs %></option>
-                                        <% }) %>
-                                    <% }) %>
-                                <% } %>
-                            </select>
-                        </div>
+            <form method="POST" action="/login" class="mp-stack" autocomplete="on">
 
-                        <div class="form-group">
-                            <label for="student_code">
-                                <i class="fas fa-barcode"></i> <span data-i18n="studentCode">Código de Estudiante /
-                                    Code</span>
-                            </label>
-                            <input type="number" id="student_code" name="student_code"
-                                data-i18n-placeholder="codePlaceholder" placeholder="Ej: 2401" required
-                                oninput="checkCode()">
-                        </div>
+                <div class="mp-field">
+                    <label class="mp-label" for="username"><%= t('loginName') %></label>
+                    <input class="mp-input" type="text" id="username" name="username"
+                           autocomplete="given-name" required autofocus
+                           placeholder="<%= t('loginNamePlaceholder') %>">
+                </div>
 
-                        <!-- Auto-populated info -->
-                        <div id="student_info"
-                            style="display: none; background: #f0fdf4; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #bbf7d0;">
-                            <div style="font-size: 0.85em; color: #166534; margin-bottom: 5px;"
-                                data-i18n="studentFound">Estudiante encontrado:</div>
-                            <div id="student_name_display" style="font-weight: bold; font-size: 1.1em; color: #15803d;">
-                            </div>
-                            <div id="student_class_display" translate="no" class="notranslate" style="font-size: 0.9em; color: #166534; margin-top: 5px;">
-                            </div>
-                        </div>
+                <div class="mp-field">
+                    <label class="mp-label" for="class_name"><%= t('loginClass') %></label>
+                    <select class="mp-select" id="class_name" name="class_name" required>
+                        <option value=""><%= t('loginClassPlaceholder') %></option>
+                        <% (uniqueClasses && uniqueClasses.length ? uniqueClasses : []).forEach(function (c) { %>
+                            <option value="<%= c %>"><%= c %></option>
+                        <% }); %>
+                    </select>
+                </div>
 
-                        <div id="code_error"
-                            style="display: none; color: #dc2626; font-size: 0.85em; margin-bottom: 15px; text-align: center;">
-                            <i class="fas fa-exclamation-circle"></i> <span data-i18n="codeNotFound">Código no
-                                encontrado en esta clase / Code nicht gefunden</span>
-                        </div>
+                <div class="mp-field">
+                    <label class="mp-label" for="student_code">
+                        <%= t('loginCode') %>
+                        <span class="mp-label__hint">— <%= t('loginCodeHint') %></span>
+                    </label>
+                    <input class="mp-input mp-mono" type="text" id="student_code" name="student_code"
+                           inputmode="numeric" autocomplete="off" required
+                           placeholder="000000">
+                </div>
 
-                        <input type="hidden" id="username" name="username">
-                        <input type="hidden" id="class_name" name="class_name">
-
-                        <button type="submit" class="login-btn" id="login_btn" disabled
-                            style="opacity: 0.5; cursor: not-allowed;">
-                            <i class="fas fa-sign-in-alt"></i> <span data-i18n="loginButton">Eintreten</span>
-                        </button>
-                    </form>
-
-                    <div
-                        style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
-                        <p style="color: #64748b; font-size: 0.9em; margin-bottom: 12px;">¿Eres Docente? / Sind Sie
-                            Lehrkraft?</p>
-                        <a href="/teacher/login"
-                            style="display: block; width: 100%; background: #f8fafc; color: #4f46e5; border: 2px solid #e0e7ff; border-radius: 12px; font-size: 1.05em; font-weight: 700; padding: 14px; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box;"
-                            onmouseover="this.style.background='#eef2ff'; this.style.borderColor='#818cf8'; this.style.transform='translateY(-2px)';"
-                            onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#e0e7ff'; this.style.transform='translateY(0)';">
-                            <i class="fas fa-chalkboard-teacher" style="margin-right: 8px; font-size: 1.2em;"></i>
-                            Portal Docente & Capacitación
-                        </a>
-                        <a href="/admin"
-                            style="display: block; width: 100%; background: #fef2f2; color: #dc2626; border: 2px solid #fecaca; border-radius: 12px; font-size: 0.95em; font-weight: 600; padding: 12px; text-decoration: none; transition: all 0.3s ease; margin-top: 10px; box-sizing: border-box;"
-                            onmouseover="this.style.background='#fee2e2'; this.style.borderColor='#f87171'; this.style.transform='translateY(-2px)';"
-                            onmouseout="this.style.background='#fef2f2'; this.style.borderColor='#fecaca'; this.style.transform='translateY(0)';">
-                            <i class="fas fa-cog" style="margin-right: 8px;"></i>
-                            Panel Administrativo
-                        </a>
-                    </div>
-
-                    <div class="login-footer" style="text-align: center; margin-top: 25px;">
-                        <p data-i18n="schoolFooter">Deutsche Schule Barranquilla — Colegio Alemán</p>
-                    </div>
+                <button type="submit" class="mp-btn mp-btn--primary mp-btn--block mp-btn--lg">
+                    <%= t('loginSubmit') %>
+                </button>
+            </form>
         </div>
+
+        <p class="mp-auth-foot">
+            <a href="/teacher/login"><%= t('loginTeacherLink') %></a>
+        </p>
+
+        <nav class="mp-langs" aria-label="Idioma" style="display:flex; justify-content:center; margin: var(--mp-4) auto 0; width: max-content;">
+            <% languages.forEach(function (l) { %>
+                <a class="mp-langs__item" href="?lang=<%= l %>"<%= lang === l ? ' aria-current="true"' : '' %>><%= l %></a>
+            <% }); %>
+        </nav>
     </div>
+</div>
 
-    <script>
-        function switchLoginLang(lang) {
-            document.querySelectorAll('.login-lang-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
-            });
-            if (window.langUtils) {
-                window.langUtils.switchLang(lang);
-            }
-        }
-
-        // On load, sync login lang buttons with current lang
-        document.addEventListener('DOMContentLoaded', () => {
-            const currentLang = window.langUtils ? window.langUtils.getLang() : 'de';
-            document.querySelectorAll('.login-lang-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
-            });
-        });
-
-        let checkTimeout;
-        async function checkCode() {
-            const classSelect = document.getElementById('class_name_select').value;
-            const code = document.getElementById('student_code').value.trim();
-            const infoDiv = document.getElementById('student_info');
-            const errorDiv = document.getElementById('code_error');
-            const btn = document.getElementById('login_btn');
-            const usernameInput = document.getElementById('username');
-            const classInput = document.getElementById('class_name');
-
-            if (!classSelect || code.length < 2) {
-                infoDiv.style.display = 'none';
-                errorDiv.style.display = 'none';
-                btn.disabled = true;
-                btn.style.opacity = '0.5';
-                btn.style.cursor = 'not-allowed';
-                return;
-            }
-
-            clearTimeout(checkTimeout);
-            checkTimeout = setTimeout(async () => {
-                try {
-                    const res = await fetch('/api/student/code/' + classSelect + '/' + code);
-                    const result = await res.json();
-
-                    if (result.success && result.student) {
-                        if (result.student.full_name) {
-                    document.getElementById('student_name_display').textContent = result.student.full_name;
-                } else if (result.student.first_name && result.student.last_name) {
-                    document.getElementById('student_name_display').textContent = result.student.first_name + ' ' + result.student.last_name;
-                } else {
-                    document.getElementById('student_name_display').textContent = result.student.username;
-                }
-                        document.getElementById('student_class_display').textContent = 'Klasse ' + result.student.class_name;
-
-                        usernameInput.value = result.student.username;
-                        classInput.value = result.student.class_name;
-
-                        infoDiv.style.display = 'block';
-                        errorDiv.style.display = 'none';
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
-                        btn.style.cursor = 'pointer';
-                    } else {
-                        infoDiv.style.display = 'none';
-                        errorDiv.style.display = 'block';
-                        btn.disabled = true;
-                        btn.style.opacity = '0.5';
-                        btn.style.cursor = 'not-allowed';
-                    }
-                } catch (e) {
-                    console.error(e);
-                }
-            }, 400); // 400ms debounce
-        }
-    </script>
-
-    <%- include('partials/footer') %>
+<%- include('layout/foot') %>
