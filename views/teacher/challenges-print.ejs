@@ -54,7 +54,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            color: #1e293b;
+            color: var(--mp-text);
             background-color: #ffffff;
             margin: 0;
             padding: 40px;
@@ -68,12 +68,12 @@
         }
         .header h1 {
             font-size: 28px;
-            color: #0f172a;
+            color: var(--mp-text);
             margin: 0;
         }
         .header p {
             font-size: 16px;
-            color: #64748b;
+            color: var(--mp-text-faint);
             margin: 5px 0 0 0;
         }
         .grade-badge {
@@ -97,8 +97,8 @@
         }
         .reto-card {
             page-break-inside: avoid;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background: var(--mp-bg);
+            border: 1px solid var(--mp-border);
             border-radius: 12px;
             padding: 28px;
             margin-bottom: 35px;
@@ -107,7 +107,7 @@
         .reto-header {
             display: flex;
             align-items: center;
-            border-bottom: 2px solid #cbd5e1;
+            border-bottom: 2px solid var(--mp-border-strong);
             padding-bottom: 16px;
             margin-bottom: 20px;
         }
@@ -121,12 +121,12 @@
         .reto-title {
             font-size: 22px;
             font-weight: 700;
-            color: #0f172a;
+            color: var(--mp-text);
             margin: 0;
         }
         .reto-subtitle {
             font-size: 15px;
-            color: #475569;
+            color: var(--mp-text-soft);
             margin: 4px 0 0 0;
         }
         .question-item {
@@ -137,23 +137,23 @@
         .question-label {
             font-size: 15px;
             font-weight: 600;
-            color: #334155;
+            color: var(--mp-text);
             margin-bottom: 4px;
         }
         .question-hint {
             font-size: 12px;
-            color: #64748b;
+            color: var(--mp-text-faint);
             font-style: italic;
             margin-bottom: 8px;
         }
         .answer-box {
             background: #ffffff;
-            border: 1px dashed #cbd5e1;
+            border: 1px dashed var(--mp-border-strong);
             border-radius: 6px;
             min-height: 45px;
             padding: 10px;
             font-size: 14px;
-            color: #94a3b8;
+            color: var(--mp-text-faint);
         }
         .print-options {
             margin: 10px 0 15px 0;
@@ -165,12 +165,12 @@
             display: flex;
             align-items: center;
             font-size: 14px;
-            color: #334155;
+            color: var(--mp-text);
         }
         .checkbox-box {
             width: 16px;
             height: 16px;
-            border: 2px solid #64748b;
+            border: 2px solid var(--mp-text-faint);
             border-radius: 3px;
             margin-right: 10px;
             flex-shrink: 0;
@@ -198,7 +198,7 @@
         @media print {
             body { padding: 0; background: white; }
             .print-btn-container { display: none; }
-            .reto-card { box-shadow: none; border: 1px solid #cbd5e1; background: #fafafa; }
+            .reto-card { box-shadow: none; border: 1px solid var(--mp-border-strong); background: #fafafa; }
         }
     </style>
 </head>
@@ -216,7 +216,7 @@
     </div>
 
     <!-- RETO 0: ESTE SOY YO (SHARED PROFILE) -->
-    <div class="reto-card" style="border-top: 5px solid #3b82f6;">
+    <div class="reto-card" style="border-top: 5px solid var(--mp-accent);">
         <div class="reto-header">
             <div class="reto-icon">👤</div>
             <div class="reto-title-group">
@@ -227,7 +227,7 @@
         <div class="questions-list">
             <% sharedProfile.evidence.forEach(function(q, index) { %>
                 <% if (q.type === 'label') { %>
-                    <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 25px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;"><%= getLangStr(q.label, lang) %></h3>
+                    <h3 style="font-size: 16px; font-weight: 700; color: var(--mp-text); margin-top: 25px; margin-bottom: 12px; border-bottom: 1px solid var(--mp-border); padding-bottom: 6px;"><%= getLangStr(q.label, lang) %></h3>
                 <% } else { %>
                     <div class="question-item">
                         <div class="question-label"><%= getLangStr(q.label, lang) %></div>
@@ -290,7 +290,7 @@
                         </div>
                     <% }); %>
                 <% } else { %>
-                    <p style="color: #64748b; font-style: italic;"><%= txt.noQuestions %></p>
+                    <p style="color: var(--mp-text-faint); font-style: italic;"><%= txt.noQuestions %></p>
                 <% } %>
             </div>
         </div>

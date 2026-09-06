@@ -13,12 +13,12 @@
                 <a href="/teacher/troubleshooting"><i class="fas fa-wrench"></i> Guía Troubleshooting</a>
                 <a href="/teacher/bitacora"><i class="fas fa-clipboard-list"></i> Bitácora de Novedades</a>
                 <a href="/teacher/progress"><i class="fas fa-chart-line"></i> Monitoreo Retos (0-6)</a>
-                <a href="/teacher/logout" style="margin-top: auto; color: #ef4444;"><i class="fas fa-sign-out-alt"></i>
+                <a href="/teacher/logout" style="margin-top: auto; color: var(--mp-danger);"><i class="fas fa-sign-out-alt"></i>
                     <span data-i18n="logoutTitle">Cerrar Sesión</span></a>
             </nav>
         </div>
 
-        <div class="admin-main" style="background: #f8fafc; overflow-y: auto;">
+        <div class="admin-main" style="background: var(--mp-bg); overflow-y: auto;">
             <header class="admin-header">
                 <div class="header-left">
                     <h1 data-i18n="certTitle">Certificación de Competencias Docentes</h1>
@@ -28,15 +28,15 @@
 
             <div class="admin-content" style="max-width: 800px; margin: 0 auto;">
                 <% if (typeof success !=='undefined' && success) { %>
-                    <div class="admin-card" style="text-align: center; border-top: 5px solid <%= score >= 75 ? '#10b981' : '#f59e0b' %>;">
+                    <div class="admin-card" style="text-align: center; border-top: 5px solid <%= score >= 75 ? 'var(--mp-ok)' : 'var(--mp-warn)' %>;">
                         <% if (score >= 75) { %>
-                            <i class="fas fa-award" style="font-size: 5em; color: #10b981; margin-bottom: 20px;"></i>
+                            <i class="fas fa-award" style="font-size: 5em; color: var(--mp-ok); margin-bottom: 20px;"></i>
                             <h2>¡Felicitaciones!</h2>
                             <p style="font-size: 1.2em;">Has completado exitosamente la validación de competencias KMK.</p>
                         <% } else { %>
-                            <i class="fas fa-exclamation-circle" style="font-size: 5em; color: #f59e0b; margin-bottom: 20px;"></i>
+                            <i class="fas fa-exclamation-circle" style="font-size: 5em; color: var(--mp-warn); margin-bottom: 20px;"></i>
                             <h2>Puntuación insuficiente</h2>
-                            <p style="font-size: 1.1em; color: #64748b;"><%= feedback %></p>
+                            <p style="font-size: 1.1em; color: var(--mp-text-faint);"><%= feedback %></p>
                         <% } %>
                         <p style="margin-top: 15px;">Tu puntuación fue del <strong><%= score %>%</strong>.</p>
                         <br>
@@ -47,10 +47,10 @@
                     <% } else { %>
                         <form action="/teacher/evaluation" method="POST" class="admin-card" style="padding: 30px;">
                             <p>Por favor responde este breve cuestionario para validar los conocimientos del módulo.</p>
-                            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e2e8f0;">
+                            <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--mp-border);">
 
                             <div class="form-group" style="margin-bottom: 30px;">
-                                <label style="font-size: 1.1em; color: #1e293b; margin-bottom: 10px; display: block;">1.
+                                <label style="font-size: 1.1em; color: var(--mp-text); margin-bottom: 10px; display: block;">1.
                                     ¿En qué área temática de la KMK se encuentra la competencia de "Evaluar y analizar
                                     fuentes mediáticas"?</label>
                                 <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -66,7 +66,7 @@
                             </div>
 
                             <div class="form-group" style="margin-bottom: 30px;">
-                                <label style="font-size: 1.1em; color: #1e293b; margin-bottom: 10px; display: block;">2.
+                                <label style="font-size: 1.1em; color: var(--mp-text); margin-bottom: 10px; display: block;">2.
                                     El cuidado del impacto ecológico (como el uso eficiente de dispositivos) pertenece
                                     a...</label>
                                 <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -82,7 +82,7 @@
                             </div>
 
                             <div class="form-group" style="margin-bottom: 30px;">
-                                <label style="font-size: 1.1em; color: #1e293b; margin-bottom: 10px; display: block;">3.
+                                <label style="font-size: 1.1em; color: var(--mp-text); margin-bottom: 10px; display: block;">3.
                                     'Interactuar, Compartir, Colaborar y Participar', hacen parte integral de:</label>
                                 <div style="display: flex; flex-direction: column; gap: 8px;">
                                     <label><input type="radio" name="q3" value="A" required> A) Área 2: Comunicar y
@@ -97,7 +97,7 @@
                             </div>
 
                             <div class="form-group" style="margin-bottom: 30px;">
-                                <label style="font-size: 1.1em; color: #1e293b; margin-bottom: 10px; display: block;">4.
+                                <label style="font-size: 1.1em; color: var(--mp-text); margin-bottom: 10px; display: block;">4.
                                     Si un estudiante tiene un error con su cuenta escolar de Office 365, ayudarle a
                                     buscar de forma autónoma la raíz del problema mediante la lógica básica de
                                     "ensayo-error" corresponde a:</label>
@@ -113,7 +113,7 @@
                             </div>
 
                             <div class="form-group" style="margin-bottom: 30px;">
-                                <label style="font-size: 1.1em; color: #1e293b; margin-bottom: 10px; display: block;">5.
+                                <label style="font-size: 1.1em; color: var(--mp-text); margin-bottom: 10px; display: block;">5.
                                     ¿Cuál es el objetivo principal del MedienPass (Pasaporte de Medios) en el Colegio Alemán?</label>
                                 <div style="display: flex; flex-direction: column; gap: 8px;">
                                     <label><input type="radio" name="q5" value="A" required> A) Generar una nota cuantitativa semestral en informática.</label>

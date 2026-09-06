@@ -27,7 +27,7 @@
             </p>
         <% } %>
         <% if (activity.instruction) { %>
-            <div class="activity-instruction" data-lang-content='<%- JSON.stringify(activity.instruction) %>' style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid var(--primary); text-align: left; font-size: 0.95em; color: #334155;">
+            <div class="activity-instruction" data-lang-content='<%- JSON.stringify(activity.instruction) %>' style="background: var(--mp-bg); padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid var(--primary); text-align: left; font-size: 0.95em; color: var(--mp-text);">
                 <span class="lang-line lang-primary">
                     <%- activity.instruction.de %>
                 </span>
@@ -74,9 +74,9 @@
 
 <!-- Star Self-Evaluation -->
 <% if (activity.id !== 'profile') { %>
-    <div class="star-self-eval" id="starSelfEval" style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #8b5cf6;">
+    <div class="star-self-eval" id="starSelfEval" style="margin-top: 20px; padding: 15px; background: var(--mp-bg); border-radius: 8px; border-left: 4px solid var(--mp-accent);">
         <span class="star-eval-label" data-i18n="selfEvaluation">Autoevaluación</span>
-        <p style="font-size: 0.9em; color: #4b5563; margin: 5px 0 10px 0;">
+        <p style="font-size: 0.9em; color: var(--mp-text-soft); margin: 5px 0 10px 0;">
             Estimado estudiante, tu autoevaluación será analizada por Inteligencia Artificial, la cual te dará un puntaje teniendo en cuenta tu respuesta y la ampliación de la misma en la sección de ¿Puedes explicar por qué seleccionaste esa respuesta?
         </p>
         <div class="star-rating-interactive" id="starRating">
@@ -95,18 +95,18 @@
         <% if (activity.id === 'profile') { %>
 
             <!-- ── Barra de progreso Reto 0 (5 paneles) ── -->
-            <div class="reto0-progress-bar" id="reto0ProgressBar" style="background:#f1f5f9;border-radius:12px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
-                <span style="font-size:0.82em;color:#64748b;white-space:nowrap;" data-i18n="progressLabel">Progreso:</span>
-                <div style="flex:1;background:#e2e8f0;border-radius:8px;height:8px;overflow:hidden;">
-                    <div id="reto0ProgressFill" style="height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:8px;transition:width .4s ease;width:0%;"></div>
+            <div class="reto0-progress-bar" id="reto0ProgressBar" style="background:var(--mp-surface-alt);border-radius:12px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+                <span style="font-size:0.82em;color:var(--mp-text-faint);white-space:nowrap;" data-i18n="progressLabel">Progreso:</span>
+                <div style="flex:1;background:var(--mp-border);border-radius:8px;height:8px;overflow:hidden;">
+                    <div id="reto0ProgressFill" style="height:100%;background:linear-gradient(90deg,var(--mp-accent),var(--mp-accent));border-radius:8px;transition:width .4s ease;width:0%;"></div>
                 </div>
-                <span id="reto0ProgressLabel" style="font-size:0.82em;font-weight:700;color:#6366f1;min-width:36px;text-align:right;">0/5</span>
+                <span id="reto0ProgressLabel" style="font-size:0.82em;font-weight:700;color:var(--mp-accent);min-width:36px;text-align:right;">0/5</span>
             </div>
             <!-- Indicador de pasos -->
             <div style="display:flex;justify-content:center;gap:8px;margin-bottom:20px;" id="reto0Steps">
                 <% for(let _s=1;_s<=5;_s++) { %>
                 <div class="reto0-step" id="step-<%= _s %>" data-step="<%= _s %>"
-                     style="width:32px;height:32px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:0.78em;font-weight:700;color:#94a3b8;cursor:pointer;border:2px solid transparent;transition:all .25s;"
+                     style="width:32px;height:32px;border-radius:50%;background:var(--mp-border);display:flex;align-items:center;justify-content:center;font-size:0.78em;font-weight:700;color:var(--mp-text-faint);cursor:pointer;border:2px solid transparent;transition:all .25s;"
                      onclick="toggleAccordionPanel(<%= _s %>)"><%= _s %></div>
                 <% } %>
             </div>
@@ -129,7 +129,7 @@
                                 </h2>
 
                                 <div class="avatar-selector-container" id="avatarSelectorContainer">
-                                    <p style="margin-bottom: 15px; color: #64748b; font-weight: 600;" data-i18n="avatarInstruction">Selecciona tu avatar / Wähle deinen Avatar:</p>
+                                    <p style="margin-bottom: 15px; color: var(--mp-text-faint); font-weight: 600;" data-i18n="avatarInstruction">Selecciona tu avatar / Wähle deinen Avatar:</p>
                                     <div class="avatar-grid" id="avatarGrid">
                                         <% const avatars = [
                                             '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🦄','🐝','🐛','🦋','🐢','🐙','🐠','🐳','🐊','🐅','🐆','🦓','🦍','🐘','🦛','🦏','🐪','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔',
@@ -150,14 +150,14 @@
                                     </div>
                                     
                                     <div class="selected-avatar-display" style="margin-top: 20px; text-align: center;">
-                                        <p style="font-weight: 600; color: #4338ca;">Tu selección:</p>
-                                        <div id="currentAvatarDisplay" style="font-size: 4em; margin: 10px auto; width: 80px; height: 80px; line-height: 80px; background: #e0e7ff; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 3px solid #4f46e5; color: #1e1b4b;">❓</div>
+                                        <p style="font-weight: 600; color: var(--mp-accent-hover);">Tu selección:</p>
+                                        <div id="currentAvatarDisplay" style="font-size: 4em; margin: 10px auto; width: 80px; height: 80px; line-height: 80px; background: var(--mp-accent-soft); border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 3px solid var(--mp-accent); color: #1e1b4b;">❓</div>
                                     </div>
 
                                     <input type="hidden" id="profile_photo" name="profile_photo" value="">
                                     
                                     <div style="text-align: center; margin-top: 25px;">
-                                        <button type="button" class="save-btn" onclick="saveProfileModule(1, this)" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);" data-lang-content='{"es": "<i class=\"fas fa-save\"></i> Guardar mi Avatar y Continuar", "de": "<i class=\"fas fa-save\"></i> Avatar speichern und weiter", "en": "<i class=\"fas fa-save\"></i> Save my Avatar and Continue"}'><span class="lang-line lang-primary"><i class="fas fa-save"></i> Guardar mi Avatar y Continuar</span></button>
+                                        <button type="button" class="save-btn" onclick="saveProfileModule(1, this)" style="background: linear-gradient(135deg, var(--mp-ok), var(--mp-ok)); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);" data-lang-content='{"es": "<i class=\"fas fa-save\"></i> Guardar mi Avatar y Continuar", "de": "<i class=\"fas fa-save\"></i> Avatar speichern und weiter", "en": "<i class=\"fas fa-save\"></i> Save my Avatar and Continue"}'><span class="lang-line lang-primary"><i class="fas fa-save"></i> Guardar mi Avatar y Continuar</span></button>
                                     </div>
                                 </div>
 
@@ -172,9 +172,9 @@
                                         max-height: 250px;
                                         overflow-y: auto;
                                         padding: 10px;
-                                        border: 2px solid #e2e8f0;
+                                        border: 2px solid var(--mp-border);
                                         border-radius: 12px;
-                                        background: #f8fafc;
+                                        background: var(--mp-bg);
                                     }
                                     .avatar-option {
                                         font-size: 1.6em;
@@ -189,24 +189,24 @@
                                         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
                                         transition: transform 0.2s, background 0.2s;
                                         border: 2px solid transparent;
-                                        color: #1e293b;
+                                        color: var(--mp-text);
                                     }
                                     .avatar-option:hover {
                                         transform: scale(1.15);
-                                        background: #eef2ff;
+                                        background: var(--mp-accent-soft);
                                     }
                                     .avatar-option.selected {
-                                        border-color: #4f46e5;
-                                        background: #e0e7ff;
+                                        border-color: var(--mp-accent);
+                                        background: var(--mp-accent-soft);
                                         transform: scale(1.15);
                                         box-shadow: 0 4px 10px rgba(79,70,229,0.3);
                                     }
                                     
                                     /* Custom scrollbar */
                                     .avatar-grid::-webkit-scrollbar { width: 8px; }
-                                    .avatar-grid::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
-                                    .avatar-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-                                    .avatar-grid::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+                                    .avatar-grid::-webkit-scrollbar-track { background: var(--mp-surface-alt); border-radius: 4px; }
+                                    .avatar-grid::-webkit-scrollbar-thumb { background: var(--mp-border-strong); border-radius: 4px; }
+                                    .avatar-grid::-webkit-scrollbar-thumb:hover { background: var(--mp-text-faint); }
                                 </style>
                             </div>
                         <div class="panel-actions" style="text-align: right; margin-top: 20px;">
@@ -231,7 +231,7 @@
                         
                         <!-- Panel 2 Avatar Display Sync -->
                         <div class="selected-avatar-display" style="text-align: center; margin-bottom: 20px;">
-                            <div id="panel2AvatarDisplay" style="font-size: 4em; margin: 10px auto; width: 80px; height: 80px; line-height: 80px; background: #e0e7ff; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 3px solid #4f46e5; color: #1e1b4b; display: flex; align-items: center; justify-content: center;">❓</div>
+                            <div id="panel2AvatarDisplay" style="font-size: 4em; margin: 10px auto; width: 80px; height: 80px; line-height: 80px; background: var(--mp-accent-soft); border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 3px solid var(--mp-accent); color: #1e1b4b; display: flex; align-items: center; justify-content: center;">❓</div>
                         </div>
                         
 <div class="profile-fields-section">
@@ -346,7 +346,7 @@
 
                     <!-- Slide 1 -->
                     <div class="mySlides fade">
-                        <div class="slide-card" style="border-top-color: #6366f1;">
+                        <div class="slide-card" style="border-top-color: var(--mp-accent);">
                             <div class="slide-icon">🚀</div>
                             <h2 data-lang-content='{"es": "El Pasaporte al Mundo Digital", "de": "Der Reisepass zur digitalen Welt", "en": "The Passport to the Digital World"}'>El Pasaporte al Mundo Digital</h2>
                             <p data-lang-content='{"es": "Guía de Implementación del Medienpass.", "de": "Implementierungsleitfaden für den Medienpass.", "en": "Implementation Guide for the Medienpass."}'>Guía de Implementación del Medienpass</p>
@@ -354,7 +354,7 @@
                     </div>
                     <!-- Slide 2 -->
                     <div class="mySlides fade" style="display:none;">
-                        <div class="slide-card" style="border-top-color: #3b82f6; text-align: center; align-items: stretch;">
+                        <div class="slide-card" style="border-top-color: var(--mp-accent); text-align: center; align-items: stretch;">
                             <div class="slide-icon">📖</div>
                             <h2 data-lang-content='{"es": "¿Qué es el Medienpass?", "de": "Was ist der Medienpass?", "en": "What is the Medienpass?"}'>¿Qué es el Medienpass?</h2>
                             <p style="margin-bottom: 15px;" data-lang-content='{"es": "Un cuaderno lúdico basado en tres pilares:", "de": "Ein spielerisches Arbeitsheft basierend auf drei Säulen:", "en": "A playful workbook based on three pillars:"}'></p>
@@ -395,7 +395,7 @@
                     </div>
                     <!-- Slide 3 -->
                     <div class="mySlides fade" style="display:none;">
-                        <div class="slide-card" style="border-top-color: #10b981; text-align: center; align-items: stretch;">
+                        <div class="slide-card" style="border-top-color: var(--mp-ok); text-align: center; align-items: stretch;">
                             <div class="slide-icon">🔄</div>
                             <h2 data-lang-content='{"es": "Metodología", "de": "Methodik", "en": "Methodology"}'>Metodología</h2>
                             <p style="margin-bottom: 15px;" data-lang-content='{"es": "Ciclo de tres pasos:", "de": "Drei-Schritte-Zyklus:", "en": "Three-step cycle:"}'></p>
@@ -436,7 +436,7 @@
                     </div>
                     <!-- Slide 4 -->
                     <div class="mySlides fade" style="display:none;">
-                        <div class="slide-card" style="border-top-color: #f59e0b; text-align: center; align-items: stretch;">
+                        <div class="slide-card" style="border-top-color: var(--mp-warn); text-align: center; align-items: stretch;">
                             <div class="slide-icon">🔍</div>
                             <h2 data-lang-content='{"es": "Competencias 1 y 2", "de": "Kompetenzen 1 & 2", "en": "Competencies 1 & 2"}'>Competencias 1 y 2</h2>
                             <p style="margin-bottom: 15px;" data-lang-content='{"es": "Estándares KMK (haz clic para descubrir):", "de": "KMK-Standards (Klicke zum Entdecken):", "en": "KMK Standards (Click to explore):"}'></p>
@@ -467,7 +467,7 @@
                     </div>
                     <!-- Slide 5 -->
                     <div class="mySlides fade" style="display:none;">
-                        <div class="slide-card" style="border-top-color: #ef4444; text-align: center; align-items: stretch;">
+                        <div class="slide-card" style="border-top-color: var(--mp-danger); text-align: center; align-items: stretch;">
                             <div class="slide-icon">🎨</div>
                             <h2 data-lang-content='{"es": "Competencias 3 y 4", "de": "Kompetenzen 3 & 4", "en": "Competencies 3 & 4"}'>Competencias 3 y 4</h2>
                             <p style="margin-bottom: 15px;" data-lang-content='{"es": "Estándares KMK (haz clic para descubrir):", "de": "KMK-Standards (Klicke zum Entdecken):", "en": "KMK Standards (Click to explore):"}'></p>
@@ -498,7 +498,7 @@
                     </div>
                     <!-- Slide 6 -->
                     <div class="mySlides fade" style="display:none;">
-                        <div class="slide-card" style="border-top-color: #8b5cf6; text-align: center; align-items: stretch;">
+                        <div class="slide-card" style="border-top-color: var(--mp-accent); text-align: center; align-items: stretch;">
                             <div class="slide-icon">⚙️</div>
                             <h2 data-lang-content='{"es": "Competencias 5 y 6", "de": "Kompetenzen 5 & 6", "en": "Competencies 5 & 6"}'>Competencias 5 y 6</h2>
                             <p style="margin-bottom: 15px;" data-lang-content='{"es": "Estándares KMK (haz clic para descubrir):", "de": "KMK-Standards (Klicke zum Entdecken):", "en": "KMK Standards (Click to explore):"}'></p>
@@ -597,7 +597,7 @@
                                 <h2 style="font-size: 1.6em; text-align: left; margin: 0;" data-lang-content='{"es": "¡Listo para la Aventura!", "de": "Bereit für das Abenteuer!", "en": "Ready for Adventure!"}'>¡Listo para la Aventura!</h2>
                             </div>
                             
-                            <p style="margin-top: 15px; font-weight: 700; color: #1e293b; font-size: 0.95em;" data-lang-content='{"es": "Ahora completa el cuestionario diagnóstico interactivo que aparece abajo para iniciar oficialmente tus retos. ¡Tú puedes lograrlo!", "de": "Fülle nun den interaktiven Diagnosefragebogen unten aus, um deine Herausforderungen offiziell zu starten. Du schaffst das!", "en": "Now complete the interactive diagnostic questionnaire below to officially start your challenges. You can do it!"}'>Ahora completa el cuestionario diagnóstico interactivo que aparece abajo para iniciar oficialmente tus retos. ¡Tú puedes lograrlo!</p>
+                            <p style="margin-top: 15px; font-weight: 700; color: var(--mp-text); font-size: 0.95em;" data-lang-content='{"es": "Ahora completa el cuestionario diagnóstico interactivo que aparece abajo para iniciar oficialmente tus retos. ¡Tú puedes lograrlo!", "de": "Fülle nun den interaktiven Diagnosefragebogen unten aus, um deine Herausforderungen offiziell zu starten. Du schaffst das!", "en": "Now complete the interactive diagnostic questionnaire below to officially start your challenges. You can do it!"}'>Ahora completa el cuestionario diagnóstico interactivo que aparece abajo para iniciar oficialmente tus retos. ¡Tú puedes lograrlo!</p>
                         </div>
                     </div>
 
@@ -640,23 +640,23 @@
                         <p class="panel-description" data-lang-content='{"es": "✏️ En este nivel ya debes tener muy claro para qué sirve el MedienPass. ¡Es hora de la evaluación!", "de": "✏️ Auf dieser Stufe solltest du sehr genau wissen, wofür der Medienpass da ist. Zeit für die Bewertung!", "en": "✏️ At this level you should be very clear about what the MedienPass is for. Time for evaluation!"}'><span class="lang-line lang-primary">✏️ En este nivel ya debes tener muy claro para qué sirve el MedienPass. ¡Es hora de la evaluación!</span></p>
                         
                         <!-- Edilim Game Container -->
-                        <div id="edilim-game-container" style="display: none; margin-bottom: 30px; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); padding: 25px; overflow: hidden; position: relative;">
-                            <div class="edilim-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569;">
+                        <div id="edilim-game-container" style="display: none; margin-bottom: 30px; background: #ffffff; border-radius: 20px; border: 1px solid var(--mp-border); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); padding: 25px; overflow: hidden; position: relative;">
+                            <div class="edilim-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--mp-surface-alt); padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: var(--mp-text-soft);">
                                     <span class="edilim-stat-icon">🏆</span>
-                                    <span class="edilim-stat-label">Aciertos</span>: <span id="edilim-hits" style="color: #10b981;">0</span> / <%= activity.evidence.filter(item => item.id.startsWith('eval_q')).length %>
+                                    <span class="edilim-stat-label">Aciertos</span>: <span id="edilim-hits" style="color: var(--mp-ok);">0</span> / <%= activity.evidence.filter(item => item.id.startsWith('eval_q')).length %>
                                 </div>
-                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569;">
+                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: var(--mp-text-soft);">
                                     <span class="edilim-stat-icon">⚠️</span>
-                                    <span class="edilim-stat-label">Errores</span>: <span id="edilim-errors" style="color: #ef4444;">0</span>
+                                    <span class="edilim-stat-label">Errores</span>: <span id="edilim-errors" style="color: var(--mp-danger);">0</span>
                                 </div>
-                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: #475569; background: #f1f5f9; padding: 6px 14px; border-radius: 9999px;">
+                                <div class="edilim-stat-group" style="display: flex; align-items: center; gap: 8px; font-size: 1.1em; font-weight: 700; color: var(--mp-text-soft); background: var(--mp-surface-alt); padding: 6px 14px; border-radius: 9999px;">
                                     <span class="edilim-stat-icon">⏱️</span>
                                     <span id="edilim-timer" style="font-family: monospace;">00:00</span>
                                 </div>
                             </div>
-                            <div class="edilim-progress-container" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; margin-bottom: 25px;">
-                                <div id="edilim-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4f46e5, #8b5cf6); border-radius: 9999px; transition: width 0.4s ease;"></div>
+                            <div class="edilim-progress-container" style="width: 100%; height: 8px; background: var(--mp-border); border-radius: 9999px; overflow: hidden; margin-bottom: 25px;">
+                                <div id="edilim-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--mp-accent), var(--mp-accent)); border-radius: 9999px; transition: width 0.4s ease;"></div>
                             </div>
                             <div id="edilim-question-body" style="min-height: 250px; display: flex; flex-direction: column; justify-content: center;">
                                 <!-- Populated by JS -->
@@ -672,7 +672,7 @@
                             </button>
                         </div>
                         <div id="reto0-eval-save-footer" class="save-actions" style="display: none; text-align: center; margin-top: 20px; margin-bottom: 20px;">
-                            <button type="button" class="save-btn" id="saveBtnQuiz" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; display: inline-block;">
+                            <button type="button" class="save-btn" id="saveBtnQuiz" style="background: linear-gradient(135deg, var(--mp-ok), var(--mp-ok)); padding: 12px 24px; font-size: 1.1em; border-radius: 30px; display: inline-block;">
                                 <i class="fas fa-cloud-upload-alt"></i> <span data-i18n="save"><%= t('save') %></span>
                             </button>
                             <div class="save-status" id="saveStatusQuiz" style="margin-top: 8px;"></div>
@@ -697,11 +697,11 @@
 
 
             <!-- Success Banner for Reto 0 Completion -->
-            <div id="reto0-success-banner" class="reto0-success-banner" style="display: none; margin-top: 30px; padding: 25px; background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+            <div id="reto0-success-banner" class="reto0-success-banner" style="display: none; margin-top: 30px; padding: 25px; background: var(--mp-accent-soft); border: 2px solid #bfdbfe; border-radius: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
                 <div class="banner-icon" style="font-size: 3.5em; margin-bottom: 15px;">🎉✨🚀</div>
                 <h3 style="color: #1e3a8a; font-size: 1.8em; margin-bottom: 10px; font-weight: 700;">¡Muy bien! Ahora ve al siguiente módulo.</h3>
                 <p style="color: #1e40af; font-size: 1.15em; margin-bottom: 20px;">Has completado exitosamente la autoevaluación y diagnóstico del Reto Cero.</p>
-                <a href="/" class="btn-back-dashboard" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 12px 30px; border-radius: 30px; font-weight: bold; text-decoration: none; box-shadow: 0 4px 15px rgba(59,130,246,0.4); transition: all 0.2s;"><i class="fas fa-arrow-left"></i> Volver al Dashboard</a>
+                <a href="/" class="btn-back-dashboard" style="display: inline-block; background: linear-gradient(135deg, var(--mp-accent), var(--mp-accent)); color: white; padding: 12px 30px; border-radius: 30px; font-weight: bold; text-decoration: none; box-shadow: 0 4px 15px rgba(59,130,246,0.4); transition: all 0.2s;"><i class="fas fa-arrow-left"></i> Volver al Dashboard</a>
             </div>
         <% } %>
 
@@ -810,7 +810,7 @@
                         <!-- Total Stars Summary -->
                         <div class="cg-total-summary">
                             <span class="cg-total-label">
-                                <i class="fas fa-star" style="color: #f59e0b;"></i>
+                                <i class="fas fa-star" style="color: var(--mp-warn);"></i>
                                 <span data-i18n="totalStarsCollected"><%= t('totalStarsCollected') %></span>
                             </span>
                             <span class="cg-total-value" id="cgTotalValue">0</span>
@@ -906,7 +906,7 @@
                                                             </div>
                                                         <% }) %>
                                                     </div>
-                                                    <p style="font-size:.85em; color:#64748b; margin-top:6px;">Puedes marcar varias respuestas.</p>
+                                                    <p style="font-size:.85em; color:var(--mp-text-faint); margin-top:6px;">Puedes marcar varias respuestas.</p>
                                                 <% } else if (item.type === 'radio_group' || item.type === 'true_false') { %>
                                                     <div class="radio-group" id="group_<%= item.id %>">
                                                         <% item.options.forEach((opt, optIdx) => {
@@ -930,7 +930,7 @@
 
                                                 <% const _hintTxt = item.hint && (item.hint.de || item.hint.es || item.hint.en || (typeof item.hint === 'string' ? item.hint : '')); %>
                                                 <% if (_hintTxt) { %>
-                                                    <div class="question-hint-box" style="margin-top: 8px; font-size: 0.85em; color: #475569; display: flex; align-items: start; gap: 6px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                                                    <div class="question-hint-box" style="margin-top: 8px; font-size: 0.85em; color: var(--mp-text-soft); display: flex; align-items: start; gap: 6px; background: var(--mp-bg); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--mp-warn);">
                                                         <span style="font-size: 1.15em; line-height: 1.2;">💡</span>
                                                         <span class="lang-line lang-primary" data-lang-content="<%- JSON.stringify(item.hint).replace(/"/g, '&quot;') %>"><%= display(item.hint).primary %></span>
                                                     </div>
@@ -1026,7 +1026,7 @@
                                                             <div class="section star-summary-section">
                                                                 <div class="star-summary-card" id="starSummaryCard">
                                                                     <i class="fas fa-star"
-                                                                        style="color: #f59e0b; font-size: 1.8em;"></i>
+                                                                        style="color: var(--mp-warn); font-size: 1.8em;"></i>
                                                                     <div class="star-summary-text">
                                                                         <span class="star-summary-label"
                                                                             data-i18n="starSummaryLabel">Resultado:</span>
@@ -1051,9 +1051,9 @@
                                                                 <div class="multimedia-block" id="multimediaBlock">
                                                                     <h3><span style="font-size:1.3em;">📱</span>
                                                                         Evidencia Digital / Producto Multimedia
-                                                                        <span style="font-size:0.75em; font-weight:400; color:#059669; margin-left:8px;">(Mínimo 1 enlace)</span>
+                                                                        <span style="font-size:0.75em; font-weight:400; color:var(--mp-ok); margin-left:8px;">(Mínimo 1 enlace)</span>
                                                                     </h3>
-                                                                    <p style="color:#6b7280; font-size:0.9em; margin:0 0 16px;">
+                                                                    <p style="color:var(--mp-text-faint); font-size:0.9em; margin:0 0 16px;">
                                                                         Agrega al menos <strong>un vínculo</strong> a un producto digital que hayas creado para este reto
                                                                         (<strong>ClassNotebook</strong>, YouTube, Canva, SharePoint, etc.).
                                                                         Esto puede ser un video, presentación, infografía, Canvas u otro medio.
@@ -1105,11 +1105,11 @@
                                                                         </div>
 
                                                                         <button type="button" class="save-btn" id="mmSaveBtn"
-                                                                            style="background:linear-gradient(135deg,#7c3aed,#a855f7); margin-top:18px; font-size:0.95em;"
+                                                                            style="background:linear-gradient(135deg,var(--mp-accent),#a855f7); margin-top:18px; font-size:0.95em;"
                                                                             onclick="saveMultimediaProduct()">
                                                                             <i class="fas fa-cloud-upload-alt"></i> Guardar Producto Multimedia
                                                                         </button>
-                                                                        <div id="mmSaveStatus" style="margin-top:8px; font-size:0.85em; color:#059669;"></div>
+                                                                        <div id="mmSaveStatus" style="margin-top:8px; font-size:0.85em; color:var(--mp-ok);"></div>
                                                                     </div>
                                                                 </div>
                                                                 <% } %>
@@ -1343,7 +1343,7 @@
                     
                     document.getElementById('edilim-question-body').innerHTML = html;
                     document.getElementById('edilim-progress-fill').style.width = '100%';
-                    document.getElementById('edilim-progress-fill').style.background = 'linear-gradient(90deg, #10b981, #059669)';
+                    document.getElementById('edilim-progress-fill').style.background = 'linear-gradient(90deg, var(--mp-ok), var(--mp-ok))';
                     
                     const saveBtnQuiz = document.getElementById('reto0-eval-save-footer');
                     if (saveBtnQuiz) saveBtnQuiz.style.display = 'block';
@@ -1415,7 +1415,7 @@
                         document.getElementById('edilim-hits').textContent = '0';
                         document.getElementById('edilim-errors').textContent = '0';
                         document.getElementById('edilim-progress-fill').style.width = '0%';
-                        document.getElementById('edilim-progress-fill').style.background = 'linear-gradient(90deg, #4f46e5, #8b5cf6)';
+                        document.getElementById('edilim-progress-fill').style.background = 'linear-gradient(90deg, var(--mp-accent), var(--mp-accent))';
                         
                         renderEdilimQuestion(0);
                         startTimer();
@@ -1483,7 +1483,7 @@
 
         /* Agente del Profesor Card */
         .teacher-agent-card {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            background: linear-gradient(135deg, var(--mp-accent-soft) 0%, var(--mp-accent-soft) 100%);
             border: 2px solid #bfdbfe;
             border-radius: 16px;
             padding: 20px;
@@ -1517,7 +1517,7 @@
         .agent-title-area p {
             margin: 2px 0 0 0;
             font-size: 0.85em;
-            color: #3b82f6;
+            color: var(--mp-accent);
             font-weight: 600;
         }
         .agent-content {
@@ -1527,7 +1527,7 @@
             background: rgba(255, 255, 255, 0.6);
             padding: 12px 16px;
             border-radius: 10px;
-            border-left: 4px solid #3b82f6;
+            border-left: 4px solid var(--mp-accent);
             font-weight: 500;
         }
 
@@ -1542,31 +1542,31 @@
             background: #ffffff;
             border-radius: 12px;
             padding: 16px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--mp-border);
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
         }
         .slide-scroll-content::-webkit-scrollbar {
             width: 8px;
         }
         .slide-scroll-content::-webkit-scrollbar-track {
-            background: #f1f5f9;
+            background: var(--mp-surface-alt);
             border-radius: 6px;
         }
         .slide-scroll-content::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: var(--mp-border-strong);
             border-radius: 6px;
-            border: 2px solid #f1f5f9;
+            border: 2px solid var(--mp-surface-alt);
         }
         .slide-scroll-content::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            background: var(--mp-text-faint);
         }
         .slide-section-title {
             font-size: 1em;
             font-weight: 700;
-            color: #1e293b;
+            color: var(--mp-text);
             margin-top: 14px;
             margin-bottom: 6px;
-            border-bottom: 2px solid #f1f5f9;
+            border-bottom: 2px solid var(--mp-surface-alt);
             padding-bottom: 4px;
             display: flex;
             align-items: center;
@@ -1577,7 +1577,7 @@
         }
         .slide-detail-p {
             font-size: 0.9em !important;
-            color: #475569 !important;
+            color: var(--mp-text-soft) !important;
             line-height: 1.5 !important;
             margin-bottom: 10px !important;
         }
@@ -1589,7 +1589,7 @@
         }
         .slide-bullets li {
             font-size: 0.88em;
-            color: #475569;
+            color: var(--mp-text-soft);
             margin-bottom: 6px;
             line-height: 1.5;
             padding-left: 18px;
@@ -1597,7 +1597,7 @@
         }
         .slide-bullets li::before {
             content: "•";
-            color: #3b82f6;
+            color: var(--mp-accent);
             font-weight: bold;
             font-size: 1.1em;
             position: absolute;
@@ -1607,8 +1607,8 @@
 
         /* Gamified Quest Tracker */
         .quest-tracker-container {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border: 2px dashed #cbd5e1;
+            background: linear-gradient(135deg, var(--mp-bg) 0%, var(--mp-surface-alt) 100%);
+            border: 2px dashed var(--mp-border-strong);
             border-radius: 12px;
             padding: 12px 16px;
             margin-bottom: 20px;
@@ -1616,8 +1616,8 @@
             transition: all 0.3s ease;
         }
         .quest-tracker-container.completed {
-            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-            border: 2px solid #10b981;
+            background: linear-gradient(135deg, #ecfdf5 0%, var(--mp-ok-soft) 100%);
+            border: 2px solid var(--mp-ok);
             box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1);
         }
         .quest-tracker-header {
@@ -1629,19 +1629,19 @@
         .quest-tracker-title {
             font-size: 0.95em;
             font-weight: 800;
-            color: #334155;
+            color: var(--mp-text);
             display: flex;
             align-items: center;
             gap: 6px;
         }
         .quest-tracker-container.completed .quest-tracker-title {
-            color: #065f46;
+            color: var(--mp-ok);
         }
         .quest-tracker-stats {
             font-size: 0.95em;
             font-weight: 800;
-            color: #4f46e5;
-            background: #e0e7ff;
+            color: var(--mp-accent);
+            background: var(--mp-accent-soft);
             padding: 2px 10px;
             border-radius: 9999px;
             box-shadow: 0 2px 4px rgba(79, 70, 229, 0.1);
@@ -1655,19 +1655,19 @@
         .quest-tracker-progress {
             width: 100%;
             height: 8px;
-            background: #e2e8f0;
+            background: var(--mp-border);
             border-radius: 9999px;
             overflow: hidden;
         }
         .quest-tracker-fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, #3b82f6, #6366f1);
+            background: linear-gradient(90deg, var(--mp-accent), var(--mp-accent));
             border-radius: 9999px;
             transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .quest-tracker-container.completed .quest-tracker-fill {
-            background: linear-gradient(90deg, #10b981, #059669);
+            background: linear-gradient(90deg, var(--mp-ok), var(--mp-ok));
         }
 
         /* Concept Card Grid */
@@ -1680,7 +1680,7 @@
         }
         .concept-item-card {
             background: #ffffff;
-            border: 2px solid #e2e8f0;
+            border: 2px solid var(--mp-border);
             border-radius: 12px;
             padding: 14px;
             cursor: pointer;
@@ -1693,12 +1693,12 @@
         }
         .concept-item-card:hover {
             transform: translateY(-2px);
-            border-color: #3b82f6;
+            border-color: var(--mp-accent);
             box-shadow: 0 6px 12px -2px rgba(59, 130, 246, 0.08);
         }
         .concept-item-card.discovered {
-            border-color: #10b981;
-            background: #f0fdf4;
+            border-color: var(--mp-ok);
+            background: var(--mp-ok-soft);
             box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.05);
         }
         .concept-header-row {
@@ -1715,26 +1715,26 @@
             width: 32px;
             height: 32px;
             border-radius: 8px;
-            background: #f1f5f9;
+            background: var(--mp-surface-alt);
             transition: all 0.3s ease;
         }
         .concept-item-card.discovered .concept-badge-icon {
-            background: #d1fae5;
+            background: var(--mp-ok-soft);
             transform: scale(1.1);
         }
         .concept-title-text {
             font-size: 0.95em;
             font-weight: 800;
-            color: #334155;
+            color: var(--mp-text);
             flex-grow: 1;
         }
         .concept-item-card.discovered .concept-title-text {
-            color: #065f46;
+            color: var(--mp-ok);
         }
         .concept-status-check {
             font-size: 0.85em;
-            color: #94a3b8;
-            background: #f1f5f9;
+            color: var(--mp-text-faint);
+            background: var(--mp-surface-alt);
             width: 22px;
             height: 22px;
             border-radius: 50%;
@@ -1753,7 +1753,7 @@
             overflow: hidden;
             transition: max-height 0.4s cubic-bezier(0, 1, 0, 1);
             font-size: 0.88em;
-            color: #475569;
+            color: var(--mp-text-soft);
             line-height: 1.5;
             margin-top: 0;
         }
@@ -1766,7 +1766,7 @@
         /* Floating +10 XP text animation */
         .xp-float {
             position: absolute;
-            color: #10b981;
+            color: var(--mp-ok);
             font-weight: 900;
             font-size: 1.1em;
             pointer-events: none;
@@ -1793,9 +1793,9 @@
         .slide-card {
             text-align: center;
             padding: 20px 40px;
-            border-top: 5px solid #3b82f6;
+            border-top: 5px solid var(--mp-accent);
             border-radius: 12px;
-            background: #f8fafc;
+            background: var(--mp-bg);
             min-height: 250px;
             display: flex;
             flex-direction: column;
@@ -1811,12 +1811,12 @@
         .slide-card h2 {
             font-size: 1.8em;
             font-weight: 800;
-            color: #1e293b;
+            color: var(--mp-text);
             margin: 0;
         }
         .slide-card p {
             font-size: 1.05em;
-            color: #475569;
+            color: var(--mp-text-soft);
             line-height: 1.6;
             margin: 0;
             max-width: 600px;
@@ -1829,9 +1829,9 @@
             gap: 16px;
         }
         .slide-btn {
-            background: #f1f5f9;
+            background: var(--mp-surface-alt);
             border: none;
-            color: #475569;
+            color: var(--mp-text-soft);
             width: 44px;
             height: 44px;
             border-radius: 50%;
@@ -1845,7 +1845,7 @@
             user-select: none;
         }
         .slide-btn:hover {
-            background: #3b82f6;
+            background: var(--mp-accent);
             color: #fff;
             transform: scale(1.1);
         }
@@ -1858,18 +1858,18 @@
             height: 12px;
             width: 12px;
             background-color: transparent;
-            border: 2px solid #cbd5e1;
+            border: 2px solid var(--mp-border-strong);
             border-radius: 50%;
             display: inline-block;
             transition: all 0.3s;
         }
         .dot.visited {
-            background-color: #22c55e;
-            border-color: #22c55e;
+            background-color: var(--mp-ok);
+            border-color: var(--mp-ok);
         }
         .dot.active {
             transform: scale(1.2);
-            border-color: #3b82f6;
+            border-color: var(--mp-accent);
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
         }
         @keyframes bounceIcon {
@@ -1893,7 +1893,7 @@
             text-align: left;
         }
         .edilim-question-num {
-            background: #4f46e5;
+            background: var(--mp-accent);
             color: #ffffff;
             font-size: 1.2em;
             font-weight: 800;
@@ -1909,7 +1909,7 @@
         .edilim-question-title h2 {
             font-size: 1.25em;
             font-weight: 800;
-            color: #1e293b;
+            color: var(--mp-text);
             margin: 0;
             line-height: 1.4;
         }
@@ -1921,12 +1921,12 @@
         }
         .edilim-option-btn {
             background: #ffffff;
-            border: 2px solid #e2e8f0;
+            border: 2px solid var(--mp-border);
             border-radius: 16px;
             padding: 16px;
             font-size: 1.05em;
             font-weight: 600;
-            color: #475569;
+            color: var(--mp-text-soft);
             cursor: pointer;
             text-align: left;
             display: flex;
@@ -1938,9 +1938,9 @@
             width: 100%;
         }
         .edilim-option-btn:hover:not(:disabled) {
-            border-color: #3b82f6;
-            background: #f8fafc;
-            color: #1e293b;
+            border-color: var(--mp-accent);
+            background: var(--mp-bg);
+            color: var(--mp-text);
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
         }
@@ -1948,8 +1948,8 @@
             width: 28px;
             height: 28px;
             border-radius: 8px;
-            background: #f1f5f9;
-            color: #64748b;
+            background: var(--mp-surface-alt);
+            color: var(--mp-text-faint);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1959,16 +1959,16 @@
             transition: all 0.2s;
         }
         .edilim-option-btn:hover:not(:disabled) .option-letter {
-            background: #dbeafe;
-            color: #2563eb;
+            background: var(--mp-accent-soft);
+            color: var(--mp-accent);
         }
         .option-text {
             line-height: 1.4;
         }
         .edilim-option-btn.correct {
-            border-color: #10b981;
+            border-color: var(--mp-ok);
             background: #ecfdf5;
-            color: #065f46;
+            color: var(--mp-ok);
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
         }
         .edilim-option-btn.correct .option-letter {
@@ -1976,13 +1976,13 @@
             color: #ffffff;
         }
         .edilim-option-btn.incorrect {
-            border-color: #ef4444;
-            background: #fef2f2;
-            color: #991b1b;
+            border-color: var(--mp-danger);
+            background: var(--mp-danger-soft);
+            color: var(--mp-danger);
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
         }
         .edilim-option-btn.incorrect .option-letter {
-            background: #ef4444;
+            background: var(--mp-danger);
             color: #ffffff;
         }
         .edilim-feedback {
@@ -1996,13 +1996,13 @@
             font-weight: 700;
         }
         .edilim-feedback.correct {
-            background: #d1fae5;
-            color: #065f46;
+            background: var(--mp-ok-soft);
+            color: var(--mp-ok);
             border: 1px solid #a7f3d0;
         }
         .edilim-feedback.incorrect {
-            background: #fee2e2;
-            color: #991b1b;
+            background: var(--mp-danger-soft);
+            color: var(--mp-danger);
             border: 1px solid #fca5a5;
         }
         
@@ -2025,7 +2025,7 @@
         }
         .grad-subtitle {
             font-size: 1.05em;
-            color: #475569;
+            color: var(--mp-text-soft);
             margin-bottom: 25px;
             line-height: 1.5;
         }
@@ -2037,8 +2037,8 @@
             flex-wrap: wrap;
         }
         .grad-stat-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background: var(--mp-bg);
+            border: 1px solid var(--mp-border);
             border-radius: 16px;
             padding: 15px 25px;
             min-width: 110px;
@@ -2048,23 +2048,23 @@
             display: block;
             font-size: 1.8em;
             font-weight: 900;
-            color: #4f46e5;
+            color: var(--mp-accent);
             line-height: 1.2;
         }
         .grad-stat-lbl {
             font-size: 0.8em;
             font-weight: 700;
-            color: #64748b;
+            color: var(--mp-text-faint);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-top: 4px;
         }
         .grad-next-steps {
-            background: #eef2ff;
-            border: 1px solid #e0e7ff;
+            background: var(--mp-accent-soft);
+            border: 1px solid var(--mp-accent-soft);
             border-radius: 12px;
             padding: 12px;
-            color: #4338ca;
+            color: var(--mp-accent-hover);
             font-weight: 700;
             font-size: 0.95em;
             margin-top: 10px;
@@ -2233,7 +2233,7 @@
         }
 
         function spawnConfetti() {
-            const colors = ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899'];
+            const colors = ['var(--mp-warn)', 'var(--mp-ok)', 'var(--mp-accent)', 'var(--mp-danger)', 'var(--mp-accent)', '#ec4899'];
             const container = document.body;
             for (let i = 0; i < 40; i++) {
                 const p = document.createElement('div');
@@ -2433,22 +2433,22 @@
 
             // Color based on percentage
             if (pct >= 80) {
-                summaryFill.style.background = 'linear-gradient(90deg, #059669, #10b981)';
+                summaryFill.style.background = 'linear-gradient(90deg, var(--mp-ok), var(--mp-ok))';
                 summaryMessage.innerHTML = isProfile ? 
-                    '<span style="color:#059669; font-weight:bold;">🎉 ¡APROBADO! Excelente dominio.</span>' : 
+                    '<span style="color:var(--mp-ok); font-weight:bold;">🎉 ¡APROBADO! Excelente dominio.</span>' : 
                     '🎉 ¡Excelente trabajo! / Ausgezeichnet!';
             } else if (pct >= 50) {
-                summaryFill.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+                summaryFill.style.background = 'linear-gradient(90deg, var(--mp-warn), #fbbf24)';
                 summaryMessage.innerHTML = isProfile ? 
-                    '<span style="color:#f59e0b; font-weight:bold;">⚠️ NECESITAS 80% PARA APROBAR. ¡Sigue revisando!</span>' : 
+                    '<span style="color:var(--mp-warn); font-weight:bold;">⚠️ NECESITAS 80% PARA APROBAR. ¡Sigue revisando!</span>' : 
                     '👍 ¡Buen avance! / Guter Fortschritt!';
             } else if (pct > 0) {
-                summaryFill.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+                summaryFill.style.background = 'linear-gradient(90deg, var(--mp-danger), #f87171)';
                 summaryMessage.innerHTML = isProfile ? 
-                    '<span style="color:#ef4444; font-weight:bold;">❌ DEBES REPETIR. Lee detenidamente el documento.</span>' : 
+                    '<span style="color:var(--mp-danger); font-weight:bold;">❌ DEBES REPETIR. Lee detenidamente el documento.</span>' : 
                     '💪 ¡Sigue adelante! / Weiter so!';
             } else {
-                summaryFill.style.background = '#e2e8f0';
+                summaryFill.style.background = 'var(--mp-border)';
                 summaryMessage.textContent = '';
             }
 
@@ -3082,9 +3082,9 @@
                     const s = parseInt(el.getAttribute('data-step'));
                     const visited = _visitedPanels.has(s);
                     const active  = s === activeNum;
-                    el.style.background  = active ? '#6366f1' : (visited ? '#a5b4fc' : '#e2e8f0');
-                    el.style.color       = (active || visited) ? '#fff' : '#94a3b8';
-                    el.style.borderColor = active ? '#4f46e5' : 'transparent';
+                    el.style.background  = active ? 'var(--mp-accent)' : (visited ? '#a5b4fc' : 'var(--mp-border)');
+                    el.style.color       = (active || visited) ? '#fff' : 'var(--mp-text-faint)';
+                    el.style.borderColor = active ? 'var(--mp-accent)' : 'transparent';
                 });
             }
 

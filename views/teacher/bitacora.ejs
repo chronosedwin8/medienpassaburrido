@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bitácora de Novedades — MedienPass</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/minimal.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; margin: 0; padding: 0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--mp-bg); margin: 0; padding: 0; }
         .bitacora-header {
             background: linear-gradient(135deg, #1e1b4b, #4338ca);
             color: white; padding: 20px 40px;
@@ -21,36 +22,36 @@
         
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
         .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-weight: 600; color: #475569; margin-bottom: 6px; font-size: 0.9em; }
+        .form-group label { display: block; font-weight: 600; color: var(--mp-text-soft); margin-bottom: 6px; font-size: 0.9em; }
         .form-group input, .form-group select, .form-group textarea {
-            width: 100%; padding: 10px 14px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 1em;
+            width: 100%; padding: 10px 14px; border: 2px solid var(--mp-border); border-radius: 10px; font-size: 1em;
             box-sizing: border-box;
         }
         .form-group textarea { min-height: 100px; resize: vertical; }
-        .form-group textarea:focus, .form-group input:focus { border-color: #4f46e5; outline: none; }
+        .form-group textarea:focus, .form-group input:focus { border-color: var(--mp-accent); outline: none; }
         
         .btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.95em; }
-        .btn-primary { background: #4f46e5; color: white; }
-        .btn-primary:hover { background: #4338ca; }
+        .btn-primary { background: var(--mp-accent); color: white; }
+        .btn-primary:hover { background: var(--mp-accent-hover); }
         .btn-success { background: #059669; color: white; }
-        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger { background: var(--mp-danger); color: white; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-        th { background: #f8fafc; padding: 12px; text-align: left; font-size: 0.8em; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
-        tr:hover { background: #fafbfe; }
+        th { background: var(--mp-bg); padding: 12px; text-align: left; font-size: 0.8em; text-transform: uppercase; color: var(--mp-text-faint); border-bottom: 2px solid var(--mp-border); }
+        td { padding: 12px; border-bottom: 1px solid var(--mp-surface-alt); }
+        tr:hover { background: var(--mp-bg); }
         
         .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: 600; }
-        .badge-abierto { background: #fee2e2; color: #991b1b; }
-        .badge-proceso { background: #fef3c7; color: #92400e; }
-        .badge-resuelto { background: #d1fae5; color: #065f46; }
+        .badge-abierto { background: var(--mp-danger-soft); color: var(--mp-danger); }
+        .badge-proceso { background: var(--mp-warn-soft); color: var(--mp-warn); }
+        .badge-resuelto { background: var(--mp-ok-soft); color: var(--mp-ok); }
         
-        .priority-high { background: #ef4444; color: white; }
-        .priority-medium { background: #f59e0b; color: white; }
+        .priority-high { background: var(--mp-danger); color: white; }
+        .priority-medium { background: var(--mp-warn); color: white; }
         .priority-low { background: #10b981; color: white; }
         
         .filter-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-        .filter-bar select, .filter-bar input { padding: 8px 14px; border: 2px solid #e5e7eb; border-radius: 8px; }
+        .filter-bar select, .filter-bar input { padding: 8px 14px; border: 2px solid var(--mp-border); border-radius: 8px; }
         
         .back-link { color: rgba(255,255,255,0.8); text-decoration: none; }
         .back-link:hover { color: white; }
@@ -160,7 +161,7 @@
                     </tr>
                 </thead>
                 <tbody id="incidentsTableBody">
-                    <tr><td colspan="7" style="text-align:center; color:#64748b;">Cargando...</td></tr>
+                    <tr><td colspan="7" style="text-align:center; color:var(--mp-text-faint);">Cargando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -180,7 +181,7 @@
                 </select>
             </div>
             <div class="modal-actions">
-                <button class="btn" onclick="closeModal()" style="background:#e2e8f0;">Cancelar</button>
+                <button class="btn" onclick="closeModal()" style="background:var(--mp-border);">Cancelar</button>
                 <button class="btn btn-success" onclick="updateStatus()"><i class="fas fa-save"></i> Guardar</button>
             </div>
         </div>
@@ -194,7 +195,7 @@
         function showToast(msg, isError) {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
-            toast.style.background = isError ? '#ef4444' : '#059669';
+            toast.style.background = isError ? 'var(--mp-danger)' : 'var(--mp-ok)';
             toast.style.display = 'block';
             setTimeout(() => toast.style.display = 'none', 3000);
         }
@@ -244,7 +245,7 @@
                 const tbody = document.getElementById('incidentsTableBody');
                 
                 if (!result.success || !result.incidents.length) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#64748b;">No hay novedades</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--mp-text-faint);">No hay novedades</td></tr>';
                     return;
                 }
 
@@ -256,7 +257,7 @@
                         <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">${i.description}</td>
                         <td><span class="badge priority-${i.priority}">${i.priority.toUpperCase()}</span></td>
                         <td><span class="badge badge-${i.status === 'open' ? 'abierto' : i.status === 'in_progress' ? 'proceso' : 'resuelto'}">${i.status === 'open' ? 'Abierto' : i.status === 'in_progress' ? 'En Proceso' : 'Resuelto'}</span></td>
-                        <td><button class="btn btn-sm" style="background:#4f46e5; color:white;" onclick="openStatusModal('${i.id}', '${i.status}')"><i class="fas fa-edit"></i></button></td>
+                        <td><button class="btn btn-sm" style="background:var(--mp-accent); color:white;" onclick="openStatusModal('${i.id}', '${i.status}')"><i class="fas fa-edit"></i></button></td>
                     </tr>
                 `).join('');
             } catch (e) {

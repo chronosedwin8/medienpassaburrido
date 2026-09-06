@@ -98,10 +98,10 @@ const l = t[langCode] || t['es'];
 <style>
 .kmk-test-container { max-width: 800px; margin: 40px auto; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 .kmk-test-container h1 { color: #1e1b4b; text-align: center; }
-.kmk-test-container p.subtitle { text-align: center; color: #64748b; margin-bottom: 30px; }
-.question-block { margin-bottom: 25px; padding: 20px; background: #f8fafc; border-left: 4px solid #4f46e5; border-radius: 8px; }
-.question-block h3 { margin-top: 0; font-size: 1.1em; color: #334155; }
-.options label { display: block; margin-bottom: 10px; cursor: pointer; color: #475569; }
+.kmk-test-container p.subtitle { text-align: center; color: var(--mp-text-faint); margin-bottom: 30px; }
+.question-block { margin-bottom: 25px; padding: 20px; background: var(--mp-bg); border-left: 4px solid var(--mp-accent); border-radius: 8px; }
+.question-block h3 { margin-top: 0; font-size: 1.1em; color: var(--mp-text); }
+.options label { display: block; margin-bottom: 10px; cursor: pointer; color: var(--mp-text-soft); }
 .options input { margin-right: 10px; }
 .submit-btn { display: block; width: 100%; padding: 15px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: background 0.3s; }
 .submit-btn:hover { background: #059669; }
@@ -173,9 +173,9 @@ const l = t[langCode] || t['es'];
         <div class="result-block" style="text-align: center; margin-top: 20px;">
             <h2>Puntaje / Score: <%= score %>%</h2>
             <% if (passed) { %>
-                <p style="color: #10b981; font-weight: bold; font-size: 1.2em;">¡Felicitaciones! Has aprobado.</p>
+                <p style="color: var(--mp-ok); font-weight: bold; font-size: 1.2em;">¡Felicitaciones! Has aprobado.</p>
             <% } else { %>
-                <p style="color: #ef4444; font-weight: bold; font-size: 1.2em;">No has alcanzado el 75%. Por favor, revisa los contenidos del taller KMK y vuelve a intentarlo.</p>
+                <p style="color: var(--mp-danger); font-weight: bold; font-size: 1.2em;">No has alcanzado el 75%. Por favor, revisa los contenidos del taller KMK y vuelve a intentarlo.</p>
             <% } %>
             <a href="/teacher/training" class="submit-btn" style="display: inline-block; text-decoration: none; margin-top: 15px; width: auto; padding: 10px 20px;">Volver a Capacitación / Back to Training</a>
         </div>

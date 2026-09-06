@@ -26,7 +26,7 @@
 
     <style>
         body {
-            background-color: #f8fafc;
+            background-color: var(--mp-bg);
             background-image: 
                 radial-gradient(at 0% 0%, rgba(241,245,249,1) 0, transparent 50%), 
                 radial-gradient(at 50% 0%, rgba(224,231,255,0.4) 0, transparent 50%),
@@ -43,7 +43,7 @@
         /* Legal Sheet Page Styling (8.5" x 14" aspect feel) */
         .legal-page-card {
             background: #ffffff;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--mp-border-strong);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
             border-radius: 1rem;
             padding: 2.5rem;
@@ -58,7 +58,7 @@
 
         .legal-page-card:hover {
             box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.12), 0 10px 12px -5px rgba(0, 0, 0, 0.06);
-            border-color: #94a3b8;
+            border-color: var(--mp-text-faint);
         }
 
         /* High Contrast Clear Scrollbar */
@@ -67,13 +67,13 @@
             height: 10px;
         }
         ::-webkit-scrollbar-track {
-            background: #e2e8f0;
+            background: var(--mp-border);
             border-radius: 9999px;
         }
         ::-webkit-scrollbar-thumb {
-            background: #475569;
+            background: var(--mp-text-soft);
             border-radius: 9999px;
-            border: 2px solid #e2e8f0;
+            border: 2px solid var(--mp-border);
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #1e293b;
@@ -316,9 +316,34 @@
             });
         }
 
-        function changeGrade(g) {
+        // Preguntas ya descargadas, por grado. La pagina llega con el grado 5;
+        // los demas se piden al servidor la primera vez que se seleccionan.
+        const preguntasPorGrado = { 5: true };
+
+        async function cargarPreguntasDelGrado(g) {
+            if (!g || preguntasPorGrado[g]) return;
+            try {
+                const r = await fetch('/api/instruments/preguntas/' + g);
+                const j = await r.json();
+                if (!j.success) return;
+                // Se sustituye la evidencia de cada actividad por la del grado pedido.
+                Object.entries(j.actividades).forEach(([nivel, lista]) => {
+                    const destino = allActivities[nivel] || [];
+                    lista.forEach(nueva => {
+                        const act = destino.find(a => a.id === nueva.id);
+                        if (act) act.evidence = nueva.evidence;
+                    });
+                });
+                preguntasPorGrado[g] = true;
+            } catch (e) {
+                console.warn('No se pudieron cargar las preguntas del grado', g, e);
+            }
+        }
+
+        async function changeGrade(g) {
             currentGrade = g;
             window.currentGrade = g;
+            await cargarPreguntasDelGrado(g);
             
             const sidebarGradeSelect = document.getElementById('sidebarGradeSelect');
             if (sidebarGradeSelect) {
@@ -551,18 +576,18 @@
             if (mode === 'editable' || mode === 'ai') {
                 if (!window.customQuestionsCache[retoNum] || window.customQuestionsCache[retoNum].length === 0) {
                     const evidenceKey = `evidence_k${effectiveGrade}`;
-                    const baseQ = activeAct[evidenceKey] || activeAct.evidence_k5 || activeAct.evidence || [];
+                    const baseQ = activeAct.evidence || [];
                     window.customQuestionsCache[retoNum] = JSON.parse(JSON.stringify(baseQ));
                 }
                 questions = window.customQuestionsCache[retoNum];
             } else {
                 const evidenceKey = `evidence_k${effectiveGrade}`;
-                questions = activeAct[evidenceKey] || activeAct.evidence_k5 || activeAct.evidence || [];
+                questions = activeAct.evidence || [];
             }
 
             const card = document.createElement('div');
             card.className = `legal-page-card animate-fade-in space-y-6 border-t-4`;
-            card.style.borderTopColor = activeAct.color || '#3b82f6';
+            card.style.borderTopColor = activeAct.color || 'var(--mp-accent)';
 
             // Title & Subtitle
             const title = getLangText(activeAct.title);
@@ -624,7 +649,7 @@
             } else {
                 // If mode === 'ai', load base questions to show original vs modified preview
                 const evidenceKey = `evidence_k${effectiveGrade}`;
-                const baseQuestions = activeAct[evidenceKey] || activeAct.evidence_k5 || activeAct.evidence || [];
+                const baseQuestions = activeAct.evidence || [];
 
                 if (mode === 'ai') {
                     const aiBanner = document.createElement('div');
@@ -778,7 +803,7 @@
                     questionDiv.innerHTML = `
                         <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                             <div class="text-sm font-extrabold text-slate-800 flex items-start gap-2 max-w-[70%]">
-                                <span class="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 text-xs mt-0.5 font-black text-white" style="background: ${activeAct.color || '#3b82f6'}">${idx+1}</span>
+                                <span class="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 text-xs mt-0.5 font-black text-white" style="background: ${activeAct.color || 'var(--mp-accent)'}">${idx+1}</span>
                                 <span>${label}</span>
                             </div>
                             <div class="flex items-center gap-2">

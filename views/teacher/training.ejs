@@ -82,7 +82,7 @@ const encodeContent = (obj) => {
 // KMK Areas data
 const areas = [
     {
-        num: 1, color: '#4f46e5', grad: '#6366f1', emoji: '🔍',
+        num: 1, color: 'var(--mp-accent)', grad: 'var(--mp-accent)', emoji: '🔍',
         title: { de: 'Suchen, Verarbeiten und Aufbewahren', en: 'Search, Process and Store', es: 'Buscar, Procesar y Almacenar' },
         comps: {
             de: [
@@ -161,7 +161,7 @@ const areas = [
         ]
     },
     {
-        num: 3, color: '#8b5cf6', grad: '#a78bfa', emoji: '🎨',
+        num: 3, color: 'var(--mp-accent)', grad: '#a78bfa', emoji: '🎨',
         title: { de: 'Produzieren und Präsentieren', en: 'Produce and Present', es: 'Producir y Presentar' },
         comps: {
             de: ['<strong>3.1 Entwickeln und Produzieren:</strong> Digitale Inhalte wie Präsentationen, Videos und Audios erstellen.', '<strong>3.2 Veröffentlichen:</strong> Eigene Produktionen auf geeigneten Plattformen teilen.', '<strong>3.3 Urheberrecht:</strong> Lizenzen respektieren, Quellen zitieren, Creative Commons kennen.'],
@@ -184,7 +184,7 @@ const areas = [
         ]
     },
     {
-        num: 4, color: '#f59e0b', grad: '#fbbf24', emoji: '🛡️',
+        num: 4, color: 'var(--mp-warn)', grad: '#fbbf24', emoji: '🛡️',
         title: { de: 'Schützen und sicher Agieren', en: 'Protect and Act Safely', es: 'Proteger y Actuar con Seguridad' },
         comps: {
             de: ['<strong>4.1 Sicher in digitalen Umgebungen:</strong> Risiken erkennen, Geräte schützen (Passwörter, Antivirus).', '<strong>4.2 Persönliche Daten schützen:</strong> Kontrolle über geteilte Daten.', '<strong>4.3 Gesundheit schützen:</strong> Bildschirmzeit, Ergonomie und digitales Wohlbefinden.', '<strong>4.4 Umwelt schützen:</strong> Bewusstsein für Energieverbrauch und Geräte-Recycling.'],
@@ -206,7 +206,7 @@ const areas = [
         ]
     },
     {
-        num: 5, color: '#ef4444', grad: '#f87171', emoji: '❓',
+        num: 5, color: 'var(--mp-danger)', grad: '#f87171', emoji: '❓',
         title: { de: 'Problemlösen und Handeln', en: 'Problem Solving and Action', es: 'Resolución de Problemas y Acción' },
         comps: {
             de: ['<strong>5.1 Technische Probleme lösen:</strong> Grundlegende Software-/Hardwarefehler diagnostizieren.', '<strong>5.2 Werkzeuge nutzen:</strong> Das richtige digitale Werkzeug je nach Bedarf wählen.', '<strong>5.3 Eigene Defizite erkennen:</strong> Sich selbst einschätzen und digitale Fähigkeiten verbessern.', '<strong>5.4 Digitale Werkzeuge zum Lernen:</strong> Tutorials und Dokumentation nutzen.', '<strong>5.5 Algorithmen verstehen:</strong> Logische Sequenzen und Computational Thinking.'],
@@ -228,7 +228,7 @@ const areas = [
         ]
     },
     {
-        num: 6, color: '#059669', grad: '#34d399', emoji: '🧠',
+        num: 6, color: 'var(--mp-ok)', grad: '#34d399', emoji: '🧠',
         title: { de: 'Analysieren und Reflektieren', en: 'Analyze and Reflect', es: 'Analizar y Reflexionar' },
         comps: {
             de: ['<strong>6.1 Medien analysieren:</strong> Verstehen, wie Medieninhalte erstellt werden und mit welcher Absicht.', '<strong>6.2 Kritisch reflektieren:</strong> Einfluss der Medien auf Meinungen und Entscheidungen bewerten.', '<strong>6.3 Fake News:</strong> Desinformation, Deepfakes und manipulierte Inhalte erkennen.', '<strong>6.4 Mediennutzung:</strong> Eigenen Medienkonsum reflektieren und gesunde Gewohnheiten entwickeln.'],
@@ -267,24 +267,24 @@ const areas = [
     }
 ];
 
-const navColors = ['#4f46e5','#0ea5e9','#8b5cf6','#f59e0b','#ef4444','#059669'];
+const navColors = ['var(--mp-accent)','#0ea5e9','var(--mp-accent)','var(--mp-warn)','var(--mp-danger)','var(--mp-ok)'];
 const areaLabel = lang === 'de' ? 'Kompetenz' : lang === 'en' ? 'Competency' : 'Competencia';
 %>
 
 <style>
-.kmk-module{max-width:1000px;margin:0 auto;padding:20px}.kmk-intro{background:linear-gradient(135deg,#1e1b4b,#312e81);color:#fff;border-radius:16px;padding:30px;text-align:center;margin-bottom:30px}.kmk-intro h1{font-size:1.8em;margin-bottom:8px}.kmk-intro p{opacity:.85;font-size:1.05em}.kmk-area{background:#fff;border-radius:14px;margin-bottom:24px;box-shadow:0 4px 15px rgba(0,0,0,.06);overflow:hidden}.kmk-area-header{padding:20px 24px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px}.kmk-area-header h2{margin:0;font-size:1.25em;flex:1}.kmk-area-header .badge{background:rgba(255,255,255,.25);padding:4px 12px;border-radius:20px;font-size:.8em}.kmk-area-header .toggle-icon{font-size:1.2em;transition:transform .3s}.kmk-area.open .toggle-icon{transform:rotate(180deg)}.kmk-area-body{display:none;padding:24px}.kmk-area.open .kmk-area-body{display:block}.kmk-section{margin-bottom:20px}.kmk-section h3{font-size:1.05em;color:#1e293b;margin-bottom:10px;display:flex;align-items:center;gap:8px}.kmk-section h3 i{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75em}.competency-list{list-style:none;padding:0;margin:0 0 16px}.competency-list li{padding:8px 12px;border-left:3px solid #e2e8f0;margin-bottom:6px;font-size:.92em;background:#f8fafc;border-radius:0 8px 8px 0}.example-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:12px}.example-box h4{margin:0 0 8px;color:#1e40af;font-size:.95em}.example-box p{font-size:.88em;color:#334155;margin:4px 0}.apply-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:12px}.apply-box h4{margin:0 0 8px;color:#166534;font-size:.95em}.apply-box ul{padding-left:18px;margin:0}.apply-box li{font-size:.88em;color:#334155;margin:4px 0}.resources-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;margin-top:10px}.resource-link{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;text-decoration:none;color:#334155;font-size:.82em;transition:all .2s}.resource-link:hover{border-color:#818cf8;background:#f5f3ff;transform:translateY(-1px)}.r-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.7em;color:#fff;flex-shrink:0}.r-icon.pdf{background:#ef4444}.r-icon.docx{background:#2563eb}.r-tag{font-size:.7em;padding:2px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;flex-shrink:0;margin-left:auto}.nav-strip{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}.nav-strip a{padding:8px 16px;border-radius:10px;text-decoration:none;color:#fff;font-size:.85em;font-weight:600;transition:transform .2s,box-shadow .2s}.nav-strip a:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.2)}.bottom-cta{text-align:center;margin:30px 0}.bottom-cta button{font-size:1.15em;padding:14px 28px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:600;transition:all .3s}.bottom-cta button:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(16,185,129,.3)}.teacher-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}.teacher-topbar .welcome{font-size:.95em;color:#64748b}.teacher-topbar .logout-btn{padding:6px 14px;background:#fee2e2;color:#ef4444;border:none;border-radius:8px;cursor:pointer;font-size:.85em;text-decoration:none}.lang-badge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:.75em;font-weight:600;color:white;margin-left:8px}
+.kmk-module{max-width:1000px;margin:0 auto;padding:20px}.kmk-intro{background:linear-gradient(135deg,#1e1b4b,#312e81);color:#fff;border-radius:16px;padding:30px;text-align:center;margin-bottom:30px}.kmk-intro h1{font-size:1.8em;margin-bottom:8px}.kmk-intro p{opacity:.85;font-size:1.05em}.kmk-area{background:#fff;border-radius:14px;margin-bottom:24px;box-shadow:0 4px 15px rgba(0,0,0,.06);overflow:hidden}.kmk-area-header{padding:20px 24px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px}.kmk-area-header h2{margin:0;font-size:1.25em;flex:1}.kmk-area-header .badge{background:rgba(255,255,255,.25);padding:4px 12px;border-radius:20px;font-size:.8em}.kmk-area-header .toggle-icon{font-size:1.2em;transition:transform .3s}.kmk-area.open .toggle-icon{transform:rotate(180deg)}.kmk-area-body{display:none;padding:24px}.kmk-area.open .kmk-area-body{display:block}.kmk-section{margin-bottom:20px}.kmk-section h3{font-size:1.05em;color:var(--mp-text);margin-bottom:10px;display:flex;align-items:center;gap:8px}.kmk-section h3 i{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75em}.competency-list{list-style:none;padding:0;margin:0 0 16px}.competency-list li{padding:8px 12px;border-left:3px solid var(--mp-border);margin-bottom:6px;font-size:.92em;background:var(--mp-bg);border-radius:0 8px 8px 0}.example-box{background:var(--mp-accent-soft);border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:12px}.example-box h4{margin:0 0 8px;color:#1e40af;font-size:.95em}.example-box p{font-size:.88em;color:var(--mp-text);margin:4px 0}.apply-box{background:var(--mp-ok-soft);border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:12px}.apply-box h4{margin:0 0 8px;color:var(--mp-ok);font-size:.95em}.apply-box ul{padding-left:18px;margin:0}.apply-box li{font-size:.88em;color:var(--mp-text);margin:4px 0}.resources-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;margin-top:10px}.resource-link{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:1px solid var(--mp-border);border-radius:8px;text-decoration:none;color:var(--mp-text);font-size:.82em;transition:all .2s}.resource-link:hover{border-color:#818cf8;background:#f5f3ff;transform:translateY(-1px)}.r-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.7em;color:#fff;flex-shrink:0}.r-icon.pdf{background:var(--mp-danger)}.r-icon.docx{background:var(--mp-accent)}.r-tag{font-size:.7em;padding:2px 6px;border-radius:4px;background:var(--mp-surface-alt);color:var(--mp-text-faint);flex-shrink:0;margin-left:auto}.nav-strip{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}.nav-strip a{padding:8px 16px;border-radius:10px;text-decoration:none;color:#fff;font-size:.85em;font-weight:600;transition:transform .2s,box-shadow .2s}.nav-strip a:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.2)}.bottom-cta{text-align:center;margin:30px 0}.bottom-cta button{font-size:1.15em;padding:14px 28px;background:linear-gradient(135deg,var(--mp-ok),var(--mp-ok));color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:600;transition:all .3s}.bottom-cta button:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(16,185,129,.3)}.teacher-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}.teacher-topbar .welcome{font-size:.95em;color:var(--mp-text-faint)}.teacher-topbar .logout-btn{padding:6px 14px;background:var(--mp-danger-soft);color:var(--mp-danger);border:none;border-radius:8px;cursor:pointer;font-size:.85em;text-decoration:none}.lang-badge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:.75em;font-weight:600;color:white;margin-left:8px}
 html[lang="de"] .worksheet-note-box { display: none !important; }
 </style>
 
 <div class="kmk-module">
     <div class="teacher-topbar">
         <span class="welcome"><i class="fas fa-chalkboard-teacher"></i> <span data-lang-content="<%- encodeContent(ui_content.welcome) %>"><%= t.welcome %></span>, <%= teacher.last_name %>
-            <span class="lang-badge" style="background:<%= lang==='de'?'#dc2626':lang==='en'?'#0ea5e9':'#ea580c' %>"><%= lang.toUpperCase() %></span>
+            <span class="lang-badge" style="background:<%= lang==='de'?'var(--mp-danger)':lang==='en'?'#0ea5e9':'#ea580c' %>"><%= lang.toUpperCase() %></span>
         </span>
         <div>
             <a href="/teacher/worksheets" style="padding:6px 14px;background:#fef08a;color:#854d0e;border-radius:8px;text-decoration:none;font-size:.85em;margin-right:8px"><i class="fas fa-print"></i> <span data-i18n="navWorksheets">Banco de Fichas</span></a>
-            <a href="/teacher/evaluation" style="padding:6px 14px;background:#eff6ff;color:#3b82f6;border-radius:8px;text-decoration:none;font-size:.85em;margin-right:8px"><i class="fas fa-tasks"></i> <span data-i18n="navEval"><%= t.evaluation %></span></a>
-            <a href="/teacher/progress" style="padding:6px 14px;background:#3b82f6;color:white;border-radius:8px;text-decoration:none;font-size:.85em;margin-right:8px"><i class="fas fa-chart-line"></i> Monitoreo Retos (0-6)</a>
+            <a href="/teacher/evaluation" style="padding:6px 14px;background:var(--mp-accent-soft);color:var(--mp-accent);border-radius:8px;text-decoration:none;font-size:.85em;margin-right:8px"><i class="fas fa-tasks"></i> <span data-i18n="navEval"><%= t.evaluation %></span></a>
+            <a href="/teacher/progress" style="padding:6px 14px;background:var(--mp-accent);color:white;border-radius:8px;text-decoration:none;font-size:.85em;margin-right:8px"><i class="fas fa-chart-line"></i> Monitoreo Retos (0-6)</a>
             <a href="/teacher/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> <span data-i18n="logoutTitle"><%= t.logout %></span></a>
         </div>
     </div>
@@ -296,20 +296,20 @@ html[lang="de"] .worksheet-note-box { display: none !important; }
         <p style="font-size:.85em;margin-top:10px;opacity:.7" data-lang-content="<%- encodeContent(ui_content.instructions) %>"><%= t.instructions %></p>
     </div>
 
-    <div style="margin-bottom: 40px; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,.08); padding: 24px; border: 1px solid #e2e8f0;">
-        <div style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; padding: 18px; border-radius: 12px; font-weight: 800; font-size: 1.3em; margin-bottom: 24px; text-transform: uppercase; text-align: center; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);">
+    <div style="margin-bottom: 40px; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,.08); padding: 24px; border: 1px solid var(--mp-border);">
+        <div style="background: linear-gradient(135deg, var(--mp-danger), var(--mp-danger)); color: #fff; padding: 18px; border-radius: 12px; font-weight: 800; font-size: 1.3em; margin-bottom: 24px; text-transform: uppercase; text-align: center; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);">
             <i class="fas fa-exclamation-triangle" style="margin-right: 8px; font-size: 1.2em; vertical-align: middle;"></i> 
             <span style="vertical-align: middle;">Importante: Leer antes de iniciar el taller</span>
         </div>
         
-        <div style="position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 400px; max-height: 85vh; background: #334155; border-radius: 12px; overflow: hidden; border: 4px solid #cbd5e1; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+        <div style="position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 400px; max-height: 85vh; background: var(--mp-text); border-radius: 12px; overflow: hidden; border: 4px solid var(--mp-border-strong); box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
             <iframe id="pdfViewer" src="/Digital_Citizenship_Blueprint.pdf#toolbar=0&navpanes=0&view=Fit" width="100%" height="100%" style="border: none; display: block;"></iframe>
         </div>
     </div>
 
 
 
-    <h2 style="font-size: 1.5em; font-weight: 800; color: #1e1b4b; margin-top: 35px; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;" data-lang-content="<%- encodeContent({ de: 'KMK-Kompetenzen verstehen - Praktische Beispiele Teil I', en: 'Understanding KMK Competencies - Practical Examples Part I', es: 'Comprendiendo las competencias KMK - Ejemplos prácticos parte I' }) %>">
+    <h2 style="font-size: 1.5em; font-weight: 800; color: #1e1b4b; margin-top: 35px; margin-bottom: 20px; text-align: center; border-bottom: 2px solid var(--mp-border); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;" data-lang-content="<%- encodeContent({ de: 'KMK-Kompetenzen verstehen - Praktische Beispiele Teil I', en: 'Understanding KMK Competencies - Practical Examples Part I', es: 'Comprendiendo las competencias KMK - Ejemplos prácticos parte I' }) %>">
         Comprendiendo las competencias KMK - Ejemplos prácticos parte I
     </h2>
 
@@ -360,7 +360,7 @@ html[lang="de"] .worksheet-note-box { display: none !important; }
             </div>
             <div class="kmk-section">
                 <h3><i style="background:<%= a.color %>" class="fas fa-file-download"></i> <span data-lang-content="<%- encodeContent(ui_content.worksheets) %>"><%= t.worksheets %></span></h3>
-                <div class="worksheet-note-box" style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.85em;color:#854d0e">
+                <div class="worksheet-note-box" style="background:var(--mp-warn-soft);border:1px solid #fde047;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.85em;color:#854d0e">
                     <span data-lang-content="<%- encodeContent(ui_content.worksheets_note) %>"><%= t.worksheets_note %></span>
                 </div>
                 <div class="resources-grid">
@@ -374,7 +374,7 @@ html[lang="de"] .worksheet-note-box { display: none !important; }
                             </span>
                         </div>
                         <% if(r.desc) { %>
-                        <div style="font-size:.78em;color:#64748b;padding-left:36px;line-height:1.3" data-lang-content="<%- encodeContent(r.desc) %>">📝 <%= r.desc[lang] || r.desc.de || '' %></div>
+                        <div style="font-size:.78em;color:var(--mp-text-faint);padding-left:36px;line-height:1.3" data-lang-content="<%- encodeContent(r.desc) %>">📝 <%= r.desc[lang] || r.desc.de || '' %></div>
                         <% } %>
                     </a>
                     <% }) %>
@@ -384,7 +384,7 @@ html[lang="de"] .worksheet-note-box { display: none !important; }
     </div>
     <% }) %>
 
-    <h2 style="font-size: 1.5em; font-weight: 800; color: #1e1b4b; margin-top: 35px; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;" data-lang-content="<%- encodeContent({ de: 'Praktische Beispiele Teil II: Kompetenzen in Aktion 0 bis 6', en: 'Practical Examples Part II: Competencies in Action 0 to 6', es: 'Ejemplos prácticos parte II Competencias en acción 0 al 6:' }) %>">
+    <h2 style="font-size: 1.5em; font-weight: 800; color: #1e1b4b; margin-top: 35px; margin-bottom: 20px; text-align: center; border-bottom: 2px solid var(--mp-border); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;" data-lang-content="<%- encodeContent({ de: 'Praktische Beispiele Teil II: Kompetenzen in Aktion 0 bis 6', en: 'Practical Examples Part II: Competencies in Action 0 to 6', es: 'Ejemplos prácticos parte II Competencias en acción 0 al 6:' }) %>">
         Ejemplos prácticos parte II Competencias en acción 0 al 6:
     </h2>
 
@@ -399,17 +399,17 @@ html[lang="de"] .worksheet-note-box { display: none !important; }
             <!-- Objetivo -->
             <div class="kmk-section">
                 <h4 style="margin: 0 0 8px 0; color: <%= c.color %>; font-size: 1.1em; font-weight: 700;" data-lang-content="<%- encodeContent(c.objTitle) %>"><%= c.objTitle[lang] %></h4>
-                <p style="margin: 0; color: #334155; font-size: 1em; line-height: 1.6; background: #f8fafc; padding: 14px; border-radius: 8px;" data-lang-content="<%- encodeContent(c.objText) %>"><%= c.objText[lang] %></p>
+                <p style="margin: 0; color: var(--mp-text); font-size: 1em; line-height: 1.6; background: var(--mp-bg); padding: 14px; border-radius: 8px;" data-lang-content="<%- encodeContent(c.objText) %>"><%= c.objText[lang] %></p>
             </div>
             
             <!-- Desarrollo -->
             <div class="kmk-section">
-                <h4 style="margin: 0 0 12px 0; color: #065f46; font-size: 1.15em; font-weight: 700; border-bottom: 2px solid #10b981; padding-bottom: 6px; display: inline-block;" data-lang-content="<%- encodeContent(c.devTitle) %>"><%= c.devTitle[lang] %></h4>
-                <p style="margin: 0 0 16px 0; color: #475569; font-size: 0.95em; line-height: 1.5;" data-lang-content="<%- encodeContent(c.devIntro) %>"><%= c.devIntro[lang] %></p>
+                <h4 style="margin: 0 0 12px 0; color: var(--mp-ok); font-size: 1.15em; font-weight: 700; border-bottom: 2px solid var(--mp-ok); padding-bottom: 6px; display: inline-block;" data-lang-content="<%- encodeContent(c.devTitle) %>"><%= c.devTitle[lang] %></h4>
+                <p style="margin: 0 0 16px 0; color: var(--mp-text-soft); font-size: 0.95em; line-height: 1.5;" data-lang-content="<%- encodeContent(c.devIntro) %>"><%= c.devIntro[lang] %></p>
                 <% c.devList.forEach(d => { %>
-                <div style="background: #f8fafc; border-left: 4px solid #10b981; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-                    <h5 style="margin: 0 0 8px 0; color: #065f46; font-size: 1.05em; font-weight: 700;" data-lang-content="<%- encodeContent(d.title) %>"><%= d.title[lang] %></h5>
-                    <p style="margin: 0; color: #334155; font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(d.text) %>"><%= d.text[lang] %></p>
+                <div style="background: var(--mp-bg); border-left: 4px solid var(--mp-ok); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                    <h5 style="margin: 0 0 8px 0; color: var(--mp-ok); font-size: 1.05em; font-weight: 700;" data-lang-content="<%- encodeContent(d.title) %>"><%= d.title[lang] %></h5>
+                    <p style="margin: 0; color: var(--mp-text); font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(d.text) %>"><%= d.text[lang] %></p>
                 </div>
                 <% }) %>
             </div>
@@ -417,26 +417,26 @@ html[lang="de"] .worksheet-note-box { display: none !important; }
             <!-- Pistas -->
             <div class="kmk-section">
                 <h4 style="margin: 0 0 12px 0; color: #1e1b4b; font-size: 1.15em; font-weight: 700; border-bottom: 2px solid <%= c.color %>; padding-bottom: 6px; display: inline-block;" data-lang-content="<%- encodeContent(c.hintTitle) %>"><%= c.hintTitle[lang] %></h4>
-                <p style="margin: 0 0 16px 0; color: #475569; font-size: 0.95em; line-height: 1.5;" data-lang-content="<%- encodeContent(c.hintIntro) %>"><%= c.hintIntro[lang] %></p>
+                <p style="margin: 0 0 16px 0; color: var(--mp-text-soft); font-size: 0.95em; line-height: 1.5;" data-lang-content="<%- encodeContent(c.hintIntro) %>"><%= c.hintIntro[lang] %></p>
                 <% c.hintsList.forEach(h => { %>
-                <div style="background: #f8fafc; border-left: 4px solid <%= c.color %>; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-                    <h5 style="margin: 0 0 8px 0; color: #1e293b; font-size: 1.05em; font-weight: 700;" data-lang-content="<%- encodeContent(h.title) %>"><%= h.title[lang] %></h5>
-                    <p style="margin: 0; color: #475569; font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(h.text) %>"><%= h.text[lang] %></p>
+                <div style="background: var(--mp-bg); border-left: 4px solid <%= c.color %>; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                    <h5 style="margin: 0 0 8px 0; color: var(--mp-text); font-size: 1.05em; font-weight: 700;" data-lang-content="<%- encodeContent(h.title) %>"><%= h.title[lang] %></h5>
+                    <p style="margin: 0; color: var(--mp-text-soft); font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(h.text) %>"><%= h.text[lang] %></p>
                 </div>
                 <% }) %>
             </div>
 
             <!-- Evaluación -->
-            <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 20px; border-radius: 12px;">
-                <h4 style="margin: 0 0 8px 0; color: #b45309; font-size: 1.1em; font-weight: 700;" data-lang-content="<%- encodeContent(c.evalTitle) %>"><%= c.evalTitle[lang] %></h4>
-                <p style="margin: 0; color: #92400e; font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(c.evalText) %>"><%= c.evalText[lang] %></p>
+            <div style="background: var(--mp-warn-soft); border: 1px solid #fde68a; padding: 20px; border-radius: 12px;">
+                <h4 style="margin: 0 0 8px 0; color: var(--mp-warn); font-size: 1.1em; font-weight: 700;" data-lang-content="<%- encodeContent(c.evalTitle) %>"><%= c.evalTitle[lang] %></h4>
+                <p style="margin: 0; color: var(--mp-warn); font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(c.evalText) %>"><%= c.evalText[lang] %></p>
             </div>
         </div>
     </div>
     <% }) %>
 
     <div class="bottom-cta">
-        <p style="color:#64748b;margin-bottom:14px" data-lang-content="<%- encodeContent(ui_content.cta_question) %>"><%= t.cta_question %></p>
+        <p style="color:var(--mp-text-faint);margin-bottom:14px" data-lang-content="<%- encodeContent(ui_content.cta_question) %>"><%= t.cta_question %></p>
         <button onclick="window.location.href='/teacher/evaluation'"><i class="fas fa-check-circle"></i> <span data-lang-content="<%- encodeContent(ui_content.cta_button) %>"><%= t.cta_button %></span></button>
     </div>
 </div>

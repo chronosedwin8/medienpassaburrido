@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guía de Troubleshooting — MedienPass</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/minimal.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; margin: 0; padding: 0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--mp-bg); margin: 0; padding: 0; }
         .header {
             background: linear-gradient(135deg, #1e1b4b, #4338ca);
             color: white; padding: 20px 40px;
@@ -21,10 +22,10 @@
             box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
         .search-box input {
-            width: 100%; padding: 14px 20px; border: 2px solid #e2e8f0; border-radius: 10px;
+            width: 100%; padding: 14px 20px; border: 2px solid var(--mp-border); border-radius: 10px;
             font-size: 1.1em; box-sizing: border-box;
         }
-        .search-box input:focus { border-color: #4f46e5; outline: none; }
+        .search-box input:focus { border-color: var(--mp-accent); outline: none; }
         
         .category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
         
@@ -37,38 +38,38 @@
             display: flex; align-items: center; gap: 10px;
         }
         .category-header i { font-size: 1.3em; }
-        .cat-red { background: #dc2626; }
+        .cat-red { background: var(--mp-danger); }
         .cat-blue { background: #0ea5e9; }
-        .cat-purple { background: #7c3aed; }
+        .cat-purple { background: var(--mp-accent); }
         .cat-orange { background: #ea580c; }
         .cat-green { background: #059669; }
         
         .category-content { padding: 16px; }
         
         .problem-item {
-            border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 10px; overflow: hidden;
+            border: 1px solid var(--mp-border); border-radius: 10px; margin-bottom: 10px; overflow: hidden;
         }
         .problem-header {
-            padding: 12px 16px; background: #f8fafc; cursor: pointer; display: flex;
+            padding: 12px 16px; background: var(--mp-bg); cursor: pointer; display: flex;
             justify-content: space-between; align-items: center;
         }
-        .problem-header:hover { background: #f1f5f9; }
-        .problem-header h4 { margin: 0; font-size: 0.95em; color: #1e293b; }
+        .problem-header:hover { background: var(--mp-surface-alt); }
+        .problem-header h4 { margin: 0; font-size: 0.95em; color: var(--mp-text); }
         .problem-content {
             padding: 0 16px; max-height: 0; overflow: hidden; transition: max-height 0.3s, padding 0.3s;
         }
         .problem-content.open { max-height: 500px; padding: 16px; }
-        .problem-content ul { margin: 0; padding-left: 20px; color: #475569; font-size: 0.9em; }
+        .problem-content ul { margin: 0; padding-left: 20px; color: var(--mp-text-soft); font-size: 0.9em; }
         .problem-content li { margin-bottom: 8px; }
         .problem-content .step { background: #f0f9ff; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.85em; }
         
         .emergency-box {
-            background: linear-gradient(135deg, #fef2f2, #fee2e2);
-            border: 2px solid #ef4444; border-radius: 16px; padding: 24px; margin-bottom: 24px;
+            background: linear-gradient(135deg, var(--mp-danger-soft), var(--mp-danger-soft));
+            border: 2px solid var(--mp-danger); border-radius: 16px; padding: 24px; margin-bottom: 24px;
         }
-        .emergency-box h3 { color: #991b1b; margin: 0 0 16px; }
-        .emergency-box .btn { background: #ef4444; color: white; padding: 12px 24px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 1em; }
-        .emergency-box .btn:hover { background: #dc2626; }
+        .emergency-box h3 { color: var(--mp-danger); margin: 0 0 16px; }
+        .emergency-box .btn { background: var(--mp-danger); color: white; padding: 12px 24px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 1em; }
+        .emergency-box .btn:hover { background: var(--mp-danger); }
         
         .back-link { color: rgba(255,255,255,0.8); text-decoration: none; }
         .back-link:hover { color: white; }
@@ -83,7 +84,7 @@
         .contact-card h3 { margin: 0 0 16px; color: #1e1b4b; }
         .contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
         .contact-item { display: flex; align-items: center; gap: 10px; }
-        .contact-item i { color: #4f46e5; font-size: 1.2em; }
+        .contact-item i { color: var(--mp-accent); font-size: 1.2em; }
     </style>
 </head>
 <body>

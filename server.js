@@ -222,6 +222,40 @@ function contarRespuestasCompletadas(actId, itemData, studentClass) {
     return Object.keys(itemData).filter(k => evidenceIds.includes(k) && tieneContenido(itemData[k])).length;
 }
 
+/**
+ * Actividades sin el contenido de las preguntas.
+ *
+ * /teacher/progress incrustaba JSON.stringify(allActivities) entero — 10,5 MB
+ * en cada carga — cuando su script solo lee `subject` de cada actividad.
+ */
+function actividadesSinPreguntas(porNivel) {
+    const salida = {};
+    for (const [nivel, acts] of Object.entries(porNivel || {})) {
+        salida[nivel] = (acts || []).map(a => ({
+            id: a.id, subject: a.subject, level: a.level,
+            title: a.title, subtitle: a.subtitle, icon: a.icon, color: a.color
+        }));
+    }
+    return salida;
+}
+
+/**
+ * Actividades con las preguntas de UN solo grado (las demas se piden por API).
+ */
+function actividadesDeUnGrado(porNivel, grado) {
+    const clave = `evidence_k${grado}`;
+    const salida = {};
+    for (const [nivel, acts] of Object.entries(porNivel || {})) {
+        salida[nivel] = (acts || []).map(a => ({
+            id: a.id, subject: a.subject, level: a.level,
+            title: a.title, subtitle: a.subtitle, icon: a.icon, color: a.color,
+            competencies: a.competencies || [],
+            evidence: a[clave] || a.evidence_k5 || a.evidence || []
+        }));
+    }
+    return salida;
+}
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 // Compresion: el panel del estudiante son ~114 KB de HTML que viajaban sin
@@ -2036,7 +2070,7 @@ app.get('/teacher/student-preview', requireTeacher, (req, res) => {
     const challengeToolsConfig = readChallengeToolsConfig();
     res.render('teacher/student-preview', { 
         sharedProfile, 
-        allActivities, 
+        allActivities: actividadesDeUnGrado(allActivities, 5), 
         subjects, 
         klassenConfig,
         challengeToolsConfig,
@@ -2066,6 +2100,31 @@ app.get('/api/instruments/:grade/:subject/:reto', requireTeacher, (req, res) => 
         return res.json({ success: true, custom: true, data: custom });
     }
     return res.json({ success: true, custom: false, data: null });
+});
+
+/**
+ * Preguntas de un grado concreto, para la vista previa del docente.
+ *
+ * Esa vista incrustaba las preguntas de los 12 grados y las 10 asignaturas en
+ * cada carga (10,5 MB) aunque solo muestra un grado a la vez. Ahora llega el
+ * grado inicial y los demas se piden aqui al cambiar de curso.
+ */
+app.get('/api/instruments/preguntas/:grade', requireTeacher, (req, res) => {
+    const grado = parseInt(req.params.grade, 10);
+    if (!Number.isFinite(grado)) {
+        return res.status(400).json({ success: false, error: 'Grado inválido.' });
+    }
+    const claveGrado = `evidence_k${grado}`;
+    const salida = {};
+
+    for (const [nivel, acts] of Object.entries(allActivities)) {
+        salida[nivel] = (acts || []).map(a => ({
+            id: a.id,
+            evidence: a[claveGrado] || a.evidence_k5 || a.evidence || []
+        }));
+    }
+
+    return res.json({ success: true, grade: grado, actividades: salida });
 });
 
 // Catalogo de tipos de pregunta, para que el editor del docente los ofrezca
@@ -2172,7 +2231,11 @@ app.post('/api/instruments/generate-ai', requireTeacher, async (req, res) => {
 
 
 app.get('/teacher/progress', requireTeacher, (req, res) => {
-    res.render('teacher/progress', { teacher: res.locals.teacher, sharedProfile, allActivities });
+    res.render('teacher/progress', {
+        teacher: res.locals.teacher,
+        sharedProfile,
+        allActivities: actividadesSinPreguntas(allActivities)
+    });
 });
 
 app.get('/api/teacher/progress/:className', requireTeacher, async (req, res) => {

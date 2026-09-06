@@ -1,0 +1,112 @@
+/**
+ * minimal.css — Capa de atenuación.
+ *
+ * Las vistas heredadas acumulan 88 degradados y 126 sombras entre style.css y
+ * las plantillas: bordes muy redondeados, sombras de colores y fondos con
+ * degradado en elementos que solo necesitan separarse del fondo.
+ *
+ * En vez de reescribir 3.900 líneas de CSS y once plantillas, esta capa se
+ * carga DESPUÉS y calma el ruido visual: sombras discretas, radios coherentes
+ * y superficies planas. La estructura y las clases no se tocan, así que nada
+ * cambia de sitio ni deja de funcionar.
+ *
+ * Se respetan a propósito las cabeceras y menús de fondo oscuro, que usan el
+ * degradado como identidad de marca.
+ */
+
+/* ── Sombras: de nubes de color a una línea sutil ─────────── */
+.card,
+.section,
+.panel,
+.stat-card,
+.kpi-card,
+.activity-card,
+.challenge-card,
+.form-group,
+.welcome-card-premium,
+.year-card-premium,
+.teacher-card,
+.pastel-sub-activity-btn {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .04) !important;
+    border-radius: var(--mp-radius) !important;
+}
+
+.card:hover,
+.activity-card:hover,
+.challenge-card:hover,
+.pastel-sub-activity-btn:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .07) !important;
+    transform: none !important;
+}
+
+/* ── Superficies planas donde el degradado no aporta nada ── */
+.card,
+.section,
+.panel,
+.stat-card,
+.kpi-card,
+.form-group,
+.welcome-card-premium,
+.year-card-premium {
+    background-image: none !important;
+    background-color: var(--mp-surface) !important;
+    border: 1px solid var(--mp-border) !important;
+}
+
+/* ── Radios coherentes: había 12, 20, 30 y 50px conviviendo ── */
+.btn,
+button:not(.mp-btn):not(.lang-btn):not(.h-lang-btn),
+input:not([type="radio"]):not([type="checkbox"]),
+textarea,
+select {
+    border-radius: var(--mp-radius-sm) !important;
+}
+
+/* Las píldoras siguen siendo píldoras */
+.badge, .tag, .chip, .pill, .mp-badge, .lang-btn, .h-lang-btn {
+    border-radius: 999px !important;
+}
+
+/* ── Botones: un acento sólido, sin degradado ─────────────── */
+.save-btn,
+.btn-primary,
+.primary-btn {
+    background-image: none !important;
+    background-color: var(--mp-accent) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+    border: 1px solid transparent !important;
+}
+.save-btn:hover,
+.btn-primary:hover,
+.primary-btn:hover {
+    background-color: var(--mp-accent-hover) !important;
+}
+
+/* ── Tipografía: menos mayúsculas gritadas ────────────────── */
+.panel-title,
+.section h2,
+.card-title {
+    letter-spacing: -0.015em;
+}
+
+/* ── Foco visible en todo lo interactivo ──────────────────── */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--mp-accent);
+    outline-offset: 2px;
+}
+
+/* ── Movimiento: solo el necesario ────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+/* La cabecera y el menú conservan su degradado: es la identidad de marca. */
+header,
+.sidebar,
+.glass-header {
+    background-image: revert !important;
+}
