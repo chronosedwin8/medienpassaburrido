@@ -12,3 +12,7 @@ data/local_activity_responses.json
 data/custom_instruments.json
 data/pending_teachers.json
 data/teacher_roles.json
+
+# Artefactos de despliegue (se regeneran con crear-tar.ps1)
+despliegue/app/
+despliegue/*.tar

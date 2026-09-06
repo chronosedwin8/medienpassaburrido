@@ -96,7 +96,7 @@ pero no se reenvían automáticamente.
 |---|----------|-----|--------|
 | 3.1 | Otras escrituras siguen siendo `writeFileSync` (`pending_teachers.json`, `teacher_roles.json`, configs admin). No están en el hotpath, pero conviene migrarlas al escritor atómico para consistencia | 🟡 | ✅ |
 | 3.2 | Configuración guardada en **JSON local** (`subject_config.json`, `level_config.json`, etc.) no se replica a BD → en despliegues con varias instancias/redeploys se pierde o diverge | 🟠 | 🔎 |
-| 3.3 | `ADMIN_PASSWORD` con default en texto plano (`'medienpass2526'`) si falta la env var | 🟠 | 🔎 |
+| 3.3 | `ADMIN_PASSWORD` con default en texto plano (`(contraseña por defecto, ya eliminada)`) si falta la env var | 🟠 | 🔎 |
 | 3.4 | `getActivitiesForClass` resuelve `evidence_k${grade}` con fallbacks frágiles para grados fuera de K2–K7 | 🟡 | ✅ |
 | 3.5 | Sin pruebas automatizadas; `package.json` `test` es un placeholder | 🟡 | ✅ |
 
