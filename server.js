@@ -13,6 +13,7 @@ const { generateInstrumentAI, getAIStatus } = require('./services/ai_service');
 const instrumentStore = require('./services/instrument_store');
 const questions = require('./services/questions');
 const stars = require('./services/stars');
+const cache = require('./services/cache');
 const compression = require('compression');
 const jsonstore = require('./services/jsonstore');
 const appConfig = require('./services/config');
@@ -1015,7 +1016,7 @@ app.get('/admin', requireAdmin, async (req, res) => {
 });
 
 // API: Bulk add students
-app.post('/api/admin/students/bulk', requireAdmin, async (req, res) => {
+app.post('/api/admin/students/bulk', requireAdmin, cache.invalidarTras(), async (req, res) => {
     const { students } = req.body; // Array of { username, class_name, full_name, code }
     if (!supabase) return res.json({ success: false, message: 'Supabase no configurado' });
 
@@ -1045,7 +1046,7 @@ app.post('/api/admin/students/bulk', requireAdmin, async (req, res) => {
 });
 
 // API: Delete student
-app.delete('/api/admin/students/:id', requireAdmin, async (req, res) => {
+app.delete('/api/admin/students/:id', requireAdmin, cache.invalidarTras(), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         await supabase.from('activity_responses').delete().eq('student_id', req.params.id);
@@ -1181,7 +1182,7 @@ app.get('/api/admin/psp-indicators/:className', requireAdmin, async (req, res) =
 });
 
 // API: Get PSP Matrix data (Klassen vs Matrices)
-app.get('/api/admin/psp-matrix', requireAdmin, async (req, res) => {
+app.get('/api/admin/psp-matrix', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const { data: students } = await supabase.from('students').select('id, class_name');
@@ -1236,7 +1237,7 @@ app.get('/api/admin/psp-matrix', requireAdmin, async (req, res) => {
 });
 
 // API: Get Teacher Reports
-app.get('/api/admin/teacher-reports', requireAdmin, async (req, res) => {
+app.get('/api/admin/teacher-reports', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         // Fetch all students to cross reference classes
@@ -1456,7 +1457,7 @@ app.get('/admin/executive', requireAdmin, (req, res) => {
 });
 
 // API: KPIs for Executive Dashboard
-app.get('/api/admin/kpis', requireAdmin, async (req, res) => {
+app.get('/api/admin/kpis', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         // Cinco consultas en paralelo, cada una pidiendo solo las columnas que
@@ -1502,7 +1503,7 @@ app.get('/api/admin/kpis', requireAdmin, async (req, res) => {
 });
 
 // API: Progress by Klasse
-app.get('/api/admin/progress-by-klasse', requireAdmin, async (req, res) => {
+app.get('/api/admin/progress-by-klasse', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const year = req.query.year || '2627';
@@ -1542,7 +1543,7 @@ app.get('/api/admin/progress-by-klasse', requireAdmin, async (req, res) => {
 });
 
 // API: Progress by Subject
-app.get('/api/admin/progress-by-subject', requireAdmin, async (req, res) => {
+app.get('/api/admin/progress-by-subject', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const year = req.query.year || '2627';
@@ -1572,7 +1573,7 @@ app.get('/api/admin/progress-by-subject', requireAdmin, async (req, res) => {
 });
 
 // API: Students without progress
-app.get('/api/admin/students-without-progress', requireAdmin, async (req, res) => {
+app.get('/api/admin/students-without-progress', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const year = req.query.year || '2627';
@@ -1639,7 +1640,7 @@ app.get('/api/admin/pending-teachers', requireAdmin, (req, res) => {
     }
 });
 
-app.post('/api/admin/approve-teacher/:id', requirePerm('admin:teachers'), async (req, res) => {
+app.post('/api/admin/approve-teacher/:id', requirePerm('admin:teachers'), cache.invalidarTras(), async (req, res) => {
     try {
         let pending = [];
         if (fs.existsSync(pendingTeachersFile)) {
@@ -1678,7 +1679,7 @@ app.post('/api/admin/approve-teacher/:id', requirePerm('admin:teachers'), async 
     }
 });
 
-app.post('/api/admin/reject-teacher/:id', requirePerm('admin:teachers'), async (req, res) => {
+app.post('/api/admin/reject-teacher/:id', requirePerm('admin:teachers'), cache.invalidarTras(), async (req, res) => {
     try {
         let pending = [];
         if (fs.existsSync(pendingTeachersFile)) {
@@ -1693,7 +1694,7 @@ app.post('/api/admin/reject-teacher/:id', requirePerm('admin:teachers'), async (
 });
 
 // API: Teachers status
-app.get('/api/admin/teachers-status', requireAdmin, async (req, res) => {
+app.get('/api/admin/teachers-status', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const { data: teachers } = await supabase.from('teachers').select('*');
@@ -1738,7 +1739,7 @@ app.get('/api/devices', requireAdmin, async (req, res) => {
     }
 });
 
-app.post('/api/devices', requireAdmin, async (req, res) => {
+app.post('/api/devices', requireAdmin, cache.invalidarTras(), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const { serial_number, type, brand, model, location, status, notes } = req.body;
@@ -1755,7 +1756,7 @@ app.post('/api/devices', requireAdmin, async (req, res) => {
     }
 });
 
-app.put('/api/devices/:id', requireAdmin, async (req, res) => {
+app.put('/api/devices/:id', requireAdmin, cache.invalidarTras(), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const { serial_number, type, brand, model, location, status, notes } = req.body;
@@ -1790,7 +1791,7 @@ app.get('/api/admin/db-records/:table', requirePerm('admin:database'), async (re
 });
 
 // API: Update a single record by id in a DB table
-app.post('/api/admin/db-records/:table/:id', requirePerm('admin:database'), async (req, res) => {
+app.post('/api/admin/db-records/:table/:id', requirePerm('admin:database'), cache.invalidarTras(), async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No Supabase' });
     const allowedTables = ['students', 'teachers', 'devices', 'incidents', 'multimedia_products'];
     const { table, id } = req.params;
@@ -1811,7 +1812,7 @@ app.post('/api/admin/db-records/:table/:id', requirePerm('admin:database'), asyn
 });
 
 // API: Create a new record in a DB table
-app.post('/api/admin/db-records/:table', requirePerm('admin:database'), async (req, res) => {
+app.post('/api/admin/db-records/:table', requirePerm('admin:database'), cache.invalidarTras(), async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No Supabase' });
     const allowedTables = ['students', 'teachers', 'devices', 'incidents', 'multimedia_products'];
     const { table } = req.params;
@@ -1828,7 +1829,7 @@ app.post('/api/admin/db-records/:table', requirePerm('admin:database'), async (r
 });
 
 // API: Delete a record from a DB table
-app.delete('/api/admin/db-records/:table/:id', requirePerm('admin:database'), async (req, res) => {
+app.delete('/api/admin/db-records/:table/:id', requirePerm('admin:database'), cache.invalidarTras(), async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No Supabase' });
     const allowedTables = ['students', 'teachers', 'devices', 'incidents', 'multimedia_products'];
     const { table, id } = req.params;
@@ -2104,6 +2105,17 @@ app.post('/api/instruments/reset', requireTeacher, (req, res) => {
     }
     instrumentStore.resetToDefault(grade, subject, reto);
     return res.json({ success: true, message: 'Restablecido al modo automático del sistema.' });
+});
+
+// Metricas internas: caché de rutas y de archivos JSON.
+app.get('/api/admin/metricas', requirePerm('admin:area'), (req, res) => {
+    return res.json({
+        success: true,
+        cacheRutas: cache.metricas(),
+        cacheArchivos: jsonstore.metrics(),
+        memoriaMB: Math.round(process.memoryUsage().heapUsed / 1048576),
+        activoSegundos: Math.round(process.uptime())
+    });
 });
 
 // Estado de la integración con Google Gemini (diagnóstico para la UI docente)
@@ -2382,7 +2394,7 @@ app.post('/api/kmk-training/complete', requireAdmin, async (req, res) => {
 });
 
 // API: Get KMK training stats by subject (for monitoring charts)
-app.get('/api/admin/kmk-training-stats', requireAdmin, async (req, res) => {
+app.get('/api/admin/kmk-training-stats', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const { data: teachers } = await supabase.from('teachers').select('*');
@@ -2501,7 +2513,7 @@ app.get('/api/student/multimedia-product/:activityId', requireLogin, async (req,
 });
 
 // API: Admin — multimedia stats per subject
-app.get('/api/admin/multimedia-stats', requireAdmin, async (req, res) => {
+app.get('/api/admin/multimedia-stats', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const { data: students } = await supabase.from('students').select('id');
@@ -2554,7 +2566,7 @@ app.get('/api/admin/multimedia-products', requireAdmin, async (req, res) => {
 });
 
 // API: Admin — Get Reto 0 Diagnostic Stats
-app.get('/api/admin/reto0-stats', requireAdmin, async (req, res) => {
+app.get('/api/admin/reto0-stats', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const { data: students } = await supabase.from('students').select('id, class_name');

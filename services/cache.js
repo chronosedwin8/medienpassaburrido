@@ -102,3 +102,61 @@ const limpieza = setInterval(() => {
 limpieza.unref();
 
 module.exports = { recordar, invalidar, rutaCacheada, metricas, TTL_POR_DEFECTO };
+
+/**
+ * Middleware que recuerda la respuesta JSON de una ruta de LECTURA.
+ *
+ * Medido en este servidor: una consulta trivial a Supabase tarda entre 180 y
+ * 375 ms, y los paneles repiten las mismas agregaciones sobre datos que cambian
+ * despacio. Con esto, refrescar un panel o entrar treinta personas a la vez
+ * deja de costar treinta viajes de ida y vuelta.
+ *
+ * Solo cachea respuestas correctas (success !== false) para no fijar un error
+ * transitorio durante todo el TTL.
+ */
+function cachearLectura(ttlMs) {
+    return (req, res, next) => {
+        if (req.method !== 'GET') return next();
+
+        const clave = 'ruta:' + req.originalUrl;
+        const hit = store.get(clave);
+
+        if (hit && hit.expira > Date.now()) {
+            stats.hits++;
+            res.set('X-Cache', 'HIT');
+            return res.json(hit.valor);
+        }
+
+        stats.misses++;
+        res.set('X-Cache', 'MISS');
+
+        const jsonOriginal = res.json.bind(res);
+        res.json = (payload) => {
+            const ok = res.statusCode < 400 && !(payload && payload.success === false);
+            if (ok) {
+                store.set(clave, { expira: Date.now() + (ttlMs || TTL_POR_DEFECTO), valor: payload });
+            }
+            return jsonOriginal(payload);
+        };
+
+        next();
+    };
+}
+
+/**
+ * Middleware para rutas de ESCRITURA: al terminar bien, olvida lo cacheado.
+ * Sin esto, un cambio del administrador tardaria hasta un TTL en verse.
+ */
+function invalidarTras(prefijo) {
+    return (req, res, next) => {
+        const finOriginal = res.json.bind(res);
+        res.json = (payload) => {
+            if (res.statusCode < 400) invalidar(prefijo || 'ruta:');
+            return finOriginal(payload);
+        };
+        next();
+    };
+}
+
+module.exports.cachearLectura = cachearLectura;
+module.exports.invalidarTras = invalidarTras;
