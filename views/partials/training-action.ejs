@@ -1,0 +1,29 @@
+<%# Contenido de "Competencias en acción" (training_competencies.js) de una competencia. Recibe c, lang y encodeContent. %>
+<div class="kmk-section">
+    <h4 style="margin: 0 0 8px 0; color: <%= c.color %>; font-size: 1.1em; font-weight: 700;" data-lang-content="<%- encodeContent(c.objTitle) %>"><%= c.objTitle[lang] %></h4>
+    <p style="margin: 0; color: #334155; font-size: 1em; line-height: 1.6; background: #f8fafc; padding: 14px; border-radius: 8px;" data-lang-content="<%- encodeContent(c.objText) %>"><%= c.objText[lang] %></p>
+</div>
+<div class="kmk-section">
+    <h4 style="margin: 0 0 12px 0; color: #065f46; font-size: 1.15em; font-weight: 700; border-bottom: 2px solid #10b981; padding-bottom: 6px; display: inline-block;" data-lang-content="<%- encodeContent(c.devTitle) %>"><%= c.devTitle[lang] %></h4>
+    <p style="margin: 0 0 16px 0; color: #475569; font-size: 0.95em; line-height: 1.5;" data-lang-content="<%- encodeContent(c.devIntro) %>"><%= c.devIntro[lang] %></p>
+    <% c.devList.forEach(d => { %>
+    <div style="background: #f8fafc; border-left: 4px solid #10b981; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+        <h5 style="margin: 0 0 8px 0; color: #065f46; font-size: 1.05em; font-weight: 700;" data-lang-content="<%- encodeContent(d.title) %>"><%= d.title[lang] %></h5>
+        <p style="margin: 0; color: #334155; font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(d.text) %>"><%= d.text[lang] %></p>
+    </div>
+    <% }) %>
+</div>
+<div class="kmk-section">
+    <h4 style="margin: 0 0 12px 0; color: #1e1b4b; font-size: 1.15em; font-weight: 700; border-bottom: 2px solid <%= c.color %>; padding-bottom: 6px; display: inline-block;" data-lang-content="<%- encodeContent(c.hintTitle) %>"><%= c.hintTitle[lang] %></h4>
+    <p style="margin: 0 0 16px 0; color: #475569; font-size: 0.95em; line-height: 1.5;" data-lang-content="<%- encodeContent(c.hintIntro) %>"><%= c.hintIntro[lang] %></p>
+    <% c.hintsList.forEach(h => { %>
+    <div style="background: #f8fafc; border-left: 4px solid <%= c.color %>; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+        <h5 style="margin: 0 0 8px 0; color: #1e293b; font-size: 1.05em; font-weight: 700;" data-lang-content="<%- encodeContent(h.title) %>"><%= h.title[lang] %></h5>
+        <p style="margin: 0; color: #475569; font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(h.text) %>"><%= h.text[lang] %></p>
+    </div>
+    <% }) %>
+</div>
+<div style="background: #fffbeb; border: 1px solid #fde68a; padding: 20px; border-radius: 12px;">
+    <h4 style="margin: 0 0 8px 0; color: #b45309; font-size: 1.1em; font-weight: 700;" data-lang-content="<%- encodeContent(c.evalTitle) %>"><%= c.evalTitle[lang] %></h4>
+    <p style="margin: 0; color: #92400e; font-size: 0.95em; line-height: 1.6;" data-lang-content="<%- encodeContent(c.evalText) %>"><%= c.evalText[lang] %></p>
+</div>

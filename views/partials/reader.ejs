@@ -1,0 +1,72 @@
+<%# Lector inmersivo del Medienpass (diferenciación): botón «Lector» abajo a la izquierda y su panel.
+    La lógica está en /js/reader.js y el estilo en /css/reader.css. Lo incluye footer.ejs cuando la
+    página lo pide ({ reader: true }), fuera de <main> para que el tamaño de letra no lo agrande. %>
+<link rel="stylesheet" href="/css/reader.css">
+<div class="reader-tint reader-ui" aria-hidden="true"></div>
+<div class="reader-ruler reader-ui" id="readerRuler" aria-hidden="true" hidden></div>
+
+<button type="button" class="reader-fab reader-ui" id="readerOpen" aria-controls="readerPanel" aria-expanded="false">
+    <span class="reader-fab-icon" aria-hidden="true">📖</span>
+    <span class="reader-fab-text" data-i18n="est_lec_boton"><%= locals.t('est_lec_boton') %></span>
+</button>
+
+<section class="reader-panel reader-ui" id="readerPanel" aria-labelledby="readerTitle" hidden>
+    <div class="reader-head">
+        <h2 id="readerTitle"><span aria-hidden="true">📖</span> <span data-i18n="est_lec_titulo"><%= locals.t('est_lec_titulo') %></span></h2>
+        <button type="button" class="reader-close" id="readerClose" aria-label="<%= locals.t('est_lec_cerrar') %>" data-i18n-aria-label="est_lec_cerrar">✕</button>
+    </div>
+    <p class="reader-intro" data-i18n="est_lec_ayuda"><%= locals.t('est_lec_ayuda') %></p>
+
+    <div class="reader-actions">
+        <button type="button" class="reader-btn primary" id="readerPage"><span aria-hidden="true">▶</span> <span data-i18n="est_lec_leer_pagina"><%= locals.t('est_lec_leer_pagina') %></span></button>
+        <button type="button" class="reader-btn" id="readerSelection"><span aria-hidden="true">🔊</span> <span data-i18n="est_lec_leer_seleccion"><%= locals.t('est_lec_leer_seleccion') %></span></button>
+        <button type="button" class="reader-btn" id="readerStop" disabled><span aria-hidden="true">■</span> <span data-i18n="est_lec_detener"><%= locals.t('est_lec_detener') %></span></button>
+    </div>
+    <p class="reader-note" id="readerNoVoice" data-i18n="est_lec_sin_voz" hidden><%= locals.t('est_lec_sin_voz') %></p>
+    <p class="reader-note" id="readerMessage" role="status" hidden></p>
+
+    <div class="reader-row">
+        <span class="reader-label" data-i18n="est_lec_velocidad"><%= locals.t('est_lec_velocidad') %></span>
+        <div class="reader-chips">
+            <button type="button" class="reader-chip" data-reader-rate="lenta" data-i18n="est_lec_lenta"><%= locals.t('est_lec_lenta') %></button>
+            <button type="button" class="reader-chip" data-reader-rate="normal" data-i18n="est_lec_normal"><%= locals.t('est_lec_normal') %></button>
+            <button type="button" class="reader-chip" data-reader-rate="rapida" data-i18n="est_lec_rapida"><%= locals.t('est_lec_rapida') %></button>
+        </div>
+    </div>
+
+    <div class="reader-row">
+        <span class="reader-label" data-i18n="est_lec_tamano"><%= locals.t('est_lec_tamano') %></span>
+        <div class="reader-size">
+            <button type="button" class="reader-chip" id="readerSmaller" aria-label="A−">A−</button>
+            <output id="readerSizeValue">100 %</output>
+            <button type="button" class="reader-chip" id="readerBigger" aria-label="A+">A+</button>
+        </div>
+    </div>
+
+    <label class="reader-check"><input type="checkbox" id="reader_spacing"> <span data-i18n="est_lec_espaciado"><%= locals.t('est_lec_espaciado') %></span></label>
+    <label class="reader-check"><input type="checkbox" id="reader_font"> <span data-i18n="est_lec_letra"><%= locals.t('est_lec_letra') %></span></label>
+    <label class="reader-check"><input type="checkbox" id="reader_ruler"> <span data-i18n="est_lec_regla"><%= locals.t('est_lec_regla') %></span></label>
+
+    <div class="reader-row">
+        <span class="reader-label" data-i18n="est_lec_fondo"><%= locals.t('est_lec_fondo') %></span>
+        <div class="reader-chips">
+            <button type="button" class="reader-chip" data-reader-tint="ninguno" data-i18n="est_lec_fondo_ninguno"><%= locals.t('est_lec_fondo_ninguno') %></button>
+            <button type="button" class="reader-chip" data-reader-tint="crema"><span class="reader-swatch" style="background:#fff1c7"></span> <span data-i18n="est_lec_fondo_crema"><%= locals.t('est_lec_fondo_crema') %></span></button>
+            <button type="button" class="reader-chip" data-reader-tint="azul"><span class="reader-swatch" style="background:#d9ebff"></span> <span data-i18n="est_lec_fondo_azul"><%= locals.t('est_lec_fondo_azul') %></span></button>
+            <button type="button" class="reader-chip" data-reader-tint="verde"><span class="reader-swatch" style="background:#e0f3d8"></span> <span data-i18n="est_lec_fondo_verde"><%= locals.t('est_lec_fondo_verde') %></span></button>
+        </div>
+    </div>
+
+    <div class="reader-row">
+        <span class="reader-label" data-i18n="est_lec_traduccion"><%= locals.t('est_lec_traduccion') %></span>
+        <div class="reader-chips">
+            <button type="button" class="reader-chip" data-reader-trans="" data-i18n="est_lec_traduccion_no"><%= locals.t('est_lec_traduccion_no') %></button>
+            <button type="button" class="reader-chip notranslate" translate="no" data-reader-trans="de">DE</button>
+            <button type="button" class="reader-chip notranslate" translate="no" data-reader-trans="en">EN</button>
+            <button type="button" class="reader-chip notranslate" translate="no" data-reader-trans="es">ES</button>
+        </div>
+    </div>
+
+    <button type="button" class="reader-btn reader-reset" id="readerReset"><span aria-hidden="true">↺</span> <span data-i18n="est_lec_restablecer"><%= locals.t('est_lec_restablecer') %></span></button>
+</section>
+<script src="/js/reader.js"></script>

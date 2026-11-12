@@ -1,0 +1,20 @@
+<%# Encabezado blanco con el logo del colegio para las páginas sin menú lateral (ayuda con problemas…).
+    Es un div con role="banner" y no <header>: style.css pinta todos los <header> de azul oscuro.
+    Parámetros: pageTitle (clave i18n), pageSubtitle (clave i18n, opcional), pageHome (destino del logo)
+    y pageLinks: [{ href, icon, key, primary }]. %>
+<div class="dsb-page-header no-print" role="banner">
+    <div class="dsb-page-header-inner">
+        <%- include('brand-logo', { brandHref: locals.pageHome || '/teacher/training', brandSub: locals.pageBrandSub || 'doc_nav_portal_docente' }) %>
+        <div class="dsb-page-title">
+            <h1 data-i18n="<%= pageTitle %>"><%= locals.t(pageTitle) %></h1>
+            <% if (locals.pageSubtitle) { %><p data-i18n="<%= pageSubtitle %>"><%= locals.t(pageSubtitle) %></p><% } %>
+        </div>
+        <div class="dsb-tools">
+            <%- include('lang-switch') %>
+            <% (locals.pageLinks || []).forEach(link => { %>
+                <a href="<%= link.href %>" class="<%= link.primary ? 'dsb-btn' : 'dsb-btn-outline' %>"><i class="fas <%= link.icon %>" aria-hidden="true"></i> <span data-i18n="<%= link.key %>"><%= locals.t(link.key) %></span></a>
+            <% }) %>
+        </div>
+    </div>
+    <div class="dsb-flag" aria-hidden="true"></div>
+</div>

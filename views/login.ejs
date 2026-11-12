@@ -1,99 +1,225 @@
-<%- include('layout/head', { title: 'Entrar — MedienPass', bodyClass: 'mp-auth', lang: lang }) %>
+<%- include('partials/header') %>
 
-<style>
-/* Pantalla de acceso: una sola columna centrada, sin distracciones. */
-.mp-auth-wrap {
-    flex: 1;
-    display: grid;
-    place-items: center;
-    padding: var(--mp-5) var(--mp-4);
-}
-.mp-auth-card { width: 100%; max-width: 400px; }
-.mp-auth-head { text-align: center; margin-bottom: var(--mp-6); }
-.mp-auth-mark {
-    width: 44px; height: 44px; margin: 0 auto var(--mp-4);
-    border-radius: var(--mp-radius);
-    background: var(--mp-accent); color: var(--mp-accent-text);
-    display: grid; place-items: center;
-    font-weight: 700; font-size: var(--mp-text-lg);
-}
-.mp-auth-title { font-size: var(--mp-text-2xl); margin-bottom: var(--mp-1); }
-.mp-auth-sub { color: var(--mp-text-faint); font-size: var(--mp-text-sm); }
-.mp-auth-foot {
-    margin-top: var(--mp-5); text-align: center;
-    font-size: var(--mp-text-sm); color: var(--mp-text-faint);
-}
-</style>
+    <div class="login-container">
+        <div class="login-card">
+            <img class="login-logo" src="/img/logo-colegio.png" width="511" height="360" alt="Colegio Alemán · Deutsche Schule Barranquilla">
+            <h2 data-i18n="loginWelcome"><%= locals.t('loginWelcome') %></h2>
+            <p class="login-subtitle"><span class="notranslate" translate="no">MedienPass</span> · <span data-i18n="hdr_brand_sub"><%= locals.t('hdr_brand_sub') %></span></p>
 
-<div class="mp-auth-wrap">
-    <div class="mp-auth-card">
+            <!-- Language selector on login page -->
+            <div class="login-lang-selector">
+                <button class="login-lang-btn active" data-lang="de" onclick="switchLoginLang('de')">
+                    <span class="login-lang-flag">🇩🇪</span> DE
+                </button>
+                <button class="login-lang-btn" data-lang="en" onclick="switchLoginLang('en')">
+                    <span class="login-lang-flag">🇬🇧</span> EN
+                </button>
+                <button class="login-lang-btn" data-lang="es" onclick="switchLoginLang('es')">
+                    <span class="login-lang-flag">🇪🇸</span> ES
+                </button>
+            </div>
 
-        <div class="mp-auth-head">
-            <div class="mp-auth-mark" aria-hidden="true">M</div>
-            <h1 class="mp-auth-title">MedienPass</h1>
-            <p class="mp-auth-sub"><%= t('schoolFooter') %></p>
-        </div>
-
-        <div class="mp-card">
-            <% if (typeof error !== 'undefined' && error) { %>
-                <div class="mp-alert mp-alert--danger" role="alert" style="margin-bottom: var(--mp-4);">
+            <% if (error) { %>
+                <div class="error-alert">
+                    <i class="fas fa-exclamation-circle"></i>
                     <%= error %>
                 </div>
-            <% } %>
+                <% } %>
 
-            <form method="POST" action="/login" class="mp-stack" autocomplete="on">
+                    <form action="/login" method="POST" class="login-form">
+                        <div class="form-group">
+                            <label for="class_name_select">
+                                <i class="fas fa-school"></i> <span data-i18n="classLabel" translate="no" class="notranslate">Klasse</span>
+                            </label>
+                            <select id="class_name_select" onchange="checkCode()">
+                                <option value="" data-i18n-option="selectClass" data-i18n-option="est_login_selecciona_tu_clase_wahle_deine"><%= locals.t('est_login_selecciona_tu_clase_wahle_deine') %></option>
+                                <% if (typeof uniqueClasses !== 'undefined') { %>
+                                    <% uniqueClasses.forEach(cls => { %>
+                                        <option value="<%= cls %>" translate="no" class="notranslate">Klasse <%= cls %></option>
+                                    <% }) %>
+                                <% } else { %>
+                                    <% klassenConfig.klassen.forEach(klasse=> { %>
+                                        <% klassenConfig.kurse.forEach(kurs=> { %>
+                                            <option value="<%= klasse %><%= kurs %>">Klasse <%= klasse %><%= kurs %></option>
+                                        <% }) %>
+                                    <% }) %>
+                                <% } %>
+                            </select>
+                        </div>
 
-                <div class="mp-field">
-                    <label class="mp-label" for="username"><%= t('loginName') %></label>
-                    <input class="mp-input" type="text" id="username" name="username"
-                           autocomplete="given-name" required autofocus
-                           placeholder="<%= t('loginNamePlaceholder') %>">
-                </div>
+                        <div class="form-group">
+                            <label for="student_code">
+                                <i class="fas fa-barcode"></i> <span data-i18n="studentCode">Código de Estudiante /
+                                    Code</span>
+                            </label>
+                            <input type="number" id="student_code" name="student_code"
+                                data-i18n-placeholder="codePlaceholder" placeholder="Ej: 2401" required
+                                oninput="checkCode()">
+                        </div>
 
-                <div class="mp-field">
-                    <label class="mp-label" for="class_name"><%= t('loginClass') %></label>
-                    <select class="mp-select" id="class_name" name="class_name" required>
-                        <option value=""><%= t('loginClassPlaceholder') %></option>
-                        <% (uniqueClasses && uniqueClasses.length ? uniqueClasses : []).forEach(function (c) { %>
-                            <option value="<%= c %>"><%= c %></option>
-                        <% }); %>
-                    </select>
-                </div>
+                        <!-- Auto-populated info -->
+                        <div id="student_info"
+                            style="display: none; background: #f0fdf4; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #bbf7d0;">
+                            <div style="font-size: 0.85em; color: #166534; margin-bottom: 5px;"
+                                data-i18n="studentFound">Estudiante encontrado:</div>
+                            <div id="student_name_display" style="font-weight: bold; font-size: 1.1em; color: #15803d;">
+                            </div>
+                            <div id="student_class_display" translate="no" class="notranslate" style="font-size: 0.9em; color: #166534; margin-top: 5px;">
+                            </div>
+                        </div>
 
-                <div class="mp-field">
-                    <label class="mp-label" for="student_code">
-                        <%= t('loginCode') %>
-                        <span class="mp-label__hint">— <%= t('loginCodeHint') %></span>
-                    </label>
-                    <input class="mp-input mp-mono" type="text" id="student_code" name="student_code"
-                           inputmode="numeric" autocomplete="off" required
-                           placeholder="000000">
-                </div>
+                        <div id="code_error"
+                            style="display: none; color: #dc2626; font-size: 0.85em; margin-bottom: 15px; text-align: center;">
+                            <i class="fas fa-exclamation-circle"></i> <span data-i18n="codeNotFound">Código no
+                                encontrado en esta clase / Code nicht gefunden</span>
+                        </div>
 
-                <div class="mp-field">
-                    <label class="mp-label" for="lang">
-                        <%= t('language') %>
-                        <span class="mp-label__hint">— <%= t('loginLangHint') %></span>
-                    </label>
-                    <select class="mp-select" id="lang" name="lang">
-                        <% languages.forEach(function (l) { %>
-                            <option value="<%= l %>" <%= lang === l ? 'selected' : '' %>><%= t('langName_' + l) %></option>
-                        <% }); %>
-                    </select>
-                </div>
+                        <input type="hidden" id="username" name="username">
+                        <input type="hidden" id="class_name" name="class_name">
 
-                <button type="submit" class="mp-btn mp-btn--primary mp-btn--block mp-btn--lg">
-                    <%= t('loginSubmit') %>
-                </button>
-            </form>
+                        <button type="submit" class="login-btn" id="login_btn" disabled
+                            style="opacity: 0.5; cursor: not-allowed;">
+                            <i class="fas fa-sign-in-alt"></i> <span data-i18n="loginButton">Eintreten</span>
+                        </button>
+                    </form>
+
+                    <div class="teacher-access">
+                        <p data-i18n="areYouTeacher"><%= locals.t('areYouTeacher') %></p>
+                        <a href="/teacher/login" class="teacher-access-btn">
+                            <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
+                            <span data-i18n="teacherPortalAndTraining"><%= locals.t('teacherPortalAndTraining') %></span>
+                        </a>
+                    </div>
+
+                    <%# Acceso institucional: cada perfil entra por su botón (/admin/login?perfil=...) %>
+                    <div class="staff-access" aria-labelledby="staffAccessTitle">
+                        <p class="staff-access-title" id="staffAccessTitle"><i class="fas fa-shield-halved"></i> <span data-i18n="est_login_acceso_institucional"><%= locals.t('est_login_acceso_institucional') %></span></p>
+                        <div class="staff-access-grid">
+                            <a class="staff-access-btn coordinador" href="/admin/login?perfil=coordinador">
+                                <i class="fas fa-clipboard-check" aria-hidden="true"></i>
+                                <strong data-i18n="est_login_soy_coordinador"><%= locals.t('est_login_soy_coordinador') %></strong>
+                                <small data-i18n="est_login_desc_coordinador"><%= locals.t('est_login_desc_coordinador') %></small>
+                            </a>
+                            <a class="staff-access-btn directivo" href="/admin/login?perfil=directivo">
+                                <i class="fas fa-landmark" aria-hidden="true"></i>
+                                <strong data-i18n="est_login_soy_directivo"><%= locals.t('est_login_soy_directivo') %></strong>
+                                <small data-i18n="est_login_desc_directivo"><%= locals.t('est_login_desc_directivo') %></small>
+                            </a>
+                            <a class="staff-access-btn desarrollador" href="/admin/login?perfil=desarrollador">
+                                <i class="fas fa-code" aria-hidden="true"></i>
+                                <strong data-i18n="est_login_soy_desarrollador"><%= locals.t('est_login_soy_desarrollador') %></strong>
+                                <small data-i18n="est_login_desc_desarrollador"><%= locals.t('est_login_desc_desarrollador') %></small>
+                            </a>
+                        </div>
+                    </div>
+                    <style>
+                        .teacher-access { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--dsb-border, #e2e2e2); text-align: center; }
+                        .teacher-access p { color: var(--dsb-muted, #54595f); font-size: 0.9em; margin: 0 0 12px; }
+                        .teacher-access-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; box-sizing: border-box; padding: 13px 16px;
+                            border: 2px solid var(--dsb-black, #111); border-radius: 999px; background: #fff; color: var(--dsb-black, #111); font-weight: 700; font-size: 1.02em; text-decoration: none;
+                            transition: background-color 0.2s ease, color 0.2s ease; }
+                        .teacher-access-btn i { font-size: 1.15em; }
+                        .teacher-access-btn:hover, .teacher-access-btn:focus-visible { background: var(--dsb-black, #111); color: #fff; }
+                        .staff-access { margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--dsb-border, #e2e2e2); }
+                        .staff-access-title { margin: 0 0 10px; text-align: center; color: var(--dsb-muted, #54595f); font-size: 0.85em; font-weight: 700; letter-spacing: 0.02em; }
+                        .staff-access-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+                        .staff-access-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; border-radius: 12px;
+                            border: 2px solid var(--staff-border); background: var(--staff-bg); color: var(--staff-color); text-decoration: none; text-align: center;
+                            transition: transform 0.2s ease, border-color 0.2s ease; box-sizing: border-box; min-width: 0; }
+                        .staff-access-btn i { font-size: 1.3em; }
+                        .staff-access-btn strong { font-size: 0.88em; line-height: 1.2; }
+                        .staff-access-btn small { font-size: 0.72em; line-height: 1.25; color: #475569; }
+                        .staff-access-btn:hover, .staff-access-btn:focus-visible { transform: translateY(-2px); border-color: var(--staff-color); }
+                        .staff-access-btn small { color: var(--dsb-muted, #54595f); }
+                        .staff-access-btn.coordinador { --staff-color: #21529b; --staff-bg: #eef4fb; --staff-border: #bcd2ee; }
+                        .staff-access-btn.directivo { --staff-color: #a92106; --staff-bg: #fdf4f3; --staff-border: #f6cbc5; }
+                        .staff-access-btn.desarrollador { --staff-color: #111111; --staff-bg: #f6f6f6; --staff-border: #d6d6d6; }
+                        @media (max-width: 480px) {
+                            .staff-access-grid { grid-template-columns: 1fr; }
+                            .staff-access-btn { flex-direction: row; flex-wrap: wrap; justify-content: flex-start; text-align: left; column-gap: 10px; }
+                            .staff-access-btn small { flex-basis: 100%; padding-left: 2em; }
+                        }
+                    </style>
+
+                    <div class="login-footer" style="text-align: center; margin-top: 25px;">
+                        <p data-i18n="schoolFooter">Deutsche Schule Barranquilla — Colegio Alemán</p>
+                    </div>
         </div>
-
-        <p class="mp-auth-foot">
-            <a href="/teacher/login"><%= t('loginTeacherLink') %></a>
-        </p>
-
-
     </div>
-</div>
 
-<%- include('layout/foot') %>
+    <script>
+        function switchLoginLang(lang) {
+            document.querySelectorAll('.login-lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+            });
+            if (window.langUtils) {
+                window.langUtils.switchLang(lang);
+            }
+        }
+
+        // On load, sync login lang buttons with current lang
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentLang = window.langUtils ? window.langUtils.getLang() : 'de';
+            document.querySelectorAll('.login-lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
+            });
+        });
+
+        let checkTimeout;
+        async function checkCode() {
+            const classSelect = document.getElementById('class_name_select').value;
+            const code = document.getElementById('student_code').value.trim();
+            const infoDiv = document.getElementById('student_info');
+            const errorDiv = document.getElementById('code_error');
+            const btn = document.getElementById('login_btn');
+            const usernameInput = document.getElementById('username');
+            const classInput = document.getElementById('class_name');
+
+            if (!classSelect || code.length < 2) {
+                infoDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                return;
+            }
+
+            clearTimeout(checkTimeout);
+            checkTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch('/api/student/code/' + classSelect + '/' + code);
+                    const result = await res.json();
+
+                    if (result.success && result.student) {
+                        if (result.student.full_name) {
+                    document.getElementById('student_name_display').textContent = result.student.full_name;
+                } else if (result.student.first_name && result.student.last_name) {
+                    document.getElementById('student_name_display').textContent = result.student.first_name + ' ' + result.student.last_name;
+                } else {
+                    document.getElementById('student_name_display').textContent = result.student.username;
+                }
+                        document.getElementById('student_class_display').textContent = 'Klasse ' + result.student.class_name;
+
+                        usernameInput.value = result.student.username;
+                        classInput.value = result.student.class_name;
+
+                        infoDiv.style.display = 'block';
+                        errorDiv.style.display = 'none';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    } else {
+                        infoDiv.style.display = 'none';
+                        errorDiv.style.display = 'block';
+                        btn.disabled = true;
+                        btn.style.opacity = '0.5';
+                        btn.style.cursor = 'not-allowed';
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }, 400); // 400ms debounce
+        }
+    </script>
+
+    <%- include('partials/footer') %>

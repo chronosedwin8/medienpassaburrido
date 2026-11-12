@@ -1,430 +1,72 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="<%= lang %>">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedienPass</title>
+    <title>MedienPass · Colegio Alemán</title>
     <meta name="description" content="Digitaler MedienPass - Deutsche Schule Barranquilla">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="<%= v('/css/medienpass.css') %>">
-    <link rel="stylesheet" href="<%= v('/css/minimal.css') %>">
-    <link rel="stylesheet" href="<%= v('/css/style.css') %>">
-<link rel="stylesheet" href="<%= v('/css/custom.css') %>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script>window.__lang = <%- JSON.stringify(typeof lang !== "undefined" ? lang : "es") %>;</script>
-    <script src="/js/i18n.js"></script>
-    <% if (typeof reglasEstrellas !== 'undefined' && reglasEstrellas) { %>
-    <script>window.__reglasEstrellas = <%- JSON.stringify(reglasEstrellas) %>;</script>
-    <script src="<%= v('/js/estrellas.js') %>"></script>
-    <% } %>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/custom.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <%- i18nScripts() %>
+    <%- include('brand-head') %>
 </head>
 
-<body data-section="<%= typeof section !== 'undefined' ? section : '' %>">
-    <style>
-        header {
-            width: 100%;
-            min-width: fit-content;
-        }
-
-        .header-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 16px 24px;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .header-left {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .hero-title {
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .hero-icon {
-            font-size: 1.8em;
-        }
-
-        .hero-title-text {
-            font-size: 2.2em; /* Grande */
-            font-weight: 900;
-            letter-spacing: 0.05em;
-            background: linear-gradient(90deg, #fbbf24, #f9a8d4, #a78bfa, #67e8f9, #fbbf24);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .subtitle-custom {
-            font-size: 1.1em; /* Más grande */
-            font-weight: 900;
-            color: #fbbf24; /* highlight */
-            margin: 0;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .header-subtitle {
-            font-size: 0.7em;
-            opacity: 0.85;
-            margin: 0;
-        }
-
-        .header-lang-switch {
-            display: flex;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 4px;
-            border-radius: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        /* Selector de idioma discreto: el idioma se elige al entrar y casi
-           nunca se cambia, asi que no debe competir con el contenido. */
-        .header-lang-switch {
-            display: inline-flex;
-            gap: 1px;
-            padding: 2px;
-            background: rgba(255, 255, 255, .07);
-            border: 1px solid rgba(255, 255, 255, .10);
-            border-radius: 7px;
-        }
-        .h-lang-btn {
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.62);
-            padding: 4px 9px;
-            border-radius: 5px;
-            font-weight: 600;
-            font-size: 0.72rem;
-            letter-spacing: .04em;
-            cursor: pointer;
-            text-decoration: none;
-            transition: background .15s ease, color .15s ease;
-            font-family: var(--font);
-        }
-
-        .h-lang-btn:hover {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.10);
-            text-decoration: none;
-        }
-
-        .h-lang-btn.active {
-            /* Sin sombra de color: basta el fondo para marcar cual esta activo. */
-            background: rgba(255, 255, 255, 0.16);
-            color: #fff;
-            box-shadow: none;
-        }
-
-        @media (max-width: 1150px) {
-            .header-content {
-                flex-direction: column;
-                text-align: center;
-                gap: 14px;
-            }
-            .hero-title {
-                justify-content: center;
-            }
-            .header-right {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-        }
-
-        /* Sticky Shrink Header using transitions */
-        header, 
-        header .header-content,
-        header .hero-title-text,
-        header .hero-icon,
-        header .subtitle-custom,
-        header .header-subtitle,
-        header .user-avatar,
-        header .user-details,
-        header .h-lang-btn,
-        header .teacher-portal-btn,
-        header .logout-btn {
-            transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        }
-
-        header.shrunk {
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35) !important;
-            /* Evitamos transformaciones en el contenedor principal del header para prevenir bucles de posicionamiento pegajoso */
-        }
-
-        /* Scale down elements inside header when shrunk */
-        header.shrunk .header-content {
-            padding: 8px 24px;
-        }
-
-        header.shrunk .hero-title-text {
-            transform: scale(0.9);
-            transform-origin: left center;
-        }
-
-        header.shrunk .hero-icon {
-            transform: scale(0.9);
-        }
-
-        header.shrunk .subtitle-custom {
-            transform: scale(0.9);
-            transform-origin: left center;
-        }
-
-        header.shrunk .header-subtitle {
-            opacity: 0;
-            height: 0;
-            margin: 0;
-            overflow: hidden;
-            pointer-events: none;
-        }
-
-        header.shrunk .user-avatar {
-            transform: scale(0.9);
-        }
-
-        header.shrunk .user-details {
-            opacity: 0;
-            transform: translateX(-10px);
-            max-width: 0;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-
-        header.shrunk .h-lang-btn {
-            transform: scale(0.9);
-        }
-
-        header.shrunk .teacher-portal-btn,
-        header.shrunk .logout-btn {
-            transform: scale(0.9);
-        }
-
-    /* ── Cabecera compacta (añadido) ──────────────────────────
-       El titulo gigante ocupaba un tercio de la pantalla en portatiles y
-       tablets; el estudiante entraba a un reto y no veia ni una pregunta.
-       Aqui se reduce y se fija arriba para que el contenido gane sitio. */
-    header {
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        padding: 10px 0 !important;
-    }
-    header .header-content {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
-    header .hero-title {
-        font-size: 1.35rem !important;
-        margin: 0 !important;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    header .hero-icon { font-size: 1.2rem !important; }
-    header .hero-title-text { font-size: 1.35rem !important; letter-spacing: .5px !important; }
-    /* El lema y el nombre del colegio ya estan en el pie: aqui solo estorban. */
-    header .subtitle-custom,
-    header .header-subtitle { display: none !important; }
-    header .header-left { flex: 0 0 auto; }
-    header .header-lang-switch { margin-left: auto; }
-
-    /* El nombre completo en MAYUSCULAS ocupaba media barra
-       ("HERRERA PFEIFFER FELIX LEANDRO GABRIEL"). Se recorta y se deja en
-       capitalizacion normal, que ademas se lee mejor. */
-    header .user-name {
-        display: inline-block;
-        max-width: 220px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        vertical-align: bottom;
-        text-transform: none !important;
-        letter-spacing: 0 !important;
-    }
-
-    @media (max-width: 720px) {
-        header .user-name { max-width: 120px; }
-    }
-
-    @media (max-width: 720px) {
-        header .hero-title-text { font-size: 1.1rem !important; }
-    }
-
-    /* ── Barra de avance del reto ─────────────────────────────
-       El estudiante no tenia forma de saber cuanto le faltaba. */
-    .reto-progreso {
-        background: rgba(255, 255, 255, .10);
-        border-top: 1px solid rgba(255, 255, 255, .15);
-        padding: 7px 0;
-        margin-top: 8px;
-    }
-    .reto-progreso__caja {
-        max-width: 1140px;
-        margin: 0 auto;
-        padding: 0 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: .8125rem;
-        color: rgba(255, 255, 255, .92);
-    }
-    .reto-progreso__barra {
-        flex: 1;
-        height: 6px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, .22);
-        overflow: hidden;
-    }
-    .reto-progreso__relleno {
-        height: 100%;
-        width: 0%;
-        border-radius: 999px;
-        background: #ffd24a;
-        transition: width 300ms cubic-bezier(.4,0,.2,1);
-    }
-    .reto-progreso__relleno.completo { background: #4ade80; }
-    .reto-progreso__texto { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 500; }
-    @media print { .reto-progreso { display: none; } }
-    </style>
-    <script>
-    // Mantiene la barra de avance justo debajo de la cabecera, midiendo su
-    // altura real en lugar de confiar en un numero fijo.
-    (function () {
-        function alinearProgreso() {
-            var h = document.querySelector('header');
-            if (h) {
-                document.documentElement.style.setProperty(
-                    '--altura-cabecera', Math.round(h.getBoundingClientRect().height) + 'px');
-            }
-        }
-        window.addEventListener('DOMContentLoaded', alinearProgreso);
-        window.addEventListener('resize', alinearProgreso);
-        window.addEventListener('load', alinearProgreso);
-    })();
-    </script>
-    <header>
-        <div class="header-content">
-            <div class="header-left">
-                <h1 class="hero-title">
-                    <span class="hero-icon">📱</span>
-                    <span class="hero-title-text notranslate" translate="no">MEDIENPASS</span>
-                </h1>
-                <p class="subtitle-custom">PSP - EDUCACIÓN EN MEDIOS - DEUTSCHE SCHULE</p>
-                <p class="header-subtitle" data-i18n="schoolFooter"><%= t('schoolFooter') %></p>
-            </div>
-            
-            <div class="header-lang-switch">
-                <% const _lang = typeof lang !== 'undefined' ? lang : 'es'; %>
-                <a class="lang-btn h-lang-btn <%= _lang === 'de' ? 'active' : '' %>" href="?lang=de" data-lang="de" hreflang="de">DE</a>
-                <a class="lang-btn h-lang-btn <%= _lang === 'en' ? 'active' : '' %>" href="?lang=en" data-lang="en" hreflang="en">EN</a>
-                <a class="lang-btn h-lang-btn <%= _lang === 'es' ? 'active' : '' %>" href="?lang=es" data-lang="es" hreflang="es">ES</a>
-            </div>
-            <div class="header-right" style="display:flex;align-items:center;gap:12px;">
-                <% if (typeof teacher !== 'undefined' && teacher) { %>
-                    <a href="/docs" style="background:#8b5cf6;color:white;padding:8px 16px;border-radius:12px;font-weight:700;font-size:0.85em;text-decoration:none;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(139,92,246,0.3);" title="Manual de Usuario">
-                        <i class="fas fa-book text-sm"></i> <span>📚 Manual de Usuario</span>
+<%# Encabezado del portal estudiante (también el ingreso y las páginas del docente sin menú lateral).
+    Arriba: logo del colegio, idioma, acceso docente y salir. Debajo, para el estudiante, una barra
+    negra con su nombre completo, la clase y el año escolar en curso: queda fija al bajar por la
+    página (en el celular solo esa barra) y nunca se oculta. %>
+<%# Alemán e Inglés en su idioma (server.js useSubjectLang): /js/lang.js lo respeta al cargar %>
+<body data-section="<%= typeof section !== 'undefined' ? section : '' %>"<% if (locals.nativeLang) { %> data-native-subject="<%= nativeLang.subject %>" data-page-lang="<%= nativeLang.lang %>"<% } %>>
+    <div class="dsb-top">
+        <header class="dsb-header">
+            <div class="dsb-header-inner">
+                <%- include('brand-logo', { brandHref: '/' }) %>
+                <div class="dsb-tools">
+                    <div class="dsb-lang" role="group" aria-label="Idioma / Sprache / Language">
+                        <button type="button" class="lang-btn h-lang-btn <%= lang === 'de' ? 'active' : '' %>" data-lang="de">DE</button>
+                        <button type="button" class="lang-btn h-lang-btn <%= lang === 'en' ? 'active' : '' %>" data-lang="en">EN</button>
+                        <button type="button" class="lang-btn h-lang-btn <%= lang === 'es' ? 'active' : '' %>" data-lang="es">ES</button>
+                    </div>
+                    <% if (typeof teacher !== 'undefined' && teacher) { %>
+                        <a href="/docs" class="dsb-btn-outline dsb-hide-sm" title="<%= locals.t('hdr_manual_de_usuario') %>" data-i18n-title="hdr_manual_de_usuario">
+                            <i class="fas fa-book"></i> <span data-i18n="hdr_manual_de_usuario_2"><%= locals.t('hdr_manual_de_usuario_2') %></span>
+                        </a>
+                    <% } %>
+                    <a href="/teacher/login" class="dsb-btn-outline" title="<%= locals.t('hdr_portal_docente_capacitacion') %>" data-i18n-title="hdr_portal_docente_capacitacion">
+                        <i class="fas fa-chalkboard-teacher"></i> <span class="dsb-hide-sm" data-i18n="teacherPortalLabel">Docentes</span>
                     </a>
-                <% } %>
-                <a href="/teacher/login" class="teacher-portal-btn" title="Portal Docente & Capacitación">
-                    <i class="fas fa-chalkboard-teacher"></i> <span class="tp-text" data-i18n="teacherPortalLabel"><%= t('teacherPortalLabel') %></span>
-                </a>
-
-                <% if (typeof student !=='undefined' && student) { %>
-<div class="user-info">
-    <span class="user-avatar" id="headerUserAvatar" style="font-size: <%= (student.profile_photo && student.profile_photo.length < 15) ? '1.2em' : '0.8em' %>;"><% if (student.profile_photo) { %>
-        <% if (student.profile_photo.length < 15) { %>
-            <%= student.profile_photo %>
-        <% } else if (student.profile_photo.startsWith('data:image')) { %>
-            <!-- avatar image hidden -->
-        <% } else { %>
-            <%= iniciales(student.full_name || student.username) %>
-        <% } %>
-    <% } else { %>
-        <%= iniciales(student.full_name || student.username) %>
-    <% } %></span>
-    <div class="user-details">
-        <%
-        // Los nombres llegan de importaciones distintas: unos bien escritos y
-        // otros en MAYUSCULAS. Se normalizan al mostrarlos (services/names.js);
-        // el dato guardado no cambia. En la barra va la version corta, con el
-        // nombre completo en el title por si hace falta comprobarlo.
-        const _nombreCompleto = student.full_name
-            || [student.first_name, student.last_name].filter(Boolean).join(' ')
-            || student.username;
-        %>
-        <span class="user-name" title="<%= nombre(_nombreCompleto) %>"><%= nombreCorto(_nombreCompleto) %></span>
-        <span class="user-class"><%= student.class_name %></span>
-    </div>
-</div>
-                    <a href="/logout" class="logout-btn" data-i18n-title="logoutTitle" title="Abmelden / Cerrar sesión">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </a>
-                <% } %>
-            </div>
-        </div>
-
-        <%
-        // Solo preguntas reales: los "_explain" son la argumentacion de la
-        // pregunta anterior, no preguntas aparte.
-        const _preguntasReales = (typeof activity !== 'undefined' && activity && activity.evidence)
-            ? activity.evidence.filter(q => q && !String(q.id || '').endsWith('_explain')).length
-            : 0;
-        %>
-        <% if (_preguntasReales > 0 && activity.id !== 'profile') { %>
-        <!-- Avance del reto. Va dentro de la cabecera fija para que acompane
-             al estudiante mientras responde; antes no habia forma de saber
-             cuanto faltaba. -->
-        <div class="reto-progreso no-print" id="retoProgreso"
-             data-total="<%= _preguntasReales %>"
-             role="progressbar" aria-valuemin="0"
-             aria-valuemax="<%= _preguntasReales %>" aria-valuenow="0">
-            <div class="reto-progreso__caja">
-                <span class="reto-progreso__texto" id="retoProgresoTexto">0 / <%= _preguntasReales %></span>
-                <div class="reto-progreso__barra">
-                    <div class="reto-progreso__relleno" id="retoProgresoRelleno"></div>
+                    <% if (typeof student !== 'undefined' && student) { %>
+                        <a href="/logout" class="dsb-icon-btn" data-i18n-title="logoutTitle" title="<%= locals.t('logoutTitle') %>" aria-label="<%= locals.t('logoutTitle') %>">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                    <% } %>
                 </div>
-                <span class="reto-progreso__texto" id="retoProgresoEstado"></span>
+            </div>
+            <div class="dsb-flag" aria-hidden="true"></div>
+        </header>
+
+        <% if (typeof student !== 'undefined' && student) {
+            const names = studentNames(student);
+            const photo = student.profile_photo;
+            const emojiPhoto = photo && photo.length < 15 ? photo : null;
+        %>
+        <div class="dsb-student-bar" role="region" aria-label="<%= locals.t('hdr_estudiante') %>">
+            <div class="dsb-student-inner">
+                <div class="dsb-student-who">
+                    <span class="dsb-avatar" id="headerUserAvatar" aria-hidden="true"><%= emojiPhoto || names.initial %></span>
+                    <span>
+                        <span class="dsb-student-label" data-i18n="hdr_estudiante"><%= locals.t('hdr_estudiante') %></span>
+                        <strong class="dsb-student-name notranslate" translate="no" id="studentFullName"><%= names.full %></strong>
+                    </span>
+                </div>
+                <div class="dsb-student-facts">
+                    <span class="dsb-chip is-class"><span data-i18n="classLabel"><%= locals.t('classLabel') %></span>&nbsp;<span class="notranslate" translate="no"><%= student.class_name %></span></span>
+                    <span class="dsb-chip is-year" title="<%= locals.t('hdr_anio_en_curso') %>" data-i18n-title="hdr_anio_en_curso"><i class="fas fa-calendar-days" aria-hidden="true"></i> <span data-i18n="schoolYear"><%= locals.t('schoolYear') %></span>&nbsp;<span class="notranslate" translate="no"><%= (locals.schoolYear || {}).label || '' %></span></span>
+                </div>
             </div>
         </div>
         <% } %>
-    </header>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const headerEl = document.querySelector('header');
-            if (headerEl) {
-                let isShrunk = false;
-                const handleScroll = () => {
-                    const scrollY = window.scrollY;
-                    if (!isShrunk && scrollY > 80) {
-                        headerEl.classList.add('shrunk');
-                        isShrunk = true;
-                    } else if (isShrunk && scrollY < 30) {
-                        headerEl.classList.remove('shrunk');
-                        isShrunk = false;
-                    }
-                };
-                window.addEventListener('scroll', handleScroll, { passive: true });
-                handleScroll(); // Initial check
-            }
-        });
-    </script>
+    </div>
     <main class="container">

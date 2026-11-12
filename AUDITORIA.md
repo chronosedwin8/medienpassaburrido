@@ -82,6 +82,14 @@ solo se intentaba guardar al cerrar la pestaña: **no había autoguardado perió
 | Cliente robusto | `views/activity.ejs` | `AbortController` (10s) + `finally` en los 4 guardados → la UI nunca queda colgada |
 | Autoguardado periódico | `views/activity.ejs` | `setInterval(silentAutosave, 30000)` con su propio timeout |
 | `sendBeacon` al salir | `public/js/autosave.js` | Reemplaza el `fetch('/autosave')` roto; usa `visibilitychange`/`pagehide` y no bloquea el cierre |
+| Confirmación local real | `server.js` | `/api/save` espera la escritura atómica antes de responder; si falla, responde HTTP 500 |
+
+> **Actualización:** por decisión del colegio se retiró todo guardado automático (el
+> `setInterval` de 30 s, el `sendBeacon` de `autosave.js` y el borrador en `localStorage`).
+> Ahora solo se guarda con los botones; la página marca "Cambios sin guardar" y el navegador
+> avisa si se intenta salir sin guardar. El borrador local además mezclaba respuestas entre
+> estudiantes en equipos compartidos. También se corrigió Reto 0 (`/profile`), que fallaba al
+> cargar (faltaba `teachersBySubject`) y cuyos botones de módulo quedaban en "Guardando...".
 
 ### 2.9 🟡 🔎 Follow-up recomendado (no implementado)
 Cola de **reintentos** real para los registros con `syncPending:true` (p. ej. al reconectar
@@ -96,9 +104,9 @@ pero no se reenvían automáticamente.
 |---|----------|-----|--------|
 | 3.1 | Otras escrituras siguen siendo `writeFileSync` (`pending_teachers.json`, `teacher_roles.json`, configs admin). No están en el hotpath, pero conviene migrarlas al escritor atómico para consistencia | 🟡 | ✅ |
 | 3.2 | Configuración guardada en **JSON local** (`subject_config.json`, `level_config.json`, etc.) no se replica a BD → en despliegues con varias instancias/redeploys se pierde o diverge | 🟠 | 🔎 |
-| 3.3 | `ADMIN_PASSWORD` con default en texto plano (`(contraseña por defecto, ya eliminada)`) si falta la env var | 🟠 | 🔎 |
+| 3.3 | `ADMIN_PASSWORD` con default en texto plano (`'medienpass2526'`) si falta la env var. **Resuelto:** se eliminó la clave maestra; solo entran docentes con rol de administración | 🟠 | ✅ |
 | 3.4 | `getActivitiesForClass` resuelve `evidence_k${grade}` con fallbacks frágiles para grados fuera de K2–K7 | 🟡 | ✅ |
-| 3.5 | Sin pruebas automatizadas; `package.json` `test` es un placeholder | 🟡 | ✅ |
+| 3.5 | Pruebas automatizadas para el guardado local y su concurrencia | 🟡 | ✅ |
 
 ---
 
@@ -110,8 +118,8 @@ pero no se reenvían automáticamente.
 | 4.2 | Bug i18n: se concatena `'\n'` **literal** en el texto en lugar de salto/`<br>` | `public/js/lang.js` | 🟠 | 🔎 |
 | 4.3 | Formulario largo del Reto 0 (acordeón de 5 paneles + 9 slides) **sin barra de progreso** ni breadcrumb | `views/activity.ejs` | 🟠 | ✅ |
 | 4.4 | Validación débil de formularios: inputs de texto sin `required`/`minlength`, sin mensajes `role="alert"` | `views/activity.ejs` | 🟠 | 🔎 |
-| 4.5 | Accesibilidad: acordeones/slides/radios sin `aria-expanded`/`aria-controls`/`aria-required`; mensajes sin `role="alert"` | `views/activity.ejs` | 🟡 | 🔎 |
-| 4.6 | Responsividad mínima (prácticamente un solo breakpoint); móvil deficiente en formularios largos y grid de avatares | `public/css/style.css` | 🟡 | 🔎 |
+| 4.5 | Accesibilidad: Reto 0 y diapositivas ahora tienen controles/estados ARIA; revisar formularios, radios y mensajes | `views/activity.ejs` | 🟡 | ⚠️ |
+| 4.6 | Responsividad: breakpoints 320/768/1024 y ajustes móviles para actividades; falta revisión visual global | `public/css/style.css` | 🟡 | ⚠️ |
 | 4.7 | Estilos inline mezclados con clases CSS; `style.css` vs `custom.css` con duplicación y clases sin uso | `views/activity.ejs`, `public/css/*` | 🟡 | 🔎 |
 | 4.8 | Textos hardcodeados sin `data-i18n` (modal de bienvenida, placeholder de clase mezcla idiomas) | `views/index.ejs`, `views/login.ejs` | 🟡 | 🔎 |
 | 4.9 | Cascada de selectores (asignatura → reto) aparece sin transición ni guía | `views/index.ejs`, `public/js/dashboard.js` | ⚪ | 🔎 |
@@ -166,17 +174,17 @@ Login por (clase + usuario + código) → dashboard de retos por nivel → activ
 | 1 | Eliminar el cuelgue de guardado (timeout middleware + cliente, escritura atómica/serializada) | Guardado | 🔴 | M | ✅ **Hecho** |
 | 2 | Cola de reintentos para `syncPending` al cargar (`/api/load`) | Guardado | 🟠 | M | ✅ **Hecho** |
 | 3 | Filtrar `/api/incidents` por profesor; validar `teacher_id` en POST/PUT | Procesos | 🟠 | S | ✅ **Hecho** |
-| 4 | Unicidad de `student_code` (constraint en Supabase) | Contenidos | 🟠 | S | ⚠️ Requiere ALTER TABLE en Supabase — pendiente de schema |
+| 4 | Unicidad de `student_code` (constraint en Supabase) | Contenidos | 🟠 | S | ⚠️ Migración `002_student_code_unique.sql` creada; falta ejecutarla en Supabase y resolver duplicados si existen |
 | 5 | Resolver K7–K12 sin profesor (extender `class_teacher_config.json`) | Contenidos | 🟠 | M | ⚠️ Requiere decisión pedagógica sobre qué profesores asignar |
 | 6 | `level_config`: quitado el force-true; la configuración del admin ya se respeta | Procesos | 🟠 | S | ✅ **Hecho** |
 | 7 | Textos hardcodeados (modal bienvenida, placeholder clase) con `data-i18n`; nuevas claves DE/EN/ES en `i18n.js`; soporte `data-i18n-option` en `lang.js` | UI/i18n | 🟠 | S | ✅ **Hecho** |
-| 8 | `ARIA` completo en acordeones (accessibility) | UI/Accesib. | 🟡 | M | ⚠️ Parcial — requiere revisión completa de cada widget |
+| 8 | `ARIA` completo en acordeones (accessibility) | UI/Accesib. | 🟡 | M | ⚠️ Reto 0 y navegación de diapositivas implementados; revisar los demás widgets |
 | 9 | Barra de progreso + indicadores de paso en Reto 0 | UI | 🟡 | S | ✅ **Hecho** |
-| 10 | Responsividad (breakpoints 320/768/1024) y centralizar CSS | UI | 🟡 | M | ⚠️ En roadmap — requiere diseño dedicado |
+| 10 | Responsividad (breakpoints 320/768/1024) y centralizar CSS | UI | 🟡 | M | ⚠️ Breakpoints y ajustes móviles añadidos; falta centralizar estilos inline y revisar pantallas |
 | 11 | Persistir configuración admin en BD (no solo JSON local) | Arquitectura | 🟠 | M | ⚠️ Requiere nuevas tablas en Supabase |
 | 12 | Limpieza de `medienpassActivities` (vacío) y `mint_sach` sin traducir | Contenidos | 🟡 | S | ✅ **Hecho** |
 | 13 | Migrar todos los `writeFileSync` en handlers a escritura atómica | Software | 🟡 | M | ✅ **Hecho** |
-| 14 | Pruebas automatizadas del flujo de guardado | Software | 🟡 | M | ⚠️ En roadmap |
+| 14 | Pruebas automatizadas del flujo de guardado | Software | 🟡 | M | ✅ Guardado confirmado tras persistir, lectura y escrituras concurrentes cubiertos |
 
 ---
 

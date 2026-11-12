@@ -1,0 +1,30 @@
+<%# Identidad del Colegio Alemán (estilo de colegioaleman.edu.co) para todas las páginas.
+    Va al final de <head>, después de los estilos propios de la página, para que /css/colegio.css
+    (colores, tipografía Roboto, encabezados blancos con el logo) quede por encima.
+    En las páginas con Tailwind, los tonos índigo, violeta, morado y azul pasan al azul del colegio. %>
+<link rel="icon" type="image/png" href="/img/logo-colegio-192.png">
+<link rel="apple-touch-icon" href="/img/logo-colegio-192.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Roboto+Slab:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/colegio.css?v=2">
+<script>
+    (function () {
+        if (!window.tailwind) return;
+        var blue = { 50: '#eef4fb', 100: '#dbe7f6', 200: '#bcd2ee', 300: '#8fb3e0', 400: '#5b8bcd', 500: '#3a6db9', 600: '#21529b', 700: '#1b4482', 800: '#19396b', 900: '#1c244b', 950: '#11172f' };
+        var red = { 50: '#fdf4f3', 100: '#fbe6e3', 200: '#f6cbc5', 300: '#eea499', 400: '#e07463', 500: '#cf5140', 600: '#c03928', 700: '#a92106', 800: '#85281d', 900: '#6e261d', 950: '#3c0f0a' };
+        var gold = { 50: '#fefbe8', 100: '#fdf6c4', 200: '#fbec8c', 300: '#f7dd4b', 400: '#f0ce2d', 500: '#dcb310', 600: '#b98b0b', 700: '#93640d', 800: '#7a4f12', 900: '#674115', 950: '#3c2208' };
+        var current = window.tailwind.config || {};
+        var theme = current.theme || {};
+        var extend = theme.extend || {};
+        window.tailwind.config = Object.assign({}, current, {
+            theme: Object.assign({}, theme, {
+                extend: Object.assign({}, extend, {
+                    colors: Object.assign({}, extend.colors || {}, { indigo: blue, violet: blue, purple: blue, blue: blue, dsbred: red, dsbgold: gold }),
+                    fontFamily: Object.assign({}, extend.fontFamily || {}, { sans: ['Roboto', 'Segoe UI', 'system-ui', 'sans-serif'] })
+                })
+            })
+        });
+    })();
+</script>

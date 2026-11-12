@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<%= lang %>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal de Documentación y Manuales - Medienpass</title>
+    <%- i18nScripts() %>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,6 +19,7 @@
             box-shadow: 0 20px 30px rgba(0, 0, 0, 0.05);
         }
     </style>
+    <%- include('../partials/brand-head') %>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-slate-800 flex flex-col">
 
@@ -33,13 +35,14 @@
             </div>
         </div>
         <div class="flex items-center space-x-4">
+            <%- include('../partials/lang-switch') %>
             <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
                 <i class="fas fa-user-circle mr-1.5"></i> Rol: <%= userRole.toUpperCase() %>
             </span>
             <% if (userRole === 'admin') { %>
-                <a href="/admin/dashboard" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl shadow-sm transition">Volver al Panel</a>
+                <a href="/admin" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl shadow-sm transition">Volver al Panel</a>
             <% } else if (userRole === 'teacher') { %>
-                <a href="/teacher/worksheets" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl shadow-sm transition">Volver al Panel</a>
+                <a href="/teacher/training" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl shadow-sm transition">Volver al Panel</a>
             <% } else { %>
                 <a href="/profile" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl shadow-sm transition">Volver al Perfil</a>
             <% } %>
@@ -136,16 +139,16 @@
                 </div>
                 <div>
                     <h4 class="font-bold text-slate-900">¿Necesitas asistencia técnica directa en el aula?</h4>
-                    <p class="text-slate-500 text-xs mt-0.5">Si experimentas fallos de hardware o red, utiliza la Bitácora de Novedades.</p>
+                    <p class="text-slate-500 text-xs mt-0.5">Si experimentas fallos de hardware o red, revisa la guía de problemas frecuentes o avisa a coordinación o al soporte de sistemas del colegio.</p>
                 </div>
             </div>
             <% if (userRole === 'teacher') { %>
-                <a href="/teacher/bitacora" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-md shadow-amber-500/20 transition whitespace-nowrap">
-                    <i class="fas fa-plus-circle mr-1.5"></i> Reportar Novedad
+                <a href="/teacher/troubleshooting" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-md shadow-amber-500/20 transition whitespace-nowrap">
+                    <i class="fas fa-screwdriver-wrench mr-1.5"></i> Problemas frecuentes
                 </a>
             <% } else if (userRole === 'admin') { %>
-                <a href="/admin/dashboard" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-md shadow-amber-500/20 transition whitespace-nowrap">
-                    <i class="fas fa-tools mr-1.5"></i> Ver Novedades
+                <a href="/admin" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-md shadow-amber-500/20 transition whitespace-nowrap">
+                    <i class="fas fa-gauge-high mr-1.5"></i> Ir al panel
                 </a>
             <% } else { %>
                 <a href="/profile" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow transition whitespace-nowrap">

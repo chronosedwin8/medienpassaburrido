@@ -1,7 +1,14 @@
 <%- include('partials/header') %>
 
-<!-- El modal de bienvenida pedia elegir idioma por asignatura; ahora el
-     idioma es uno solo y se elige al entrar, asi que sobraba. -->
+<!-- Welcome Modal Overlay -->
+<div id="welcomeModal" class="welcome-modal-overlay" style="display: none;">
+    <div class="welcome-modal-card">
+        <div class="welcome-modal-icon">✨</div>
+        <h2 class="welcome-modal-title" data-i18n="welcomeTitle">BIENVENIDO A TU MEDIEN PASS</h2>
+        <p class="welcome-modal-text" data-i18n="welcomeModalText">"POR FAVOR SELECCIONA TU IDIOMA SEGÚN LA ASIGNATURA A DESARROLLAR"</p>
+        <button id="closeWelcomeModal" class="welcome-modal-btn" data-i18n="accept">Aceptar</button>
+    </div>
+</div>
 
     <!-- ═══ Early Script: define functions before buttons use them ═══ -->
         <script>
@@ -49,58 +56,42 @@
         }
     </script>
 
-    <!-- ═══ New Premium Dashboard Controls ═══ -->
-    <div class="dashboard-top-row">
-        <!-- Welcome Card -->
-        <div class="welcome-card-premium">
-            <div class="welcome-card-left">
-                <%
-                // `username` suele ser el numero de matricula ("3791"), y las
-                // columnas first_name/last_name NO existen en la tabla: el
-                // saludo mostraba un numero seguido de dos huecos vacios.
-                const _saludo = student.full_name || student.username;
-                %>
-                <h1 class="welcome-greeting">👋 <span data-i18n="hello"><%= t('hello') %></span>, <span class="username-highlight"><%= nombreCorto(_saludo, 2) %></span>!<% if (student.full_name) { %> <span class="full-name"><%= nombre(student.full_name) %></span><% } %></h1>
-                <p class="welcome-subtext" data-i18n="welcome"><%= t('welcome') %></p>
-            </div>
-            <%
-            // Tres problemas juntos: .toUpperCase() forzaba MAYUSCULAS, se leian
-            // columnas (first_name/last_name) que NO existen en la tabla, y
-            // "KLASSE" estaba en aleman fijo aunque la interfaz fuera en español.
-            const _etiqueta = student.full_name || student.username;
-            %>
-            <div class="student-info-tag">
-                <%= nombre(_etiqueta) %> — <%= t('loginClass') %> <%= student.class_name %>
-            </div>
+    <!-- ═══ Bienvenida: saludo con el nombre, clase y año escolar en curso ═══ -->
+    <%# El año lo fija el desarrollador en Administración › Año escolar; el estudiante no lo elige. %>
+    <% const heroNames = studentNames(student); %>
+    <section class="dsb-hero" aria-labelledby="heroTitle">
+        <div>
+            <p class="dsb-eyebrow"><span class="notranslate" translate="no">MedienPass</span> · <span data-i18n="hdr_brand_sub"><%= locals.t('hdr_brand_sub') %></span></p>
+            <h1 class="dsb-hero-title" id="heroTitle">👋 <span data-i18n="hello"><%= locals.t('hello') %></span>, <span class="notranslate" translate="no"><%= heroNames.first %></span>!</h1>
+            <p class="dsb-hero-sub" data-i18n="welcome"><%= locals.t('welcome') %></p>
         </div>
-
-        <!-- Year Selector -->
-        <div class="year-card-premium">
-            <div class="year-header">
-                <span class="year-icon">📅</span>
-                <span class="year-title" data-i18n="schoolYear"><%= t('schoolYear') %></span>
+        <dl class="dsb-facts">
+            <div>
+                <dt data-i18n="hdr_estudiante"><%= locals.t('hdr_estudiante') %></dt>
+                <dd><i class="fas fa-user" aria-hidden="true"></i><span class="notranslate" translate="no"><%= heroNames.full %></span></dd>
             </div>
-            <select id="yearSelect" class="premium-year-combo" onchange="window.location.href='/?year='+this.value">
-                <% schoolYears.forEach(year=> { %>
-                    <option value="<%= year %>" <%=currentYear===year ? 'selected' : '' %>>
-                        20<%= year.substring(0,2) %> - 20<%= year.substring(2) %>
-                    </option>
-                <% }) %>
-            </select>
-        </div>
-    </div>
+            <div>
+                <dt data-i18n="classLabel"><%= locals.t('classLabel') %></dt>
+                <dd><i class="fas fa-school" aria-hidden="true"></i><span class="notranslate" translate="no"><%= student.class_name %></span></dd>
+            </div>
+            <div>
+                <dt data-i18n="schoolYear"><%= locals.t('schoolYear') %></dt>
+                <dd id="currentSchoolYear" data-year="<%= currentYear %>"><i class="fas fa-calendar-days" aria-hidden="true"></i><span class="notranslate" translate="no"><%= (locals.schoolYear || {}).label || '' %></span></dd>
+            </div>
+        </dl>
+    </section>
 
     <!-- ═══ Subject Dropdown Selector ═══ -->
     <div class="large-subject-select-container">
         <label for="subjectCombo" class="subject-combo-label">
-            <i class="fas fa-graduation-cap"></i> SELECCIONA LA ASIGNATURA A TRABAJAR
+            <i class="fas fa-graduation-cap"></i> <span data-i18n="selectSubjectLabel">SELECCIONA LA ASIGNATURA A TRABAJAR</span>
         </label>
         <select id="subjectCombo" class="large-subject-combo">
-            <option value="" disabled selected>-- SELECCIONA LA ASIGNATURA A TRABAJAR --</option>
+            <option value="" disabled selected data-i18n-option="selectSubjectPlaceholder" data-i18n-option="est_idx_selecciona_la_asignatura_a_trabajar"><%= locals.t('est_idx_selecciona_la_asignatura_a_trabajar') %></option>
             <% if (typeof subjects !== 'undefined' && subjects) { %>
-                <% subjects.forEach(sub => { %>
+                <% subjects.filter(sub => sub.active !== false).forEach(sub => { %>
                     <% const isEnabled = (typeof enabledSubjects !== 'undefined' && enabledSubjects[sub.id] === false) ? false : true; %>
-                    <option value="<%= sub.id %>" <%= !isEnabled ? 'disabled' : '' %>>
+                    <option value="<%= sub.id %>" <%= !isEnabled ? 'disabled' : '' %> data-names='<%- JSON.stringify(sub.name).replace(/'/g, "&#39;") %>' data-icon="<%= sub.icon %>">
                         <%= sub.icon %> <%= sub.name.es %> <%= !isEnabled ? '(No habilitada)' : '' %>
                     </option>
                 <% }); %>
@@ -111,23 +102,23 @@
     <!-- Placeholder when no subject is selected -->
         <div id="noSubjectSelectedPlaceholder" class="no-subject-placeholder">
             <div class="placeholder-icon">📚</div>
-            <p class="placeholder-main">Por favor selecciona la asignatura en la que vas a trabajar.</p>
-            <p class="placeholder-sub">Bitte wähle das Fach aus, an dem du arbeiten möchtest. / Please select the subject you want to work on.</p>
+            <p class="placeholder-main" data-i18n="noSubjectSelectedMain">Por favor selecciona la asignatura en la que vas a trabajar.</p>
+            <p class="placeholder-sub" data-i18n="noSubjectSelectedSub">Bitte wähle das Fach aus, an dem du arbeiten möchtest.</p>
         </div>
         <!-- Combo de retos -->
         <div class="challenge-combo-container" id="retoComboContainer" style="display: none; margin-top: 30px;">
             <label for="retoCombo" class="subject-combo-label">
-                <i class="fas fa-bullseye"></i> SELECCIONA EL RETO A TRABAJAR
+                <i class="fas fa-bullseye"></i> <span data-i18n="selectChallengeLabel">SELECCIONA EL RETO A TRABAJAR</span>
             </label>
             <select id="retoCombo" class="large-subject-combo">
-                <option value="" disabled selected>-- SELECCIONA EL RETO A TRABAJAR --</option>
-                <option value="0">Reto 0: Este soy yo / Das bin ich</option>
-                <option value="1">Reto 1</option>
-                <option value="2">Reto 2</option>
-                <option value="3">Reto 3</option>
-                <option value="4">Reto 4</option>
-                <option value="5">Reto 5</option>
-                <option value="6">Reto 6</option>
+                <option value="" disabled selected data-i18n-option="selectChallengePlaceholder" data-i18n-option="est_idx_selecciona_el_reto_a_trabajar"><%= locals.t('est_idx_selecciona_el_reto_a_trabajar') %></option>
+                <option value="0" data-i18n-option="reto0ComboTitle" data-i18n-option="est_idx_reto_0_este_soy_yo"><%= locals.t('est_idx_reto_0_este_soy_yo') %></option>
+                <option value="1" data-i18n-option="est_idx_reto_1"><%= locals.t('est_idx_reto_1') %></option>
+                <option value="2" data-i18n-option="est_idx_reto_2"><%= locals.t('est_idx_reto_2') %></option>
+                <option value="3" data-i18n-option="est_idx_reto_3"><%= locals.t('est_idx_reto_3') %></option>
+                <option value="4" data-i18n-option="est_idx_reto_4"><%= locals.t('est_idx_reto_4') %></option>
+                <option value="5" data-i18n-option="est_idx_reto_5"><%= locals.t('est_idx_reto_5') %></option>
+                <option value="6" data-i18n-option="est_idx_reto_6"><%= locals.t('est_idx_reto_6') %></option>
             </select>
         </div>
 
@@ -141,8 +132,8 @@
                         <div class="sub-btn-content">
                             <span class="sub-btn-icon">👤</span>
                             <div class="sub-btn-info">
-                                <span class="sub-btn-title" data-i18n="reto0Title"><%= t('reto0Title') %></span>
-                                <span class="sub-btn-progress-text" id="status-reto-0">Pendiente</span>
+                                <span class="sub-btn-title" data-i18n="reto0Title">Este soy yo / Das bin ich</span>
+                                <span class="sub-btn-progress-text" id="status-reto-0"><span data-i18n="est_idx_pendiente"><%= locals.t('est_idx_pendiente') %></span></span>
                             </div>
                         </div>
                         <div class="sub-btn-progress-container">
@@ -171,8 +162,8 @@
                                 <div class="sub-btn-content">
                                     <span class="sub-btn-icon"><%= activity.icon || '📝' %></span>
                                     <div class="sub-btn-info">
-                                        <span class="sub-btn-title"><%= activity.title.es || activity.title.de || activity.title %></span>
-                                        <span class="sub-btn-progress-text" id="text-<%= activity.id %>">Sin iniciar</span>
+                                        <span class="sub-btn-title" data-lang-content='<%- JSON.stringify(typeof activity.title === "object" ? activity.title : { es: activity.title, de: activity.title, en: activity.title }).replace(/'/g, "&#39;") %>'><%= (typeof activity.title === "object" ? (activity.title.es || activity.title.de || activity.title.en) : activity.title) %></span>
+                                        <span class="sub-btn-progress-text" id="text-<%= activity.id %>"><span data-i18n="est_idx_sin_iniciar"><%= locals.t('est_idx_sin_iniciar') %></span></span>
                                     </div>
                                 </div>
                                 <div class="sub-btn-progress-container">
@@ -193,15 +184,15 @@
             const retoCombo = document.getElementById('retoCombo');
             const retoComboContainer = document.getElementById('retoComboContainer');
             const placeholder = document.getElementById('noSubjectSelectedPlaceholder');
-            // Proyeccion ligera (ver slimActivities en server.js): antes aqui se
-            // incrustaban 9,8 MB con las preguntas de todos los grados.
-            const activitiesData = <%- JSON.stringify(slimActivities) %>;
+            const activitiesData = <%- JSON.stringify(allActivities) %>;
             const techActivitiesData = <%- JSON.stringify(tecnologiaActivities) %>;
             const levelConfig = <%- JSON.stringify(levelConfig) %>;
             const currentYear = '<%= currentYear %>';
 
             // Store progress result globally
             window.latestProgressResult = <%- JSON.stringify(progress) %>;
+            // Reto 0 ganado por materia (lo calcula el servidor con la evaluación de cada materia)
+            const reto0Status = <%- JSON.stringify(typeof reto0Status !== 'undefined' ? reto0Status : {}) %>;
 
             function getLevelActivities(lvl, selectedSubject) {
                 let lvlActs = activitiesData[lvl] || [];
@@ -234,9 +225,7 @@
 
                 lvlActs.forEach(act => {
                     const prog = progress[act.id];
-                    // Sin los "_explain": acompanan a una pregunta, no son una mas.
-                    const evid = (act.evidence || []).filter(e => e && !String(e.id || '').endsWith('_explain'));
-                    const fields = evid.length + (act.competencies ? act.competencies.length : 0);
+                    const fields = (act.evidence ? act.evidence.length : 0) + (act.competencies ? act.competencies.length : 0);
                     totalFields += fields;
                     if (prog) {
                         totalCompleted += prog.fieldsCompleted;
@@ -253,23 +242,25 @@
 
                 const lang = window.langUtils ? window.langUtils.getLang() : 'es';
 
-                // Update Reto 0 Progress
+                // Reto 0: uno por materia (enlace y estado de la materia elegida)
                 const profileCard = document.getElementById('card-profile');
                 const status0 = document.getElementById('status-reto-0');
                 const fill0 = document.getElementById('btn-progress-fill-0');
-                const pct0 = getLevelCompletionPct(0, progress, selectedSubject);
+                const reto0Won = !!reto0Status[selectedSubject];
+                const pct0 = reto0Won ? 100 : getLevelCompletionPct(0, progress, selectedSubject);
                 if (fill0) fill0.style.width = pct0 + '%';
-                
+
                 if (profileCard) {
+                    profileCard.href = '/profile?subject=' + encodeURIComponent(selectedSubject);
                     profileCard.classList.remove('sub-btn-completed', 'sub-btn-not-started');
                 }
-                
+
                 if (status0) {
-                    if (pct0 >= 100 || window.isProfileComplete) {
-                        status0.textContent = lang === 'es' ? 'Completado' : lang === 'de' ? 'Fertig' : 'Complete';
+                    if (reto0Won) {
+                        status0.textContent = window.t('est_idx_reto0_ganado');
                         if (profileCard) profileCard.classList.add('sub-btn-completed');
                     } else if (pct0 > 0) {
-                        status0.textContent = pct0 + '%';
+                        status0.textContent = window.t('est_idx_reto0_en_curso');
                     } else {
                         status0.textContent = lang === 'es' ? 'Pendiente' : lang === 'de' ? 'Ausstehend' : 'Pending';
                         if (profileCard) profileCard.classList.add('sub-btn-not-started');
@@ -299,7 +290,7 @@
                             if (subFill) subFill.style.width = actPct + '%';
                             if (subText) {
                                 if (actPct >= 100) {
-                                    subText.textContent = lang === 'es' ? 'Completado' : 'Fertig';
+                                    subText.textContent = lang === 'es' ? 'Completado' : lang === 'de' ? 'Fertig' : 'Completed';
                                     if (subBtn) subBtn.classList.add('sub-btn-completed');
                                 } else {
                                     subText.textContent = actPct + '%';
@@ -307,7 +298,7 @@
                             }
                         } else {
                             if (subFill) subFill.style.width = '0%';
-                            if (subText) subText.textContent = lang === 'es' ? 'Sin iniciar' : 'Nicht gestartet';
+                            if (subText) subText.textContent = lang === 'es' ? 'Sin iniciar' : lang === 'de' ? 'Nicht gestartet' : 'Not started';
                             if (subBtn) subBtn.classList.add('sub-btn-not-started');
                         }
                     });
@@ -345,6 +336,32 @@
                 }
             }
 
+            function updateRetoComboTexts() {
+                if (!retoCombo) return;
+                const lang = window.langUtils ? window.langUtils.getLang() : 'es';
+                const selectedSubject = subjectCombo ? subjectCombo.value : '';
+                const challengeWord = lang === 'de' ? 'Herausforderung' : lang === 'en' ? 'Challenge' : 'Reto';
+                const notAvailableWord = lang === 'de' ? '(Nicht verfügbar)' : lang === 'en' ? '(Not available)' : '(No disponible)';
+
+                const opt0 = retoCombo.querySelector('option[value="0"]');
+                if (opt0) {
+                    opt0.text = lang === 'de' ? 'Herausforderung 0: Das bin ich' : lang === 'en' ? 'Challenge 0: This is me' : 'Reto 0: Este soy yo';
+                }
+
+                for (let lvl = 1; lvl <= 6; lvl++) {
+                    const opt = retoCombo.querySelector(`option[value="${lvl}"]`);
+                    if (opt) {
+                        let lvlActs = selectedSubject ? getLevelActivities(lvl, selectedSubject) : [];
+                        opt.disabled = lvlActs.length === 0;
+                        if (lvlActs.length === 0) {
+                            opt.text = `${challengeWord} ${lvl} ${notAvailableWord}`;
+                        } else {
+                            opt.text = `${challengeWord} ${lvl}`;
+                        }
+                    }
+                }
+            }
+
             function applySubjectFilter(selectedSubject) {
                 if (!selectedSubject) {
                     if (retoComboContainer) retoComboContainer.style.display = 'none';
@@ -355,8 +372,6 @@
 
                 if (retoComboContainer) retoComboContainer.style.display = 'block';
                 if (placeholder) placeholder.style.display = 'none';
-
-                const lang = window.langUtils ? window.langUtils.getLang() : 'es';
 
                 // Configure retos 1-6 according to selection
                 for (let lvl = 1; lvl <= 6; lvl++) {
@@ -376,24 +391,10 @@
                     }
                 }
 
-                // Update retoCombo options availability
+                // Update retoCombo options availability and text
+                updateRetoComboTexts();
+
                 if (retoCombo) {
-                    const opt0 = retoCombo.querySelector('option[value="0"]');
-                    if (opt0) opt0.disabled = false;
-
-                    for (let lvl = 1; lvl <= 6; lvl++) {
-                        const opt = retoCombo.querySelector(`option[value="${lvl}"]`);
-                        if (opt) {
-                            let lvlActs = getLevelActivities(lvl, selectedSubject);
-                            opt.disabled = lvlActs.length === 0;
-                            if (lvlActs.length === 0) {
-                                opt.text = `Reto ${lvl} (No disponible)`;
-                            } else {
-                                opt.text = `Reto ${lvl}`;
-                            }
-                        }
-                    }
-
                     // Reset reto selection if it's no longer valid for this subject
                     const currentRetoVal = retoCombo.value;
                     if (currentRetoVal && currentRetoVal !== '0') {
@@ -404,16 +405,10 @@
                     }
                 }
 
-                // Apply dynamic language change based on selected subject (like original logic)
-                let targetLang = 'es';
-                if (selectedSubject === 'aleman') {
-                    targetLang = 'de';
-                } else if (selectedSubject === 'ingles') {
-                    targetLang = 'en';
-                }
-
-                if (window.langUtils) {
-                    window.langUtils.switchLang(targetLang);
+                // Alemán e Inglés se muestran en su idioma (de / en) sin cambiar la preferencia del
+                // estudiante; con otra materia vuelve a su idioma. Los botones DE | EN | ES lo cambian.
+                if (window.langUtils && window.langUtils.showSubjectLang) {
+                    window.langUtils.showSubjectLang(selectedSubject);
                 }
 
                 // Render progress based on loaded values
@@ -469,8 +464,23 @@
                 if (window.latestProgressResult) {
                     updateProgressLabels(window.latestProgressResult);
                 }
+                if (typeof updateRetoComboTexts === 'function') {
+                    updateRetoComboTexts();
+                }
             });
 
+            // Welcome Modal Logic
+            const welcomeModal = document.getElementById('welcomeModal');
+            const closeWelcomeModal = document.getElementById('closeWelcomeModal');
+            if (welcomeModal && !sessionStorage.getItem('welcomeModalShown')) {
+                welcomeModal.style.display = 'flex';
+            }
+            if (closeWelcomeModal) {
+                closeWelcomeModal.addEventListener('click', () => {
+                    welcomeModal.style.display = 'none';
+                    sessionStorage.setItem('welcomeModalShown', 'true');
+                });
+            }
         });
     </script>
 

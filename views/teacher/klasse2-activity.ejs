@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<%= lang %>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎨 Mi Primer Pasaporte Digital - Klasse 2</title>
+    <%- i18nScripts() %>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -278,15 +279,15 @@
         .feedback.show { display: block; }
 
         .feedback.correct {
-            background: var(--mp-ok-soft);
-            border: 3px solid var(--mp-ok);
-            color: var(--mp-ok);
+            background: #d1fae5;
+            border: 3px solid #10b981;
+            color: #065f46;
         }
 
         .feedback.wrong {
-            background: var(--mp-danger-soft);
-            border: 3px solid var(--mp-danger);
-            color: var(--mp-danger);
+            background: #fee2e2;
+            border: 3px solid #ef4444;
+            color: #991b1b;
         }
 
         .feedback h3 { margin: 0 0 10px; }
@@ -392,23 +393,25 @@
             .certificate { padding: 30px; }
         }
     </style>
+    <%- include('../partials/brand-head') %>
 </head>
 <body>
     <div class="lang-switch">
-        <button class="lang-btn active" onclick="switchLang('es')">🇪🇸 ES</button>
-        <button class="lang-btn" onclick="switchLang('de')">🇩🇪 DE</button>
-        <button class="lang-btn" onclick="switchLang('en')">🇬🇺 EN</button>
+        <button class="lang-btn <%= lang === 'es' ? 'active' : '' %>" data-lang="es">ES</button>
+        <button class="lang-btn <%= lang === 'de' ? 'active' : '' %>" data-lang="de">DE</button>
+        <button class="lang-btn <%= lang === 'en' ? 'active' : '' %>" data-lang="en">EN</button>
     </div>
 
     <div class="container">
         <div class="header">
-            <h1>🎨 Mi Primer Pasaporte Digital</h1>
-            <p>🌟 Klasse 2 - ¡Aprendamos jugando! 🌟</p>
+            <img src="/img/logo-colegio.png" width="511" height="360" alt="Colegio Alemán · Deutsche Schule Barranquilla" style="display:block; width:170px; max-width:60%; height:auto; margin:0 auto 12px; background:#fff; border-radius:16px; padding:10px 14px;">
+            <h1 data-lang="es:🎨 Mi Primer Pasaporte Digital|de:🎨 Mein erster digitaler Pass|en:🎨 My First Digital Passport">🎨 Mi Primer Pasaporte Digital</h1>
+            <p data-lang="es:🌟 Klasse 2 - ¡Aprendamos jugando! 🌟|de:🌟 Klasse 2 - Spielerisch lernen! 🌟|en:🌟 Klasse 2 - Learning by playing! 🌟">🌟 Klasse 2 - ¡Aprendamos jugando! 🌟</p>
         </div>
 
         <div class="progress-container">
             <div class="progress-label">
-                <span>🎯 Mi Progreso</span>
+                <span id="progressTitle" data-lang="es:🎯 Mi Progreso|de:🎯 Mein Fortschritt|en:🎯 My Progress">🎯 Mi Progreso</span>
                 <span id="progressText">0%</span>
             </div>
             <div class="progress-bar">
@@ -457,7 +460,7 @@
                 </p>
             </div>
 
-            <button class="btn btn-next" id="next1" onclick="nextActivity(2)">➡️ Siguiente</button>
+            <button class="btn btn-next" id="next1" onclick="nextActivity(2)" data-lang="es:➡️ Siguiente|de:➡️ Weiter|en:➡️ Next">➡️ Siguiente</button>
         </div>
 
         <!-- Activity 2: Kindness Online -->
@@ -491,7 +494,7 @@
                 </p>
             </div>
 
-            <button class="btn btn-next" id="next2" onclick="nextActivity(3)">➡️ Siguiente</button>
+            <button class="btn btn-next" id="next2" onclick="nextActivity(3)" data-lang="es:➡️ Siguiente|de:➡️ Weiter|en:➡️ Next">➡️ Siguiente</button>
         </div>
 
         <!-- Activity 3: Protecting Info -->
@@ -532,7 +535,7 @@
                 </p>
             </div>
 
-            <button class="btn btn-next" id="next3" onclick="nextActivity(4)">➡️ Siguiente</button>
+            <button class="btn btn-next" id="next3" onclick="nextActivity(4)" data-lang="es:➡️ Siguiente|de:➡️ Weiter|en:➡️ Next">➡️ Siguiente</button>
         </div>
 
         <!-- Activity 4: Screen Time Balance -->
@@ -569,7 +572,7 @@
                 </p>
             </div>
 
-            <button class="btn btn-next" id="next4" onclick="nextActivity(5)">➡️ Siguiente</button>
+            <button class="btn btn-next" id="next4" onclick="nextActivity(5)" data-lang="es:➡️ Siguiente|de:➡️ Weiter|en:➡️ Next">➡️ Siguiente</button>
         </div>
 
         <!-- Activity 5: Ask Adults -->
@@ -603,7 +606,7 @@
                 </p>
             </div>
 
-            <button class="btn btn-success btn-next" id="next5" onclick="showCertificate()">🎓 ¡Obtener Certificado!</button>
+            <button class="btn btn-success btn-next" id="next5" onclick="showCertificate()" data-lang="es:🎓 ¡Obtener Certificado!|de:🎓 Urkunde erhalten!|en:🎓 Get Certificate!">🎓 ¡Obtener Certificado!</button>
         </div>
 
         <!-- Certificate -->
@@ -629,7 +632,6 @@
     <script>
         let currentActivity = 1;
         let completedActivities = new Set();
-        let currentLang = 'es';
 
         const translations = {
             'es': {
@@ -655,23 +657,9 @@
             }
         };
 
-        function switchLang(lang) {
-            currentLang = lang;
-            document.querySelectorAll('.lang-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent.includes(lang.toUpperCase()));
-            });
-            
-            document.querySelectorAll('[data-lang]').forEach(el => {
-                const langData = el.getAttribute('data-lang');
-                const parts = langData.split('|');
-                const text = parts.find(p => p.startsWith(lang + ':'));
-                if (text) {
-                    el.textContent = text.substring(lang.length + 1);
-                }
-            });
-
-            updateProgress();
-        }
+        // El idioma lo cambia el selector global (/js/lang.js), que también traduce los
+        // textos data-lang="es:…|de:…|en:…"; aquí solo se redibuja el progreso.
+        document.addEventListener('langchange', () => updateProgress());
 
         function checkAnswer(element, isCorrect) {
             if (element.classList.contains('correct') || element.classList.contains('wrong')) return;
@@ -857,5 +845,6 @@
             document.getElementById('activity1').classList.add('active');
         }
     </script>
+<%- include('../partials/help-button') %>
 </body>
 </html>

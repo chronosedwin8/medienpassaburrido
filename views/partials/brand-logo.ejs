@@ -1,0 +1,11 @@
+<%# Logo del Colegio Alemán + marca MEDIENPASS para los encabezados de los portales.
+    Parámetros opcionales: brandHref (destino del logo) y brandSub (clave i18n del subtítulo). %>
+<% const brandSubKey = locals.brandSub || 'hdr_brand_sub'; %>
+<a class="dsb-brand" href="<%= locals.brandHref || '/' %>">
+    <img class="dsb-logo" src="/img/logo-colegio.png" width="511" height="360" alt="Colegio Alemán · Deutsche Schule Barranquilla">
+    <span class="dsb-brand-divider" aria-hidden="true"></span>
+    <span class="dsb-brand-text">
+        <strong class="notranslate" translate="no">MEDIENPASS</strong>
+        <small data-i18n="<%= brandSubKey %>"><%= locals.t(brandSubKey) %></small>
+    </span>
+</a>

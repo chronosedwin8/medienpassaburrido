@@ -3,24 +3,35 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
 const supabase = require('./supabaseClient');
-const { allActivities, tecnologiaActivities, sharedProfile, klassenConfig, schoolYears, subjects, levels } = require('./data');
-const { kmkTrainingQuestions } = require('./kmk_training_questions');
+const { allActivities, tecnologiaActivities, sharedProfile, reto0BySubject, getReto0ForSubject, getVisualReto0, registerSubjectActivities, legacyReto0Questions, klassenConfig, subjects, levels } = require('./data');
+const { picturesOf, visualCompetences } = require('./data_visual');
+const { getReto0Study } = require('./data_reto0_quiz');
+const teacherTest = require('./data_teacher_test');
+const { getKmkQuestions } = require('./kmk_training_questions_i18n');
 const { part2Competencies } = require('./training_competencies');
-const defaultAgentTools = require('./default_agent_tools');
-const { generateInstrumentAI, getAIStatus } = require('./services/ai_service');
+const { agentToolsFor } = require('./default_agent_tools');
 const instrumentStore = require('./services/instrument_store');
-const questions = require('./services/questions');
-const stars = require('./services/stars');
-const names = require('./services/names');
-const cache = require('./services/cache');
-const compression = require('compression');
-const jsonstore = require('./services/jsonstore');
-const appConfig = require('./services/config');
-const session = require('./services/session');
-const auth = require('./services/auth');
-const i18n = require('./services/i18n');
+const { KMK_AREAS } = require('./data_kmk_competences');
+const i18nStore = require('./services/i18n_store');
+const { searchText, splitStudentName } = require('./services/admin_search');
+const retoResults = require('./services/reto_result');
+const subjectStore = require('./services/subject_store'); // aplica data/subjects_config.json a `subjects`
+const classLevels = require('./services/class_levels');
+const evidenceLinks = require('./services/evidence_links');
+const indicators = require('./services/indicators');
+const campaign = require('./services/campaign');
+const mailer = require('./services/mailer');
+const access = require('./services/access');
+const teacherCourses = require('./services/teacher_courses');
+const noProgress = require('./services/no_progress');
+const teacherSubjects = require('./services/teacher_subjects');
+const userGuide = require('./services/user_guide');
+const techManual = require('./services/tech_manual');
+const yearStore = require('./services/school_years'); // año escolar en curso y lista de años (data/school_years.json)
+const displayName = require('./services/display_name');
 const fsp = fs.promises;
 
 // ─── Helper: timeout guard for async ops (evita que Supabase cuelgue la petición) ───
@@ -31,6 +42,25 @@ function withTimeout(promise, ms, label = 'operación') {
         timer = setTimeout(() => reject(new Error(`Timeout (${ms}ms) en ${label}`)), ms);
     });
     return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+// ─── Helper: lee TODAS las filas de una consulta a Supabase ───
+// Supabase devuelve máx. 1000 filas por petición y corta el resto SIN error
+// (con 1194 estudiantes el panel mostraba solo 1000). Pagina con .range() hasta el final.
+// `buildQuery` debe crear una consulta NUEVA en cada llamada, p. ej.
+//   selectAll(() => supabase.from('students').select('id, class_name'))
+// Devuelve { data, error } igual que una consulta normal.
+const SUPABASE_PAGE_SIZE = 1000;
+async function selectAll(buildQuery) {
+    const rows = [];
+    for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+        const { data, error } = await buildQuery()
+            .order('id', { ascending: true }) // orden estable entre páginas
+            .range(from, from + SUPABASE_PAGE_SIZE - 1);
+        if (error) return { data: null, error };
+        rows.push(...(data || []));
+        if (!data || data.length < SUPABASE_PAGE_SIZE) return { data: rows, error: null };
+    }
 }
 
 // ─── Helper: escrituras JSON atómicas y serializadas por archivo ───
@@ -52,19 +82,99 @@ async function _writeJsonAtomic(filePath, dataObj) {
     await fsp.rename(tmp, filePath);
 }
 
-const pendingTeachersFile = path.join(__dirname, 'data', 'pending_teachers.json');
+const pendingTeachersFile = process.env.PENDING_TEACHERS_FILE
+    ? path.resolve(process.env.PENDING_TEACHERS_FILE)
+    : path.join(__dirname, 'data', 'pending_teachers.json');
 if (!fs.existsSync(pendingTeachersFile)) {
     if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'));
     fs.writeFileSync(pendingTeachersFile, JSON.stringify([]));
 }
 
-const teacherRolesFile = path.join(__dirname, 'data', 'teacher_roles.json');
+// Roles por correo (desarrollador, directivo, coordinador). Se leen en cada petición (services/access.js).
+const teacherRolesFile = process.env.TEACHER_ROLES_FILE
+    ? path.resolve(process.env.TEACHER_ROLES_FILE)
+    : path.join(__dirname, 'data', 'teacher_roles.json');
 if (!fs.existsSync(teacherRolesFile)) {
-    if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'));
+    fs.mkdirSync(path.dirname(teacherRolesFile), { recursive: true });
     fs.writeFileSync(teacherRolesFile, JSON.stringify({}));
 }
+const roleOfEmail = email => access.roleOf(teacherRolesFile, email);
 
-const localCacheFile = path.join(__dirname, 'data', 'local_activity_responses.json');
+// Segmentos de cada docente por correo (Administración › Docentes): { correo: ['primaria'] }
+const teacherSegmentsFile = process.env.TEACHER_SEGMENTS_FILE
+    ? path.resolve(process.env.TEACHER_SEGMENTS_FILE)
+    : path.join(__dirname, 'data', 'teacher_segments.json');
+
+function readTeacherSegments() {
+    try {
+        return JSON.parse(fs.readFileSync(teacherSegmentsFile, 'utf8'));
+    } catch (e) {
+        return {};
+    }
+}
+
+// Docentes exentos de la capacitación KMK (Inicio › Docentes pendientes de certificación):
+// { correo: { reason, by, date } }. No cuentan en el indicador de profesores capacitados.
+const teacherExemptionsFile = process.env.TEACHER_EXEMPTIONS_FILE
+    ? path.resolve(process.env.TEACHER_EXEMPTIONS_FILE)
+    : path.join(__dirname, 'data', 'teacher_exemptions.json');
+
+function readTeacherExemptions() {
+    try {
+        return JSON.parse(fs.readFileSync(teacherExemptionsFile, 'utf8')) || {};
+    } catch (e) {
+        return {};
+    }
+}
+const isExemptTeacher = (exemptions, teacher) => !!exemptions[String((teacher && teacher.email) || '').trim().toLowerCase()];
+
+// Cambios de materia de los docentes hechos desde el panel (para poder revisarlos o deshacerlos)
+const teacherSubjectLogFile = process.env.TEACHER_SUBJECT_LOG_FILE
+    ? path.resolve(process.env.TEACHER_SUBJECT_LOG_FILE)
+    : path.join(__dirname, 'data', 'teacher_subject_changes.json');
+
+// Docentes eliminados desde el panel: copia completa de cada uno (con sus pruebas KMK, rol,
+// segmentos y excepción) para poder volver a crearlo si se borró por error.
+const teacherDeletionsFile = process.env.TEACHER_DELETIONS_FILE
+    ? path.resolve(process.env.TEACHER_DELETIONS_FILE)
+    : path.join(__dirname, 'data', 'teacher_deletions.json');
+
+// Materias habilitadas por clase (Administración › Configuración): { K5A: { aleman: true } }
+const SUBJECT_CONFIG_FILE = process.env.CLASS_SUBJECTS_FILE
+    ? path.resolve(process.env.CLASS_SUBJECTS_FILE)
+    : path.join(__dirname, 'subject_config.json');
+
+// Mapeo de profesores por clase (Administración › Mapeo de profesores)
+const classTeacherConfigFile = process.env.CLASS_TEACHER_CONFIG_FILE
+    ? path.resolve(process.env.CLASS_TEACHER_CONFIG_FILE)
+    : path.join(__dirname, 'class_teacher_config.json');
+
+function readClassTeacherConfig() {
+    try {
+        if (fs.existsSync(classTeacherConfigFile)) return JSON.parse(fs.readFileSync(classTeacherConfigFile, 'utf8'));
+    } catch (e) {
+        console.error('Error leyendo class_teacher_config.json:', e.message);
+    }
+    return {};
+}
+
+// El mapeo usa claves como "KLASSE 6 (K6A)"; las clases de los estudiantes se llaman "K6A" o "6A".
+// Las tres dan "6A".
+function classKey(name) {
+    const text = String(name || '').toUpperCase();
+    const inParens = /\(([^)]+)\)/.exec(text);
+    return (inParens ? inParens[1] : text).replace(/^KLASSE/, '').replace(/\s+/g, '').replace(/^K(?=\d)/, '');
+}
+
+function teachersForClass(config, className) {
+    const key = classKey(className);
+    const match = Object.keys(config).find(k => classKey(k) === key);
+    return match ? config[match] : {};
+}
+
+const localCacheFile = process.env.LOCAL_ACTIVITY_CACHE_FILE
+    ? path.resolve(process.env.LOCAL_ACTIVITY_CACHE_FILE)
+    : path.join(__dirname, 'data', 'local_activity_responses.json');
 if (!fs.existsSync(localCacheFile)) {
     if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'));
     fs.writeFileSync(localCacheFile, JSON.stringify({}), 'utf8');
@@ -73,7 +183,7 @@ if (!fs.existsSync(localCacheFile)) {
 function readLocalCache() {
     try {
         if (fs.existsSync(localCacheFile)) {
-            return jsonstore.read(localCacheFile, {});
+            return JSON.parse(fs.readFileSync(localCacheFile, 'utf8'));
         }
     } catch (e) {
         // JSON corrupto: NO devolver {} para que luego se sobrescriba a ciegas.
@@ -115,7 +225,7 @@ if (!fs.existsSync(challengeToolsFile)) {
 function readChallengeToolsConfig() {
     try {
         if (fs.existsSync(challengeToolsFile)) {
-            return jsonstore.read(challengeToolsFile, {});
+            return JSON.parse(fs.readFileSync(challengeToolsFile, 'utf8'));
         }
     } catch (e) {
         console.error('Error reading challenge tools config:', e);
@@ -137,19 +247,24 @@ function getStudentLevel(className) {
 
 function getActivitiesForClass(activities, className) {
     if (!activities) return [];
-    const grade = parseInt(getStudentLevel(className), 10);
+    const grade = classLevels.questionGrade(className);
     return activities.map(act => {
         const cloned = { ...act };
-        const evidenceKey = `evidence_k${grade}`;
-        if (cloned[evidenceKey]) {
-            cloned.evidence = cloned[evidenceKey];
-        } else if (grade >= 12 && cloned.evidence_k12) {
-            cloned.evidence = cloned.evidence_k12;
-        } else if (grade <= 2 && cloned.evidence_k2) {
-            cloned.evidence = cloned.evidence_k2;
-        }
+        const evidence = retoEvidenceFor(cloned, grade);
+        if (evidence) cloned.evidence = evidence;
         return cloned;
     });
+}
+
+// Preguntas de un reto 1-6 para un grado (K2 a K12): la versión que editaron los docentes en
+// "Configura tus Retos del 0 al 6" o, si no hay, la del sistema (el Reto 0 usa reto0ForGrade). La usan la página del reto, la
+// calificación, el cuadernillo impreso y el progreso del docente. null si la actividad no tiene
+// preguntas por grado.
+function retoEvidenceFor(activity, grade) {
+    const g = Math.min(12, Math.max(2, parseInt(grade, 10) || 2));
+    const n = retoResults.retoNumber(activity.id);
+    const custom = n >= 1 && activity.subject ? instrumentStore.getCustomQuestions(g, activity.subject, n) : null;
+    return custom || activity[`evidence_k${g}`] || null;
 }
 
 function getActivityForClass(activity, className) {
@@ -157,204 +272,125 @@ function getActivityForClass(activity, className) {
     return getActivitiesForClass([activity], className)[0];
 }
 
-/**
- * Proyeccion ligera de las actividades para el navegador.
- *
- * El panel del estudiante incrustaba JSON.stringify(allActivities) completo:
- * 9,8 MB en CADA carga, con las preguntas de todos los grados y asignaturas.
- * El script del cliente solo necesita id, asignatura, titulo, icono y CUANTOS
- * campos tiene cada actividad, asi que se envia eso.
- */
-function slimActivities(resolvedByLevel) {
-    const slim = {};
-    for (const [lvl, acts] of Object.entries(resolvedByLevel || {})) {
-        slim[lvl] = (acts || []).map(a => ({
-            id: a.id,
-            subject: a.subject,
-            level: a.level,
-            title: a.title,
-            icon: a.icon,
-            // Solo el tamano: el contenido de las preguntas no se usa en el panel.
-            evidence: new Array((a.evidence || []).length).fill(0),
-            competencies: new Array((a.competencies || []).length).fill(0)
-        }));
+// Orden de las listas de clase: "NOMBRES APELLIDO1 APELLIDO2" se ordena por los apellidos
+function sortNameKey(name) {
+    if (!name) return '';
+    const parts = name.trim().toUpperCase().split(/\s+/);
+    if (parts.length > 2) {
+        return parts.slice(-2).join(' ') + ' ' + parts.slice(0, -2).join(' ');
     }
-    return slim;
+    return name.toUpperCase();
 }
 
-/**
- * Cuenta cuantas respuestas con contenido tiene un estudiante en una actividad.
- *
- * Estaba duplicada literalmente en la ruta del panel y en /api/progress, de modo
- * que arreglarla en una dejaba la otra mal: el panel decia una cosa y la barra
- * de progreso otra.
- *
- * Cuenta contra las preguntas que el estudiante VE de verdad (las del docente si
- * personalizo el reto), no contra las de data.js.
- */
-function contarRespuestasCompletadas(actId, itemData, studentClass) {
-    if (!itemData) return 0;
-
-    let activity = null;
-    for (const acts of Object.values(allActivities)) {
-        const found = acts.find(a => a.id === actId);
-        if (found) { activity = found; break; }
-    }
-    if (!activity && actId === 'profile') activity = sharedProfile;
-
-    // Ademas de texto y booleano, los tipos nuevos llegan como numero (escala),
-    // arreglo (opcion multiple) u objeto (ordenar).
-    const tieneContenido = (val) => {
-        if (val === null || val === undefined) return false;
-        if (typeof val === 'boolean') return val;
-        if (typeof val === 'number') return true;
-        if (typeof val === 'string') return val.trim().length > 0;
-        if (Array.isArray(val)) return val.length > 0;
-        if (typeof val === 'object') return Object.keys(val).length > 0;
-        return false;
-    };
-
-    if (!activity) {
-        return Object.keys(itemData).filter(k => tieneContenido(itemData[k])).length;
-    }
-
-    const resolved = getActivityForClass(activity, studentClass);
-    // Solo preguntas reales: los "_explain" son la argumentacion de la pregunta
-    // anterior. Contarlos hacia que el panel dijera 50% donde el reto decia
-    // 100%, porque la barra del reto ya los excluye.
-    const evidenceIds = questions.paraEstudiante(resolved, studentClass).questions
-        .map(e => e.id)
-        .filter(id => !String(id).endsWith('_explain'));
-    return Object.keys(itemData).filter(k => evidenceIds.includes(k) && tieneContenido(itemData[k])).length;
+// Reto 0-6 tal como lo ve un estudiante de esa clase (null si la actividad no es un reto).
+// El Reto 0 ("profile") tiene una evaluación por materia: hace falta la materia.
+function findRetoActivity(activityId, className, subject) {
+    const n = retoResults.retoNumber(activityId);
+    if (n === null) return null;
+    if (n === 0) return classLevels.isVisualClass(className) ? getVisualReto0(validSubject(subject)) : reto0ForGrade(subject, classLevels.questionGrade(className));
+    const activity = (allActivities[String(n)] || []).find(a => a.id === activityId);
+    return getActivityForClass(activity, className);
 }
 
-/**
- * Actividades sin el contenido de las preguntas.
- *
- * /teacher/progress incrustaba JSON.stringify(allActivities) entero — 10,5 MB
- * en cada carga — cuando su script solo lee `subject` de cada actividad.
- */
-function actividadesSinPreguntas(porNivel) {
-    const salida = {};
-    for (const [nivel, acts] of Object.entries(porNivel || {})) {
-        salida[nivel] = (acts || []).map(a => ({
-            id: a.id, subject: a.subject, level: a.level,
-            title: a.title, subtitle: a.subtitle, icon: a.icon, color: a.color
-        }));
-    }
-    return salida;
+// Reto 0 de una materia para un grado (K3-K12): las preguntas 1 a 9 (datos y preguntas abiertas)
+// son las del sistema; la evaluación (desde la pregunta 10) es la que editaron los docentes en
+// "Configura tus Retos del 0 al 6" para ese grado y materia, o la del sistema si no hay.
+function reto0ForGrade(subject, grade) {
+    const base = getReto0ForSubject(validSubject(subject));
+    const g = parseInt(grade, 10);
+    const custom = g >= 3 && g <= 12 ? instrumentStore.getCustomQuestions(g, base.subject, 0) : null;
+    if (!custom) return base;
+    return { ...base, evidence: [...base.evidence.filter(item => !item.quiz), ...custom] };
 }
 
-/**
- * Actividades con las preguntas de UN solo grado (las demas se piden por API).
- */
-function actividadesDeUnGrado(porNivel, grado) {
-    const clave = `evidence_k${grado}`;
-    const salida = {};
-    for (const [nivel, acts] of Object.entries(porNivel || {})) {
-        salida[nivel] = (acts || []).map(a => ({
-            id: a.id, subject: a.subject, level: a.level,
-            title: a.title, subtitle: a.subtitle, icon: a.icon, color: a.color,
-            competencies: a.competencies || [],
-            evidence: a[clave] || a.evidence_k5 || a.evidence || []
-        }));
-    }
-    return salida;
+function validSubject(subject) {
+    return subjects.some(s => s.id === subject) ? subject : 'individuos';
 }
 
-/**
- * Version de los archivos estaticos, para romper la cache del navegador.
- *
- * Los CSS se enlazaban sin version: al cambiarlos, el navegador seguia usando
- * la copia vieja y parecia que los arreglos no surtian efecto. Con la fecha de
- * modificacion en la URL, un cambio se ve al instante y lo que no cambia se
- * sigue cacheando.
- */
-const _versionCache = new Map();
-function v(rutaPublica) {
-    if (!_versionCache.has(rutaPublica)) {
-        try {
-            const abs = path.join(__dirname, 'public', rutaPublica.replace(/^\//, ''));
-            _versionCache.set(rutaPublica, String(Math.floor(fs.statSync(abs).mtimeMs)));
-        } catch (e) {
-            _versionCache.set(rutaPublica, String(Date.now()));
-        }
-    }
-    return rutaPublica + '?v=' + _versionCache.get(rutaPublica);
+// ¿Ganó el reto? Para el Reto 0 también reconoce la evaluación anterior de 28 preguntas.
+function computeRetoResult(activityId, className, data, subject) {
+    const activity = findRetoActivity(activityId, className, subject);
+    if (!activity) return null;
+    return retoResults.retoResult(activity, data, { legacyQuestions: legacyReto0Questions });
+}
+
+// Reto 0 ganado o no en cada materia, con lo guardado en "profile"
+function reto0StatusBySubject(profileData, className) {
+    const status = {};
+    subjects.forEach(s => {
+        const result = computeRetoResult('profile', className, profileData || {}, s.id);
+        status[s.id] = !!(result && result.won);
+    });
+    return status;
 }
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-// Compresion: el panel del estudiante son ~114 KB de HTML que viajaban sin
-// comprimir. En la wifi de un colegio eso se nota en cada carga.
-app.use(compression({ threshold: 1024 }));
-
-// Estaticos con cache real. Antes se servian con max-age=0, asi que cada CSS,
-// cada JS y cada PDF (hay 22 MB) se revalidaba en todas las visitas.
-app.use(express.static(path.join(__dirname, 'public'), {
-    maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
-    etag: true,
-    lastModified: true,
-    setHeaders(res, filePath) {
-        // Los PDF del material cambian muy poco y pesan mucho.
-        if (filePath.endsWith('.pdf')) {
-            res.setHeader('Cache-Control', 'public, max-age=2592000');
-        }
-    }
-}));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(express.json({ limit: '5mb' }));
-app.use(cookieParser());
 
-/**
- * Perfil mínimo del estudiante reconstruido desde la sesión firmada.
- * Sustituye a la antigua cookie `student_data`, que el navegador podía editar.
- */
-function studentFromSession(user) {
-    if (!user || user.kind !== 'student') return null;
-    return {
-        id: user.sub,
-        username: user.name,
-        class_name: user.className,
-        student_code: user.code || null
-    };
+// ─── Cookies de sesión firmadas ───
+// Sin firma, cualquiera podía crear a mano `admin_auth=true` o un `teacher_data` falso
+// y entrar sin contraseña. Las cookies de sesión se escriben con { signed: true } y se
+// leen SOLO desde req.signedCookies (una cookie alterada o sin firma se ignora).
+// Si falta COOKIE_SECRET se usa uno temporal: funciona, pero cada reinicio cierra las sesiones.
+const COOKIE_SECRET = process.env.COOKIE_SECRET || crypto.randomBytes(32).toString('hex');
+if (!process.env.COOKIE_SECRET) {
+    console.warn('⚠️  COOKIE_SECRET no está definido en .env: las sesiones se cerrarán cada vez que se reinicie el servidor.');
 }
+app.use(cookieParser(COOKIE_SECRET));
 
-/** Recuerda el idioma elegido durante un año, para la próxima visita. */
-function recordarIdioma(res, lang) {
-    res.cookie('lang', lang, {
-        maxAge: 365 * 24 * 60 * 60 * 1000,
-        sameSite: 'lax',
-        path: '/'
-    });
-}
-
-// ─── Sesión firmada: carga req.user y res.locals (ver services/session.js) ───
-app.use(auth.loadSession);
-
-// ─── Nombres presentables en todas las vistas ───
-// En `students` conviven "Helena Marriott Rodriguez" y
-// "HERRERA PFEIFFER FELIX LEANDRO GABRIEL": los datos vienen de importaciones
-// distintas. Se arregla al mostrar, sin tocar lo guardado.
+// ─── Idioma de la interfaz ───
+// Los botones DE/EN/ES guardan la elección en la cookie `lang` (public/js/lang.js) y vale
+// para los tres portales. Con ella el servidor entrega la página ya traducida:
+// locals.t(clave) en las vistas (locals.t y no t: algunos bucles EJS usan `t` como
+// variable) y res.locals.t en los mensajes; i18nScripts() carga los diccionarios.
 app.use((req, res, next) => {
-    res.locals.v = v;
-    res.locals.nombre = n => names.formatear(n);
-    res.locals.nombreCorto = (n, max) => names.corto(n, max);
-    res.locals.iniciales = n => names.iniciales(n);
+    const lang = i18nStore.normalizeLang(req.cookies.lang);
+    res.locals.lang = lang;
+    res.locals.t = key => i18nStore.translate(key, lang);
+    res.locals.i18nScripts = () => i18nStore.scriptTags(req.path);
+    // Año escolar en curso (Administración › Año escolar): lo muestran la barra del estudiante y el panel
+    const activeYear = yearStore.activeYear();
+    res.locals.schoolYear = { id: activeYear, label: yearStore.labelOf(activeYear) };
     next();
 });
 
-// ─── Idioma resuelto en el servidor: expone lang, t() y pick() a las vistas ───
-app.use(i18n.middleware);
+// Nombre del estudiante para las vistas: { full, first, initial } (services/display_name.js)
+app.locals.studentNames = displayName.studentNames;
+
+// Alemán e Inglés se muestran por defecto en su idioma (de / en). Si en la sesión el estudiante
+// eligió otro idioma para esa materia (cookie lang_<materia>, la escribe /js/lang.js), se respeta.
+// La página lo marca en <body> (partials/header.ejs) para que el navegador no la cambie al cargar.
+const NATIVE_LANG = { aleman: 'de', ingles: 'en' };
+function useSubjectLang(req, res, subject) {
+    const native = NATIVE_LANG[subject];
+    if (!native) return;
+    const chosen = req.cookies && req.cookies['lang_' + subject];
+    const lang = i18nStore.LANGS.includes(chosen) ? chosen : native;
+    res.locals.lang = lang;
+    res.locals.t = key => i18nStore.translate(key, lang);
+    res.locals.nativeLang = { subject, lang };
+}
+
+// Subcompetencia KMK de una pregunta ("1.2" -> { id, name: { de, en, es }, area }), para la etiqueta
+// que muestra en cada pregunta de los retos qué competencia trabaja (data_kmk_competences.js)
+// Área KMK de un reto 1-6 (con su dimensión de inteligencia artificial); null en el Reto 0
+app.locals.kmkArea = level => {
+    const n = parseInt(level, 10);
+    return n >= 1 && n <= 6 ? KMK_AREAS[n - 1] : null;
+};
+app.locals.kmkSubcompetence = id => {
+    const area = KMK_AREAS.find(a => a.subs.some(sub => sub.id === id));
+    const sub = area && area.subs.find(s => s.id === id);
+    return sub ? { id: sub.id, name: sub.name, area: area.name } : null;
+};
 
 // ─── Middleware: attach student info to every request ───
 app.use(async (req, res, next) => {
     res.locals.student = null;
-
-    // El identificador sale de la sesión FIRMADA, nunca de una cookie editable.
-    const studentId = (req.user && req.user.kind === 'student') ? req.user.sub : null;
-    if (!studentId) return next();
-
+    const studentId = req.signedCookies.student_id;
     if (studentId && supabase) {
         try {
             // Parallel fetch of student and profile response (avatar).
@@ -372,14 +408,21 @@ app.use(async (req, res, next) => {
                 res.locals.student = student;
             }
         } catch (e) {
-            // Timeout o error de Supabase: NO colgar la petición. Se sigue con el
-            // perfil que viaja firmado en la sesión, para que el alumno pueda
-            // continuar trabajando y guardando localmente.
-            console.error('Middleware student fetch falló, usando el perfil de la sesión:', e.message);
-            res.locals.student = studentFromSession(req.user);
+            // Timeout o error de Supabase: NO colgar la petición. Continuar con el
+            // fallback de cookie para que el alumno pueda seguir guardando localmente.
+            console.error('Middleware student fetch falló, usando fallback de cookie:', e.message);
+            try {
+                const cookieData = JSON.parse(req.signedCookies.student_data || '{}');
+                if (cookieData.id) res.locals.student = cookieData;
+            } catch (_) { /* ignore */ }
         }
-    } else {
-        res.locals.student = studentFromSession(req.user);
+    } else if (studentId) {
+        try {
+            const cookieData = JSON.parse(req.signedCookies.student_data || '{}');
+            if (cookieData.id) {
+                res.locals.student = cookieData;
+            }
+        } catch (e) { /* ignore */ }
     }
 
     // Try loading avatar from local cache if student is active but profile_photo is not set
@@ -394,79 +437,87 @@ app.use(async (req, res, next) => {
     next();
 });
 
-/* ════════════════════════════════════════════════════════════
-   GUARDIAS DE ACCESO
-
-   Antes, `requireAdmin` solo miraba si la cookie `admin_auth` valía "true":
-   cualquiera podía escribirla desde la consola del navegador y entrar como
-   administrador. Ahora todo se resuelve contra la sesión firmada y contra el
-   mapa de permisos de services/auth.js.
-
-   Se conservan los nombres originales para no reescribir las ~90 rutas.
-   ════════════════════════════════════════════════════════════ */
-
-/** Expone el perfil del personal a las vistas (que esperan `res.locals.teacher`). */
-function exposeStaff(req, res) {
-    if (req.user && req.user.kind === 'staff') {
-        res.locals.teacher = {
-            id: req.user.sub,
-            email: req.user.email,
-            role: req.user.role,
-            first_name: req.user.firstName,
-            last_name: req.user.lastName,
-            username: [req.user.firstName, req.user.lastName].filter(Boolean).join(' ') || req.user.email,
-            subject: req.user.subject || null
-        };
-    }
+// ─── Auth guard middleware ───
+function requireLogin(req, res, next) {
+    if (!res.locals.student) return res.redirect('/login');
+    next();
 }
 
-// Estudiantes
-const requireLogin = auth.requireStudent;
-
-// Área docente
-function requireTeacher(req, res, next) {
-    return auth.requirePermission('teacher:area', { loginPath: '/teacher/login' })(req, res, () => {
-        exposeStaff(req, res);
-        next();
-    });
+// ─── Admin guard middleware ───
+// Sesión del panel: cookies firmadas admin_auth y admin_user (correo). El perfil se lee en
+// teacher_roles.json en cada petición: si la cuenta ya no es desarrollador, directivo ni
+// coordinador, la sesión del panel deja de valer en el siguiente clic.
+function adminSession(req) {
+    if (req.signedCookies.admin_auth !== 'true') return null;
+    let user = {};
+    try { user = JSON.parse(req.signedCookies.admin_user || '{}'); } catch (e) { return null; }
+    const role = roleOfEmail(user.email);
+    if (!access.isPanelRole(role)) return null;
+    return { ...user, role, perms: access.permissionsOf(role) };
 }
 
-// Área de administración
 function requireAdmin(req, res, next) {
-    return auth.requirePermission('admin:area', { loginPath: '/admin/login' })(req, res, () => {
-        exposeStaff(req, res);
-        next();
-    });
-}
-
-/** Factoría para exigir un permiso concreto (p. ej. 'admin:database'). */
-function requirePerm(permission) {
-    return (req, res, next) => auth.requirePermission(permission, { loginPath: '/admin/login' })(req, res, () => {
-        exposeStaff(req, res);
-        next();
-    });
-}
-
-// Cualquier sesión válida (manuales y documentación)
-function requireAnyLogin(req, res, next) {
-    if (!req.user) {
-        return req.path.startsWith('/api/')
-            ? res.status(401).json({ success: false, error: 'Debes iniciar sesión.' })
-            : res.redirect('/login?error=' + encodeURIComponent('Debes iniciar sesión para acceder a los manuales y la documentación oficial'));
+    const admin = adminSession(req);
+    if (admin) {
+        res.locals.admin = admin;
+        return next();
     }
-    exposeStaff(req, res);
-    res.locals.userRole = req.user.kind === 'student' ? 'student'
-        : auth.atLeast(req.user.role, 'desarrollador') ? 'admin' : 'teacher';
-    return next();
+    if (req.signedCookies.admin_auth === 'true') {
+        res.clearCookie('admin_auth');
+        res.clearCookie('admin_user');
+    }
+    return res.redirect('/admin/login');
 }
 
-// ─── Teacher menu route ───
-app.get('/teacher/menu', requireAnyLogin, (req, res) => {
-    // Render the new teacher menu view
-    res.render('teacher/menu', {
-        user: res.locals.teacher,
-        userRole: res.locals.userRole
+// Ruta del panel con un permiso (services/access.js). Sin permiso: 403 en la API, el panel en páginas.
+function allow(permission) {
+    return (req, res, next) => requireAdmin(req, res, () => {
+        if (res.locals.admin.perms[permission]) return next();
+        if (req.originalUrl.startsWith('/api/')) {
+            return res.status(403).json({ success: false, code: 'forbidden', message: res.locals.t('srv_sin_permiso') });
+        }
+        return res.redirect('/admin');
     });
+}
+const devOnly = allow('configure'); // solo el desarrollador
+
+// ─── Any Login guard middleware (for Docs/Manuals) ───
+function requireAnyLogin(req, res, next) {
+    if (req.signedCookies.teacher_auth === 'true') {
+        try {
+            if (req.signedCookies.teacher_data) {
+                const t = JSON.parse(req.signedCookies.teacher_data);
+                t.role = roleOfEmail(t.email);
+                res.locals.teacher = t;
+            } else {
+                res.locals.teacher = { username: 'Docente', role: 'profesor' };
+            }
+        } catch (e) { res.locals.teacher = { username: 'Docente', role: 'profesor' }; }
+    }
+
+    const admin = adminSession(req);
+    if (admin) {
+        res.locals.userRole = 'admin';
+        res.locals.adminRole = admin.role;
+        if (!res.locals.teacher) res.locals.teacher = admin;
+        return next();
+    }
+    if (req.signedCookies.teacher_auth === 'true') {
+        res.locals.userRole = 'teacher';
+        return next();
+    }
+    if (res.locals.student) {
+        res.locals.userRole = 'student';
+        return next();
+    }
+    return res.redirect('/login?error=Debes+iniciar+sesión+para+acceder+a+los+manuales+y+documentación+oficial');
+} 
+
+// ─── Dirección antigua del menú docente ───
+// La vista teacher/menu ya no existe (respondía 500): lleva al inicio de cada portal.
+app.get('/teacher/menu', requireAnyLogin, (req, res) => {
+    const home = res.locals.userRole === 'admin' ? '/admin' : res.locals.userRole === 'teacher' ? '/teacher/training' : '/';
+    res.redirect(home);
 });
 
 
@@ -474,7 +525,7 @@ app.get('/teacher/menu', requireAnyLogin, (req, res) => {
 async function getUniqueClasses() {
     if (!supabase) return [];
     try {
-        const { data } = await supabase.from('students').select('class_name');
+        const { data } = await selectAll(() => supabase.from('students').select('class_name'));
         return [...new Set((data || []).map(s => s.class_name))].filter(Boolean).sort();
     } catch (e) { return []; }
 }
@@ -508,22 +559,15 @@ app.post('/login', async (req, res) => {
     const { username, class_name, student_code } = req.body;
     const uniqueClasses = await getUniqueClasses();
     if (!username || !username.trim()) {
-        return res.render('login', { error: 'Por favor ingresa tu nombre / Bitte gib deinen Namen ein.', klassenConfig, uniqueClasses });
+        return res.render('login', { error: res.locals.t('srv_ingresa_nombre'), klassenConfig, uniqueClasses });
     }
     
     if (!student_code || !student_code.trim()) {
-        return res.render('login', { error: 'Por favor ingresa tu código / Bitte gib deinen Code ein.', klassenConfig, uniqueClasses });
+        return res.render('login', { error: res.locals.t('srv_ingresa_codigo'), klassenConfig, uniqueClasses });
     }
-
-    if (!class_name || !String(class_name).trim()) {
-        return res.render('login', { error: 'Selecciona tu curso / Bitte wähle deine Klasse.', klassenConfig, uniqueClasses });
-    }
-
-    // El idioma se decide aqui, una vez, y vale para TODA la interfaz.
-    const idiomaElegido = i18n.isSupported(req.body.lang) ? req.body.lang : req.lang;
 
     const cleanUsername = username.trim().toLowerCase();
-    const cleanClass = String(class_name || '').trim();
+    const cleanClass = (class_name || '4D').trim();
     const cleanCode = student_code.trim();
 
     if (supabase) {
@@ -537,51 +581,70 @@ app.post('/login', async (req, res) => {
                 .single();
 
             if (!student) {
-                return res.render('login', { error: 'Datos incorrectos o código no válido.', klassenConfig, uniqueClasses });
+                return res.render('login', { error: res.locals.t('srv_datos_incorrectos'), klassenConfig, uniqueClasses });
             }
 
-            session.attach(res, {
-                sub: student.id,
-                kind: 'student',
-                role: 'estudiante',
-                name: student.username,
-                className: student.class_name,
-                code: student.student_code,
-                lang: idiomaElegido
-            }, appConfig.sessionConfig().studentTtlHours);
-            recordarIdioma(res, idiomaElegido);
+            res.cookie('student_id', student.id, {
+                maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true
+            });
             return res.redirect('/');
         } catch (e) {
             console.error('Login error:', e);
-            return res.render('login', { error: 'Error de conexión. Intenta de nuevo.', klassenConfig, uniqueClasses });
+            return res.render('login', { error: res.locals.t('srv_error_conexion'), klassenConfig, uniqueClasses });
         }
     } else {
-        // Modo local (sin base de datos): la sesión firmada lleva el perfil.
         const localId = 'local_' + Date.now();
-        session.attach(res, {
-            sub: localId,
-            kind: 'student',
-            role: 'estudiante',
-            name: cleanUsername,
-            className: cleanClass,
-            code: cleanCode,
-            lang: idiomaElegido
-        }, appConfig.sessionConfig().studentTtlHours);
-        recordarIdioma(res, idiomaElegido);
+        const student = { id: localId, username: cleanUsername, class_name: cleanClass, student_code: cleanCode };
+        res.cookie('student_id', localId, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true });
+        res.cookie('student_data', JSON.stringify(student), { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true });
         return res.redirect('/');
     }
 });
 
 app.get('/logout', (req, res) => {
-    session.destroy(res);
+    res.clearCookie('student_id');
+    res.clearCookie('student_data');
     res.redirect('/login');
 });
+
+// Las 7 paradas del Medienpass visual en una materia: Reto 0 y retos 1 a 6
+function visualStops(subject, className, storedData, levelConfig) {
+    const competences = visualCompetences(subject);
+    return retoIdsForSubject(subject).map((id, n) => {
+        const data = storedData[id] || {};
+        const result = computeRetoResult(id, className, data, subject);
+        return {
+            n,
+            icon: n === 0 ? '🚀' : competences[n - 1].icon,
+            title: n === 0 ? null : competences[n - 1].title,
+            href: n === 0 ? `/profile?subject=${encodeURIComponent(subject)}` : `/activity/${yearStore.activeYear()}/${id}`,
+            won: !!(result && result.won),
+            started: hasRetoAnswers(id, data, subject),
+            locked: n > 0 && levelConfig[String(n)] !== true
+        };
+    });
+}
+
+// Lo que necesita la vista del Medienpass visual para un reto (o la vista previa del docente)
+function visualRetoLocals(activity, { preview = false } = {}) {
+    const n = retoResults.retoNumber(activity.id);
+    return {
+        activity,
+        section: 'visual',
+        preview,
+        reto: n,
+        pictures: picturesOf(activity.subject),
+        competence: n > 0 ? visualCompetences(activity.subject)[n - 1] : null,
+        subjectName: (subjects.find(s => s.id === activity.subject) || {}).name || { es: '', de: '', en: '' }
+    };
+}
 
 // ════════════════════════════════════════
 // DASHBOARD ROUTE
 // ════════════════════════════════════════
 app.get('/', requireLogin, async (req, res) => {
-    const year = req.query.year || '2526';
+    // El estudiante trabaja siempre en el año en curso (lo fija el desarrollador en Administración › Año escolar)
+    const year = yearStore.activeYear();
     const studentLevel = getStudentLevel(res.locals.student.class_name);
     const requestedLevel = req.query.level || '1';
     const rawActivities = allActivities[requestedLevel] || [];
@@ -598,10 +661,10 @@ app.get('/', requireLogin, async (req, res) => {
 
     // Load subject config for this student's class
     let subjectConfig = {};
-    const configPath = path.join(__dirname, 'subject_config.json');
+    const configPath = SUBJECT_CONFIG_FILE;
     try {
-        {
-            subjectConfig = jsonstore.read(configPath, {});
+        if (fs.existsSync(configPath)) {
+            subjectConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
         }
     } catch (e) { /* no config yet */ }
     const studentClass = res.locals.student.class_name; // e.g. "4A"
@@ -612,7 +675,7 @@ app.get('/', requireLogin, async (req, res) => {
     const levelConfigPath = path.join(__dirname, 'level_config.json');
     try {
         if (fs.existsSync(levelConfigPath)) {
-            const allLevelConfig = jsonstore.read(levelConfigPath, {});
+            const allLevelConfig = JSON.parse(fs.readFileSync(levelConfigPath, 'utf8'));
             levelConfig = allLevelConfig[studentClass] || {};
         }
     } catch (e) { /* no config yet */ }
@@ -629,9 +692,40 @@ app.get('/', requireLogin, async (req, res) => {
     const isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
     let rawProgress = {};
 
-    const getCompletedCount = (actId, itemData) =>
-        contarRespuestasCompletadas(actId, itemData, studentClass);
+    const getCompletedCount = (actId, itemData) => {
+        let activity = null;
+        for (const [lvl, acts] of Object.entries(allActivities)) {
+            const found = acts.find(a => a.id === actId);
+            if (found) { activity = found; break; }
+        }
+        if (!activity && actId === 'profile') {
+            activity = sharedProfile;
+        }
 
+        if (activity) {
+            const resolved = getActivityForClass(activity, studentClass);
+            const evidenceIds = (resolved.evidence || []).map(e => e.id);
+            const fields = itemData ? Object.keys(itemData).filter(k => {
+                if (!evidenceIds.includes(k)) return false;
+                const val = itemData[k];
+                if (typeof val === 'boolean') return val;
+                if (typeof val === 'string') return val.trim().length > 0;
+                return false;
+            }) : [];
+            return fields.length;
+        } else {
+            const fields = itemData ? Object.keys(itemData).filter(k => {
+                const val = itemData[k];
+                if (typeof val === 'boolean') return val;
+                if (typeof val === 'string') return val.trim().length > 0;
+                return false;
+            }) : [];
+            return fields.length;
+        }
+    };
+
+    let profileData = null; // Reto 0: un registro con las evaluaciones de todas las materias
+    const storedData = {};
     if (isLocal) {
         const cache = readLocalCache();
         if (cache[studentId]) {
@@ -641,6 +735,8 @@ app.get('/', requireLogin, async (req, res) => {
                     fieldsCompleted: getCompletedCount(actId, item.data),
                     updatedAt: item.updated_at
                 };
+                storedData[actId] = item.data;
+                if (actId === 'profile') profileData = item.data;
             });
         }
     } else if (supabase) {
@@ -654,19 +750,35 @@ app.get('/', requireLogin, async (req, res) => {
                     fieldsCompleted: getCompletedCount(item.activity_id, item.data),
                     updatedAt: item.updated_at
                 };
+                storedData[item.activity_id] = item.data;
+                if (item.activity_id === 'profile') profileData = item.data;
             });
         } catch (e) { /* silently ignore */ }
+    }
+    const reto0Status = reto0StatusBySubject(profileData, studentClass);
+
+    // Prekínder, Kinder, K1 y K2: Medienpass visual, sin leer ni escribir
+    if (classLevels.isVisualClass(studentClass)) {
+        const available = subjects.filter(s => s.active !== false && enabledSubjects[s.id] !== false);
+        const selected = available.find(s => s.id === req.query.subject) || null;
+        if (selected) useSubjectLang(req, res, selected.id); // Alemán e Inglés en su idioma
+        return res.render('visual/home', {
+            student: res.locals.student,
+            section: 'visual',
+            subjects: available,
+            pictureOf: id => picturesOf(id).topic,
+            selected,
+            stops: selected ? visualStops(selected.id, studentClass, storedData, levelConfig) : []
+        });
     }
 
     res.render('index', {
         activities: activeActivities,
         tecnologiaActivities: getActivitiesForClass(tecnologiaActivities, res.locals.student.class_name),
         allResolvedActivities,
-        slimActivities: slimActivities(allResolvedActivities),
         student: res.locals.student,
         sharedProfile,
         klassenConfig,
-        schoolYears,
         currentYear: year,
         currentLevel: requestedLevel,
         studentLevel,
@@ -675,7 +787,8 @@ app.get('/', requireLogin, async (req, res) => {
         allActivities,
         enabledSubjects,
         levelConfig,
-        progress: rawProgress
+        progress: rawProgress,
+        reto0Status
     });
 });
 
@@ -695,32 +808,39 @@ app.get('/profile', requireLogin, (req, res) => {
     let teacherConfig = {};
     let allTeachers = [];
     try {
-        const configPath = require('path').join(__dirname, 'class_teacher_config.json');
-        if (require('fs').existsSync(configPath)) {
-            const allConfig = jsonstore.read(configPath, {});
-            const rawConfig = allConfig[res.locals.student.class_name] || {};
-            // Format each teacher name to "Primer Nombre Primer Apellido"
-            for (let subj in rawConfig) {
-                teacherConfig[subj] = formatTeacherName(rawConfig[subj]);
-            }
-            
-            const pSet = new Set();
-            for(let cls in allConfig) {
-                for(let subj in allConfig[cls]) {
-                    pSet.add(formatTeacherName(allConfig[cls][subj]));
-                }
-            }
-            allTeachers = Array.from(pSet).sort();
+        const allConfig = readClassTeacherConfig();
+        const rawConfig = teachersForClass(allConfig, res.locals.student.class_name);
+        // Format each teacher name to "Primer Nombre Primer Apellido"
+        for (let subj in rawConfig) {
+            teacherConfig[subj] = formatTeacherName(rawConfig[subj]);
         }
+
+        const pSet = new Set();
+        for (let cls in allConfig) {
+            for (let subj in allConfig[cls]) {
+                pSet.add(formatTeacherName(allConfig[cls][subj]));
+            }
+        }
+        allTeachers = Array.from(pSet).sort();
     } catch (e) { }
 
+    const studentSubject = req.query.subject || (req.cookies && req.cookies.currentSubject) || 'individuos';
+    useSubjectLang(req, res, validSubject(studentSubject)); // Alemán e Inglés en su idioma
+    if (classLevels.isVisualClass(res.locals.student.class_name)) {
+        return res.render('visual/reto', { student: res.locals.student, ...visualRetoLocals(getVisualReto0(validSubject(studentSubject))) });
+    }
+    const profileActivity = reto0ForGrade(studentSubject, classLevels.questionGrade(res.locals.student.class_name));
+
     res.render('activity', { 
-        activity: sharedProfile, 
-        student: res.locals.student, 
-        currentYear: '2526', 
+        activity: profileActivity, 
+        student: res.locals.student,
+        currentYear: yearStore.activeYear(),
         section: 'profile',
         teacherConfig,
         allTeachers,
+        reto0BySubject,
+        // Combo de materias del Reto 0: las activas (y la que se está viendo)
+        reto0Subjects: subjects.filter(s => s.active !== false || s.id === profileActivity.subject),
         challengeToolsConfig: {},
         defaultAgentTools: {}
     });
@@ -730,7 +850,12 @@ app.get('/profile', requireLogin, (req, res) => {
 // ACTIVITY ROUTES
 // ════════════════════════════════════════
 app.get('/activity/:year/:id', requireLogin, (req, res) => {
-    const year = req.params.year || '2526';
+    if (req.params.id === 'profile') {
+        const qSubj = req.query.subject ? `?subject=${encodeURIComponent(req.query.subject)}` : '';
+        return res.redirect(`/profile${qSubj}`);
+    }
+    // El año de la dirección es solo informativo: se trabaja y se guarda en el año en curso
+    const year = yearStore.activeYear();
     // Search across all levels for the activity
     let activity = null;
     let actLevel = null;
@@ -740,13 +865,11 @@ app.get('/activity/:year/:id', requireLogin, (req, res) => {
     }
     if (!activity) return res.status(404).send('Activity not found');
     const resolvedActivity = getActivityForClass(activity, res.locals.student.class_name);
+    useSubjectLang(req, res, resolvedActivity.subject); // Alemán e Inglés en su idioma
 
-    // Las preguntas que guarda el docente (a mano o generadas con IA) tienen
-    // prioridad sobre las de data.js. Hasta ahora se escribian en
-    // data/custom_instruments.json y ninguna ruta de estudiante las leia: el
-    // editor del docente no llegaba nunca al aula.
-    const resueltas = questions.paraEstudiante(resolvedActivity, res.locals.student.class_name);
-    resolvedActivity.evidence = resueltas.questions;
+    if (classLevels.isVisualClass(res.locals.student.class_name)) {
+        return res.render('visual/reto', { student: res.locals.student, ...visualRetoLocals(resolvedActivity) });
+    }
 
     const challengeToolsConfig = readChallengeToolsConfig();
     res.render('activity', {
@@ -755,10 +878,7 @@ app.get('/activity/:year/:id', requireLogin, (req, res) => {
         currentYear: year,
         section: resolvedActivity.subject || 'medienpass',
         challengeToolsConfig,
-        defaultAgentTools,
-        questionSource: resueltas.source,
-        questionsUpdatedAt: resueltas.updatedAt || null,
-        reglasEstrellas: stars.reglasParaCliente()
+        defaultAgentTools: agentToolsFor(resolvedActivity.subject)
     });
 });
 
@@ -773,54 +893,207 @@ app.get('/tecnologia/:id', requireLogin, (req, res) => {
     if (!activity) return res.status(404).send('Activity not found');
     
     const resolvedActivity = getActivityForClass(activity, res.locals.student.class_name);
-
-    // Mismo criterio que /activity: manda lo que guardo el docente.
-    const resueltasTec = questions.paraEstudiante(resolvedActivity, res.locals.student.class_name);
-    resolvedActivity.evidence = resueltasTec.questions;
-
     const challengeToolsConfig = readChallengeToolsConfig();
-
-    res.render('activity', {
-        activity: resolvedActivity,
+    
+    res.render('activity', { 
+        activity: resolvedActivity, 
         student: res.locals.student,
-        currentYear: '2526',
+        currentYear: yearStore.activeYear(),
         section: 'tecnologia',
-        questionSource: resueltasTec.source,
-        reglasEstrellas: stars.reglasParaCliente(),
         challengeToolsConfig,
-        defaultAgentTools
+        defaultAgentTools: agentToolsFor(resolvedActivity.subject)
     });
 });
 
 app.get('/activity/:id', requireLogin, (req, res) => {
-    res.redirect('/activity/2526/' + req.params.id);
+    res.redirect(`/activity/${yearStore.activeYear()}/${encodeURIComponent(req.params.id)}`);
 });
 
 // ════════════════════════════════════════
 // API: SAVE / LOAD / PROGRESS
 // ════════════════════════════════════════
+// Lo guardado de una actividad: combina el caché local y Supabase; gana lo más reciente.
+async function readStoredResponse(studentId, activityId) {
+    let localData = null;
+    let localUpdatedAt = null;
+    let localSyncPending = false;
+    try {
+        const cache = readLocalCache();
+        if (cache[studentId] && cache[studentId][activityId]) {
+            localData = cache[studentId][activityId].data;
+            localUpdatedAt = cache[studentId][activityId].updated_at;
+            localSyncPending = cache[studentId][activityId].syncPending === true;
+        }
+    } catch (e) {
+        console.error('Error reading local cache on load:', e);
+    }
+
+    let supabaseData = null;
+    let supabaseUpdatedAt = null;
+    if (supabase) {
+        try {
+            const { data, error } = await withTimeout(supabase
+                .from('activity_responses')
+                .select('data, updated_at')
+                .eq('student_id', studentId)
+                .eq('activity_id', activityId)
+                .maybeSingle(), 6000, 'supabase load');
+            if (!error && data) {
+                supabaseData = data.data;
+                supabaseUpdatedAt = data.updated_at;
+            }
+        } catch (e) {
+            console.error('Supabase load error:', e.message);
+        }
+    }
+
+    const { data, updatedAt } = mergeStored(localData, localUpdatedAt, supabaseData, supabaseUpdatedAt);
+    return { data, updatedAt, localData, localUpdatedAt, localSyncPending };
+}
+
+// Combina lo guardado en el caché local y en Supabase; gana lo más reciente.
+function mergeStored(localData, localUpdatedAt, supabaseData, supabaseUpdatedAt) {
+    if (localData && supabaseData) {
+        const localTime = localUpdatedAt ? new Date(localUpdatedAt).getTime() : 0;
+        const supabaseTime = supabaseUpdatedAt ? new Date(supabaseUpdatedAt).getTime() : 0;
+        return localTime >= supabaseTime
+            ? { data: { ...supabaseData, ...localData }, updatedAt: localUpdatedAt }
+            : { data: { ...localData, ...supabaseData }, updatedAt: supabaseUpdatedAt };
+    }
+    if (localData) return { data: localData, updatedAt: localUpdatedAt };
+    if (supabaseData) return { data: supabaseData, updatedAt: supabaseUpdatedAt };
+    return { data: {}, updatedAt: null };
+}
+
+// Lo guardado de varias actividades de un estudiante: caché local y una sola consulta a Supabase
+async function readStoredResponses(studentId, activityIds) {
+    let cache = {};
+    try { cache = readLocalCache()[studentId] || {}; } catch (e) { console.error('Error reading local cache on load:', e); }
+    const remote = {};
+    if (supabase) {
+        try {
+            const { data, error } = await withTimeout(supabase
+                .from('activity_responses')
+                .select('activity_id, data, updated_at')
+                .eq('student_id', studentId)
+                .in('activity_id', activityIds), 6000, 'supabase load set');
+            if (!error) (data || []).forEach(row => { remote[row.activity_id] = row; });
+        } catch (e) {
+            console.error('Supabase load error:', e.message);
+        }
+    }
+    const stored = {};
+    activityIds.forEach(id => {
+        const local = cache[id] || {};
+        const row = remote[id] || {};
+        stored[id] = mergeStored(local.data || null, local.updated_at || null, row.data || null, row.updated_at || null);
+    });
+    return stored;
+}
+
+// ─── Medienpass de una materia: los 7 retos (0 a 6) del estudiante ───
+// El cuadro "Certificado Medienpass" (partials/reto-certificate.ejs) y el correo institucional
+// solo se habilitan cuando el estudiante ganó los 7 retos de la materia (80 % en cada uno).
+// `stored` = { activityId: { data, updatedAt } } de readStoredResponses.
+function medienpassFrom(student, subject, stored) {
+    subject = validSubject(subject);
+    let email = '';
+    let emailDate = '';
+    let completedAt = '';
+    const retos = retoIdsForSubject(subject).map((id, n) => {
+        const { data = {}, updatedAt = null } = stored[id] || {};
+        const result = computeRetoResult(id, student.class_name, data || {}, subject);
+        const won = !!(result && result.won);
+        if (won && (updatedAt || '') > completedAt) completedAt = updatedAt || '';
+        if (data && data.institutional_email && (updatedAt || '') >= emailDate) {
+            email = data.institutional_email;
+            emailDate = updatedAt || '';
+        }
+        return { n, won, kind: result ? result.kind : null, score: result ? result.score : 0,
+            max: result ? result.max : 0, pct: result ? result.pct : 0 };
+    });
+    const wonCount = retos.filter(r => r.won).length;
+    const complete = wonCount === retos.length;
+    const info = subjects.find(s => s.id === subject) || {};
+    return {
+        subject, subjectName: info.name || null, icon: info.icon || '',
+        wonCount, total: retos.length, complete, retos,
+        email: complete ? email : '', completedAt: complete ? (completedAt || null) : null
+    };
+}
+
+// Materia de un reto: la del Reto 0 abierto (?subject=) o la de la actividad (reto3_ingles -> ingles)
+function retoSubjectOf(activityId, retoActivity, subject) {
+    if (activityId === 'profile') return validSubject(subject);
+    return validSubject((retoActivity && retoActivity.subject) || String(activityId).replace(/^reto[1-6]_/, ''));
+}
+
 app.post('/api/save/:activityId', requireLogin, async (req, res) => {
     const { activityId } = req.params;
     const studentId = res.locals.student.id;
-    const formData = req.body;
+    let formData = req.body;
     const period = req.body.period || 1;
-    const schoolYear = req.body.school_year || '2627';
+    // Las respuestas quedan en el año en curso (Administración › Año escolar)
+    const schoolYear = yearStore.activeYear();
     const updatedAt = new Date().toISOString();
 
-    // 1. Guardado local serializado y atómico (sin race read-modify-write).
-    updateLocalCache(cache => {
-        if (!cache[studentId]) cache[studentId] = {};
-        cache[studentId][activityId] = {
-            data: formData,
-            period: period,
-            school_year: schoolYear,
-            updated_at: updatedAt,
-            syncPending: !!supabase   // se limpia cuando Supabase confirme
-        };
-    }).catch(e => console.error('Local cache save error:', e.message));
+    // El Reto 0 es un solo registro para todas las materias: lo que llega se combina con lo
+    // guardado para no borrar las respuestas de las otras materias.
+    let subject = null;
+    if (activityId === 'profile') {
+        subject = validSubject(formData && formData.reto0_subject);
+        const stored = await readStoredResponse(studentId, activityId);
+        formData = { ...stored.data, ...formData };
+    }
 
-    // 2. Respuesta inmediata para que la UI no se quede esperando.
-    res.json({ success: true, message: 'Guardado localmente.', localOnly: true });
+    // Retos 0-6: resultado calculado aquí. El correo institucional solo se acepta cuando el
+    // estudiante completó los 7 retos (0 a 6) de la materia y es del colegio; si no, queda el
+    // correo que ya estaba guardado y se avisa (el resto se guarda igual).
+    const retoActivity = findRetoActivity(activityId, res.locals.student.class_name, subject);
+    const retoResult = retoActivity ? computeRetoResult(activityId, res.locals.student.class_name, formData, subject) : null;
+    let emailError = null;
+    let medienpass = null;
+    if (retoActivity) {
+        const retoSubject = retoSubjectOf(activityId, retoActivity, subject);
+        const stored = await readStoredResponses(studentId, retoIdsForSubject(retoSubject));
+        const previousEmail = ((stored[activityId] || {}).data || {}).institutional_email || '';
+        const withThisSave = () => ({ ...stored, [activityId]: { data: formData, updatedAt } });
+        const complete = medienpassFrom(res.locals.student, retoSubject, withThisSave()).complete;
+        if (formData && typeof formData.institutional_email === 'string') {
+            const email = retoResults.normalizeEmail(formData.institutional_email);
+            if (!email) formData.institutional_email = '';
+            else if (!complete) {
+                if (email !== previousEmail) emailError = 'not_complete';
+                formData.institutional_email = previousEmail;
+            } else if (!retoResults.isInstitutionalEmail(email)) {
+                emailError = 'invalid';
+                formData.institutional_email = previousEmail;
+            } else formData.institutional_email = email;
+        }
+        medienpass = medienpassFrom(res.locals.student, retoSubject, withThisSave());
+    }
+
+    // 1. Guardado local serializado y atómico (sin race read-modify-write).
+    try {
+        await updateLocalCache(cache => {
+            if (!cache[studentId]) cache[studentId] = {};
+            cache[studentId][activityId] = {
+                data: formData,
+                period: period,
+                school_year: schoolYear,
+                updated_at: updatedAt,
+                syncPending: !!supabase
+            };
+        });
+    } catch (e) {
+        console.error('Local cache save error:', e.message);
+        return res.status(500).json({ success: false, message: 'No se pudo guardar la respuesta localmente.' });
+    }
+
+    // 2. Confirm local persistence before acknowledging the save.
+    const saved = { success: true, message: 'Guardado localmente.', localOnly: true };
+    if (retoActivity) Object.assign(saved, { retoResult, institutionalEmail: formData.institutional_email || '', emailError, medienpass });
+    res.json(saved);
 
     // 3. Sincronización con Supabase en segundo plano (con timeout).
     if (supabase) {
@@ -859,21 +1132,8 @@ app.get('/api/load/:activityId', requireLogin, async (req, res) => {
     const { activityId } = req.params;
     const studentId = res.locals.student.id;
 
-    let localData = null;
-    let localUpdatedAt = null;
-
-    // Load from local cache
-    let localSyncPending = false;
-    try {
-        const cache = readLocalCache();
-        if (cache[studentId] && cache[studentId][activityId]) {
-            localData = cache[studentId][activityId].data;
-            localUpdatedAt = cache[studentId][activityId].updated_at;
-            localSyncPending = cache[studentId][activityId].syncPending === true;
-        }
-    } catch (e) {
-        console.error('Error reading local cache on load:', e);
-    }
+    const stored = await readStoredResponse(studentId, activityId);
+    const { localData, localUpdatedAt, localSyncPending } = stored;
 
     // Si hay datos pendientes de sincronizar, intentar reintentar el upsert ahora (sin bloquear).
     if (localSyncPending && supabase && localData) {
@@ -902,52 +1162,20 @@ app.get('/api/load/:activityId', requireLogin, async (req, res) => {
         })();
     }
 
-    let supabaseData = null;
-    let supabaseUpdatedAt = null;
-
-    // Load from Supabase
-    if (supabase) {
-        try {
-            const { data, error } = await supabase
-                .from('activity_responses')
-                .select('data, updated_at')
-                .eq('student_id', studentId)
-                .eq('activity_id', activityId)
-                .maybeSingle();
-
-            if (!error && data) {
-                supabaseData = data.data;
-                supabaseUpdatedAt = data.updated_at;
-            }
-        } catch (e) {
-            console.error('Supabase load error:', e);
+    // Reto 0: el resultado es el de la materia abierta (?subject=)
+    const loaded = { success: true, data: stored.data, updated_at: stored.updatedAt };
+    if (retoResults.retoNumber(activityId) !== null) {
+        loaded.retoResult = computeRetoResult(activityId, res.locals.student.class_name, stored.data, req.query.subject);
+        // Los 7 retos de la materia: el cuadro del certificado aparece solo si están todos ganados
+        const retoActivity = findRetoActivity(activityId, res.locals.student.class_name, req.query.subject);
+        if (retoActivity) {
+            const retoSubject = retoSubjectOf(activityId, retoActivity, req.query.subject);
+            const set = await readStoredResponses(studentId, retoIdsForSubject(retoSubject));
+            set[activityId] = { data: stored.data, updatedAt: stored.updatedAt };
+            loaded.medienpass = medienpassFrom(res.locals.student, retoSubject, set);
         }
     }
-
-    // Merge strategy: combine both datasets, prioritizing the newest one
-    let finalData = {};
-    let finalUpdatedAt = null;
-
-    if (localData && supabaseData) {
-        const localTime = localUpdatedAt ? new Date(localUpdatedAt).getTime() : 0;
-        const supabaseTime = supabaseUpdatedAt ? new Date(supabaseUpdatedAt).getTime() : 0;
-
-        if (localTime >= supabaseTime) {
-            finalData = { ...supabaseData, ...localData };
-            finalUpdatedAt = localUpdatedAt;
-        } else {
-            finalData = { ...localData, ...supabaseData };
-            finalUpdatedAt = supabaseUpdatedAt;
-        }
-    } else if (localData) {
-        finalData = localData;
-        finalUpdatedAt = localUpdatedAt;
-    } else if (supabaseData) {
-        finalData = supabaseData;
-        finalUpdatedAt = supabaseUpdatedAt;
-    }
-
-    return res.json({ success: true, data: finalData, updated_at: finalUpdatedAt });
+    return res.json(loaded);
 });
 
 app.get('/api/progress', requireLogin, async (req, res) => {
@@ -955,8 +1183,37 @@ app.get('/api/progress', requireLogin, async (req, res) => {
     const studentClass = res.locals.student.class_name;
     const isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
 
-    const getCompletedCount = (actId, itemData) =>
-        contarRespuestasCompletadas(actId, itemData, studentClass);
+    const getCompletedCount = (actId, itemData) => {
+        let activity = null;
+        for (const [lvl, acts] of Object.entries(allActivities)) {
+            const found = acts.find(a => a.id === actId);
+            if (found) { activity = found; break; }
+        }
+        if (!activity && actId === 'profile') {
+            activity = sharedProfile;
+        }
+
+        if (activity) {
+            const resolved = getActivityForClass(activity, studentClass);
+            const evidenceIds = (resolved.evidence || []).map(e => e.id);
+            const fields = itemData ? Object.keys(itemData).filter(k => {
+                if (!evidenceIds.includes(k)) return false;
+                const val = itemData[k];
+                if (typeof val === 'boolean') return val;
+                if (typeof val === 'string') return val.trim().length > 0;
+                return false;
+            }) : [];
+            return fields.length;
+        } else {
+            const fields = itemData ? Object.keys(itemData).filter(k => {
+                const val = itemData[k];
+                if (typeof val === 'boolean') return val;
+                if (typeof val === 'string') return val.trim().length > 0;
+                return false;
+            }) : [];
+            return fields.length;
+        }
+    };
 
     if (isLocal) {
         const cache = readLocalCache();
@@ -998,71 +1255,103 @@ app.get('/api/progress', requireLogin, async (req, res) => {
 });
 
 // 
+// Ingreso al panel por perfil: /admin/login muestra los tres perfiles y /admin/login?perfil=coordinador
+// el formulario de ese perfil. La cuenta debe tener en teacher_roles.json el perfil que eligió.
+const loginProfile = value => (access.PROFILES.includes(String(value || '')) ? String(value) : null);
+
 app.get('/admin/login', (req, res) => {
-    res.render('admin/login', { error: null });
+    if (adminSession(req)) return res.redirect('/admin');
+    res.render('admin/login', { error: null, profile: loginProfile(req.query.perfil), profiles: access.PROFILES, email: '' });
 });
 
 app.post('/admin/login', async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
-        return res.render('admin/login', { error: 'Ingresa tu correo y tu contraseña.' });
+    const { email, password } = req.body || {};
+    const profile = loginProfile(req.body && req.body.profile);
+    const fail = (message, keepProfile = profile) => res.render('admin/login', {
+        error: message, profile: keepProfile, profiles: access.PROFILES, email: String(email || '').trim().slice(0, 120)
+    });
+    if (!profile) return fail(res.locals.t('srv_elige_perfil'), null);
+    if (!password) return fail(res.locals.t('srv_ingresa_documento'));
+    if (!email) return fail(res.locals.t('srv_ingresa_correo'));
+
+    // Sin clave maestra: solo entran docentes (tabla teachers) con un perfil del panel en
+    // teacher_roles.json, y por el botón de ese perfil.
+    if (!supabase) return fail(res.locals.t('srv_sin_base_datos'));
+    try {
+        let cleanEmail = String(email).trim().toLowerCase();
+        if (!cleanEmail.includes('@')) cleanEmail += '@colegioaleman.edu.co';
+        const cleanPassword = String(password).trim();
+
+        const { data: teacher } = await supabase
+            .from('teachers')
+            .select('*')
+            .eq('email', cleanEmail)
+            .eq('doc_number', cleanPassword)
+            .single();
+        if (!teacher) return fail(res.locals.t('srv_credenciales_admin'));
+
+        const role = roleOfEmail(teacher.email);
+        const decision = access.checkProfile(role, profile);
+        if (decision === 'not_panel') {
+            const label = role === 'profesor' ? res.locals.t('adm_rol_badge_profesor') : role;
+            return fail(res.locals.t('srv_acceso_denegado').replace('{rol}', label.toUpperCase()));
+        }
+        // Las credenciales son correctas: se le indica por cuál botón entrar
+        if (decision === 'mismatch') {
+            return fail(res.locals.t('srv_perfil_distinto').replace('{perfil}', res.locals.t('adm_role_' + role)));
+        }
+
+        const cookie = { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true };
+        res.cookie('admin_auth', 'true', cookie);
+        res.cookie('admin_user', JSON.stringify({
+            email: teacher.email,
+            role,
+            first_name: teacher.first_name,
+            last_name: teacher.last_name,
+            id: teacher.id
+        }), cookie);
+
+        // También la sesión docente, para entrar a la capacitación y a los manuales sin otro ingreso
+        res.cookie('teacher_auth', 'true', cookie);
+        res.cookie('teacher_data', JSON.stringify({
+            first_name: teacher.first_name,
+            last_name: teacher.last_name,
+            subject: teacher.subject,
+            email: teacher.email,
+            id: teacher.id,
+            role
+        }), cookie);
+        return res.redirect('/admin');
+    } catch (e) {
+        console.error('Admin login error:', e);
+        return fail(res.locals.t('srv_error_login_admin'));
     }
-
-    const profile = await auth.authenticateStaff(email, password, supabase);
-
-    if (!profile) {
-        return res.render('admin/login', { error: 'Correo o contraseña incorrectos.' });
-    }
-
-    if (!auth.can(profile.role, 'admin:area')) {
-        const label = appConfig.roles().labels[profile.role];
-        return res.render('admin/login', {
-            error: `Acceso denegado: tu perfil (${(label && label.es) || profile.role}) no tiene permisos de administración.`
-        });
-    }
-
-    session.attach(res, {
-        sub: profile.id,
-        kind: 'staff',
-        role: profile.role,
-        name: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
-        email: profile.email,
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        subject: profile.subject || null
-    }, appConfig.sessionConfig().staffTtlHours);
-
-    return res.redirect('/admin');
 });
-
 app.get('/admin/logout', (req, res) => {
-    session.destroy(res);
+    res.clearCookie('admin_auth');
+    res.clearCookie('admin_user');
+    res.clearCookie('teacher_auth');
+    res.clearCookie('teacher_data');
     res.redirect('/admin/login');
 });
 
 // Admin Dashboard
 app.get('/admin', requireAdmin, async (req, res) => {
+    const admin = res.locals.admin;
+    // El código del estudiante es su clave de ingreso: solo lo recibe el desarrollador
+    const studentColumns = admin.perms.configure ? '*' : 'id, username, full_name, class_name, created_at';
     let students = [];
     if (supabase) {
         try {
-            const { data } = await supabase.from('students').select('*');
+            const { data } = await selectAll(() => supabase.from('students').select(studentColumns));
             students = data || [];
-            
-            function getSortName(name) {
-                if (!name) return '';
-                const parts = name.trim().toUpperCase().split(/\s+/);
-                if (parts.length > 2) {
-                    return parts.slice(-2).join(' ') + ' ' + parts.slice(0, -2).join(' ');
-                }
-                return name.toUpperCase();
-            }
 
             students.sort((a, b) => {
                 if (a.class_name < b.class_name) return -1;
                 if (a.class_name > b.class_name) return 1;
-                
-                const nameA = getSortName(a.full_name || a.username);
-                const nameB = getSortName(b.full_name || b.username);
+
+                const nameA = sortNameKey(a.full_name || a.username);
+                const nameB = sortNameKey(b.full_name || b.username);
                 return nameA.localeCompare(nameB, 'es', { sensitivity: 'base' });
             });
 
@@ -1074,22 +1363,41 @@ app.get('/admin', requireAdmin, async (req, res) => {
                     counter = 1;
                 }
                 s.list_number = counter++;
+                // Para los buscadores de Administración › Estudiantes
+                const { names, surnames } = splitStudentName(s.full_name || s.username);
+                s.search = { code: admin.perms.configure ? searchText(s.student_code) : '', names, surnames };
             });
-            
+
         } catch (e) { /* ignore */ }
     }
+
+    // Clases para el mapeo de profesores: las de los estudiantes y las de Configuración
+    let mappingClasses = [];
+    if (admin.perms.configure) {
+        let subjectConfig = {};
+        try { subjectConfig = JSON.parse(fs.readFileSync(SUBJECT_CONFIG_FILE, 'utf8')); } catch (e) { /* sin configuración */ }
+        const keys = new Set([...students.map(s => s.class_name), ...Object.keys(subjectConfig)]
+            .map(teacherCourses.canonicalClass).filter(Boolean));
+        mappingClasses = [...keys].map(teacherCourses.mappingKeyFor);
+    }
+
     res.render('admin/dashboard', {
+        adminUser: admin, // nombre y perfil para la barra superior (el perfil, leído de teacher_roles.json)
+        access: { role: admin.role, perms: admin.perms, isDeveloper: !!admin.perms.configure },
+        mappingClasses,
         students,
         klassenConfig,
         tecnologiaActivities,
-        subjects,
+        subjects: subjectStore.activeSubjects(), // combos y Configuración: solo las activas
+        allSubjects: subjects, // Administración › Materias
         levels,
-        schoolYears
+        schoolYears: yearStore.list(), // filtro de año de Inicio; el en curso viene marcado
+        activeSchoolYear: yearStore.activeYear()
     });
 });
 
 // API: Bulk add students
-app.post('/api/admin/students/bulk', requireAdmin, cache.invalidarTras(), async (req, res) => {
+app.post('/api/admin/students/bulk', devOnly, async (req, res) => {
     const { students } = req.body; // Array of { username, class_name, full_name, code }
     if (!supabase) return res.json({ success: false, message: 'Supabase no configurado' });
 
@@ -1119,7 +1427,7 @@ app.post('/api/admin/students/bulk', requireAdmin, cache.invalidarTras(), async 
 });
 
 // API: Delete student
-app.delete('/api/admin/students/:id', requireAdmin, cache.invalidarTras(), async (req, res) => {
+app.delete('/api/admin/students/:id', devOnly, async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         await supabase.from('activity_responses').delete().eq('student_id', req.params.id);
@@ -1130,46 +1438,174 @@ app.delete('/api/admin/students/:id', requireAdmin, cache.invalidarTras(), async
     }
 });
 
-// API: Get all students data for reports
-app.get('/api/admin/reports/:className', requireAdmin, async (req, res) => {
-    if (!supabase) return res.json({ success: false });
-    try {
-        const { data: students } = await supabase
-            .from('students')
-            .select('*')
-            .eq('class_name', req.params.className)
-            .order('username');
+// ─── Retos 0-6 de cada estudiante en una materia (Certificados y Avance retos) ───
+// Ganado: 80 % o más (computeRetoResult). En curso: guardó respuestas de ese reto en esa materia
+// y todavía no lo gana (en el Reto 0, respuestas de la evaluación de esa materia).
+function retoIdsForSubject(subject) {
+    return ['profile', ...[1, 2, 3, 4, 5, 6].map(n => `reto${n}_${subject}`)];
+}
 
-        if (!students || students.length === 0) {
-            return res.json({ success: true, students: [], activities: [] });
+function hasRetoAnswers(activityId, data, subject) {
+    if (activityId === 'profile' && data.reto0_subject === subject) return true;
+    const belongs = key => activityId !== 'profile' || key.startsWith(`r0_${subject}_`) || key.startsWith(`r0v_${subject}_`);
+    return Object.entries(data).some(([key, value]) => belongs(key) && key !== 'institutional_email'
+        && value !== '' && value !== null && value !== false && value !== undefined);
+}
+
+function indexResponses(responses) {
+    const index = new Map();
+    (responses || []).forEach(r => index.set(`${r.student_id}|${r.activity_id}`, r));
+    return index;
+}
+
+function studentRetoStatus(student, index, subject) {
+    let email = '';
+    let emailDate = '';
+    const retos = retoIdsForSubject(subject).map((id, n) => {
+        const resp = index.get(`${student.id}|${id}`);
+        const data = (resp && resp.data) || {};
+        // El Reto 0 se califica con la evaluación de esta materia
+        const result = resp ? computeRetoResult(id, student.class_name, data, subject) : null;
+        const won = !!(result && result.won);
+        if (won && data.institutional_email && (resp.updated_at || '') >= emailDate) {
+            email = data.institutional_email;
+            emailDate = resp.updated_at || '';
         }
+        return { n, won, started: won || (!!resp && hasRetoAnswers(id, data, subject)),
+            kind: result ? result.kind : null, score: result ? result.score : 0, max: result ? result.max : 0,
+            pct: result ? result.pct : 0, date: won ? resp.updated_at : null };
+    });
+    return { retos, email, wonCount: retos.filter(r => r.won).length };
+}
 
-        const studentIds = students.map(s => s.id);
-        const { data: responses } = await supabase
-            .from('activity_responses')
-            .select('*')
-            .in('student_id', studentIds);
+// API: Certificados Medienpass de estudiantes (una clase y una materia habilitada).
+// Por estudiante: retos 0-6 ganados en esa materia y el correo institucional que dejó al ganar.
+app.get('/api/admin/certificates/students/:className/:subject', allow('certificates'), async (req, res) => {
+    const { className, subject } = req.params;
+    if (!subjectStore.isKnown(subject)) return res.status(400).json({ success: false, message: 'Materia desconocida' });
+    if (!supabase) return res.json({ success: true, students: [] });
+    try {
+        const { data: students, error } = await selectAll(() => supabase.from('students')
+            .select('id, username, full_name, student_code, class_name').eq('class_name', className));
+        if (error) return res.json({ success: false, message: error.message });
+        if (!students.length) return res.json({ success: true, students: [] });
 
-        // Combine all activities for lookup
-        const level = getStudentLevel(req.params.className);
-        const reportActivities = [
-            ...(allActivities[level] || []),
-            ...(tecnologiaActivities ? tecnologiaActivities.filter(a => a.level == level) : [])
-        ];
+        const { data: responses } = await selectAll(() => supabase.from('activity_responses')
+            .select('student_id, activity_id, data, updated_at')
+            .in('student_id', students.map(s => s.id))
+            .in('activity_id', retoIdsForSubject(subject)));
+        const index = indexResponses(responses);
+        const showCode = res.locals.admin.perms.configure; // el código es la clave del estudiante
+        const rows = students.map(st => ({
+            id: st.id,
+            name: st.full_name || st.username,
+            code: showCode ? (st.student_code || '') : '',
+            ...studentRetoStatus(st, index, subject)
+        }));
+        rows.sort((a, b) => sortNameKey(a.name).localeCompare(sortNameKey(b.name), 'es', { sensitivity: 'base' }));
+        return res.json({ success: true, students: rows });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
 
-        return res.json({
-            success: true,
-            students,
-            responses: responses || [],
-            activities: reportActivities.map(a => ({ id: a.id, title: a.title, stars: a.stars || 0, evidence: a.evidence?.length || 0 }))
+// API: Avance retos (Indicadores). Por clase: estudiantes que ganaron cada reto 0-6 en una materia
+// y cuántos lo tienen en curso. Salen las clases con la materia habilitada (Configuración) o con
+// algún avance. El detalle por estudiante de una clase lo da la ruta de certificados.
+app.get('/api/admin/retos-progress/:subject', allow('reports'), async (req, res) => {
+    const { subject } = req.params;
+    if (!subjectStore.isKnown(subject)) return res.status(400).json({ success: false, message: 'Materia desconocida' });
+    if (!supabase) return res.json({ success: true, classes: [] });
+    try {
+        const { data: students, error } = await selectAll(() => supabase.from('students').select('id, class_name'));
+        if (error) return res.json({ success: false, message: error.message });
+        const { data: responses, error: respError } = await selectAll(() => supabase.from('activity_responses')
+            .select('student_id, activity_id, data, updated_at')
+            .in('activity_id', retoIdsForSubject(subject)));
+        if (respError) return res.json({ success: false, message: respError.message });
+
+        let subjectConfig = {};
+        try { subjectConfig = JSON.parse(fs.readFileSync(SUBJECT_CONFIG_FILE, 'utf8')); } catch (e) { /* sin configuración */ }
+        const index = indexResponses(responses);
+        const byClass = new Map();
+        students.filter(st => st.class_name).forEach(st => {
+            if (!byClass.has(st.class_name)) byClass.set(st.class_name, []);
+            byClass.get(st.class_name).push(studentRetoStatus(st, index, subject).retos);
         });
+        const classes = [...byClass].map(([className, list]) => ({
+            className,
+            enabled: !!(subjectConfig[className] && subjectConfig[className][subject] === true),
+            total: list.length,
+            retos: [0, 1, 2, 3, 4, 5, 6].map(n => ({
+                n,
+                won: list.filter(r => r[n].won).length,
+                inProgress: list.filter(r => r[n].started && !r[n].won).length
+            }))
+        })).filter(c => c.enabled || c.retos.some(r => r.won || r.inProgress))
+            .sort((a, b) => a.className.localeCompare(b.className, 'es', { numeric: true }));
+        return res.json({ success: true, subject, classes });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// Números de reto 1-6 que ganó un estudiante, en cualquier materia
+function wonRetoNumbers(responses, className) {
+    const won = new Set();
+    (responses || []).forEach(r => {
+        const n = retoResults.retoNumber(r.activity_id);
+        if (!n) return;
+        const result = computeRetoResult(r.activity_id, className, r.data || {});
+        if (result && result.won) won.add(n);
+    });
+    return won;
+}
+
+// Datos de los indicadores institucionales (services/indicators.js)
+async function loadIndicators() {
+    const { data: students, error } = await selectAll(() => supabase.from('students').select('id, class_name, student_code'));
+    if (error) throw new Error(error.message);
+    const { data: teachers, error: teachersError } = await selectAll(() => supabase.from('teachers').select('id, first_name, last_name, email, training_completed'));
+    if (teachersError) throw new Error(teachersError.message);
+    const { data: responses, error: responsesError } = await selectAll(() => supabase.from('activity_responses')
+        .select('student_id, activity_id, data').like('activity_id', 'reto%'));
+    if (responsesError) throw new Error(responsesError.message);
+    const { data: products, error: productsError } = await selectAll(() => supabase.from('multimedia_products').select('student_id, link'));
+    if (productsError) throw new Error(productsError.message);
+
+    const classOf = new Map(students.map(s => [s.id, s.class_name]));
+    const byStudent = new Map();
+    responses.forEach(r => {
+        if (!byStudent.has(r.student_id)) byStudent.set(r.student_id, []);
+        byStudent.get(r.student_id).push(r);
+    });
+    const wonRetos = new Map();
+    byStudent.forEach((list, id) => wonRetos.set(id, wonRetoNumbers(list, classOf.get(id))));
+    const withEvidence = new Set(products.filter(p => evidenceLinks.validLinks(p.link).length).map(p => p.student_id));
+
+    const exemptions = readTeacherExemptions();
+    return indicators.computeIndicators({
+        students,
+        teachers: teachers.map(t => ({ ...t, exempt: isExemptTeacher(exemptions, t) })),
+        assignedSegments: readTeacherSegments(),
+        mappingSegments: indicators.segmentsFromMapping(readClassTeacherConfig(), teachers),
+        wonRetos,
+        withEvidence
+    });
+}
+
+// API: Indicadores institucionales, en total y por segmento
+app.get('/api/admin/indicators', allow('reports'), async (req, res) => {
+    if (!supabase) return res.json({ success: false, message: 'Supabase no configurado' });
+    try {
+        return res.json({ success: true, indicators: await loadIndicators() });
     } catch (e) {
         return res.json({ success: false, message: e.message });
     }
 });
 
 // API: Get PSP Indicators data per class
-app.get('/api/admin/psp-indicators/:className', requireAdmin, async (req, res) => {
+app.get('/api/admin/psp-indicators/:className', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         // Fetch students in class
@@ -1184,10 +1620,10 @@ app.get('/api/admin/psp-indicators/:className', requireAdmin, async (req, res) =
         }
 
         const studentIds = students.map(s => s.id);
-        const { data: responses } = await supabase
+        const { data: responses } = await selectAll(() => supabase
             .from('activity_responses')
             .select('*')
-            .in('student_id', studentIds);
+            .in('student_id', studentIds));
 
         // Fetch registered teachers for eval status
         const { data: teachers } = await supabase.from('teachers').select('*');
@@ -1219,28 +1655,16 @@ app.get('/api/admin/psp-indicators/:className', requireAdmin, async (req, res) =
                 if (match && match.training_completed) { evalStatus = true; break; }
             }
 
-            // Calculate Retos 1-6 progress 
-            // We check how many reto_* the student started.
-            let retosStarted = 0;
-            const uniqueRetos = new Set();
-            studentResp.forEach(r => {
-                if (r.activity_id && r.activity_id.startsWith('reto')) {
-                    // Extract the reto number (e.g., roto1_aleman -> reto1)
-                    const retoLevel = r.activity_id.split('_')[0];
-                    uniqueRetos.add(retoLevel);
-                }
-            });
-            retosStarted = uniqueRetos.size;
-
-            // Progress percentage (out of 6 max retos)
-            const progress = Math.min(100, Math.round((retosStarted / 6) * 100));
+            // Retos 1-6 ganados: los mismos que cuenta el indicador (números distintos, en cualquier materia)
+            const retosWon = wonRetoNumbers(studentResp, st.class_name).size;
+            const progress = Math.min(100, Math.round((retosWon / 6) * 100));
 
             return {
                 id: st.id,
                 name: st.full_name || st.username,
                 teacher: teacherName,
                 evaluation_passed: evalStatus,
-                retosCompleted: retosStarted,
+                retosCompleted: retosWon,
                 progress: progress
             };
         });
@@ -1255,13 +1679,13 @@ app.get('/api/admin/psp-indicators/:className', requireAdmin, async (req, res) =
 });
 
 // API: Get PSP Matrix data (Klassen vs Matrices)
-app.get('/api/admin/psp-matrix', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
+app.get('/api/admin/psp-matrix', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
-        const { data: students } = await supabase.from('students').select('id, class_name');
+        const { data: students } = await selectAll(() => supabase.from('students').select('id, class_name'));
         if (!students) return res.json({ success: true, matrix: {} });
 
-        const { data: responses } = await supabase.from('activity_responses').select('student_id, activity_id');
+        const { data: responses } = await selectAll(() => supabase.from('activity_responses').select('student_id, activity_id'));
         if (!responses) return res.json({ success: true, matrix: {} });
 
         const matrix = {};
@@ -1310,15 +1734,15 @@ app.get('/api/admin/psp-matrix', requireAdmin, cache.cachearLectura(45000), asyn
 });
 
 // API: Get Teacher Reports
-app.get('/api/admin/teacher-reports', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
+app.get('/api/admin/teacher-reports', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         // Fetch all students to cross reference classes
-        const { data: students } = await supabase.from('students').select('id, class_name');
+        const { data: students } = await selectAll(() => supabase.from('students').select('id, class_name'));
         if (!students) return res.json({ success: true, teachers: [] });
 
         // Fetch profile responses
-        const { data: profiles } = await supabase.from('activity_responses').select('student_id, data').eq('activity_id', 'profile');
+        const { data: profiles } = await selectAll(() => supabase.from('activity_responses').select('student_id, data').eq('activity_id', 'profile'));
         if (!profiles) return res.json({ success: true, teachers: [] });
 
         const teacherMap = {}; // { 'Teacher Name': Set(class_names) }
@@ -1350,12 +1774,57 @@ app.get('/api/admin/teacher-reports', requireAdmin, cache.cachearLectura(45000),
     }
 });
 
+// API: Docentes y cursos (Indicadores). Por curso (clase + materia): docente, avance en los retos 0-6
+// y si está pendiente por aplicar el Medienpass; por docente: capacitación KMK y cursos.
+app.get('/api/admin/teacher-courses', allow('reports'), async (req, res) => {
+    if (!supabase) return res.json({ success: true, courses: [], teachers: [], summary: null });
+    try {
+        // El código solo sirve para no contar dos veces a un estudiante repetido; no sale en la respuesta
+        const { data: students, error } = await selectAll(() => supabase.from('students').select('id, class_name, student_code'));
+        if (error) return res.json({ success: false, message: error.message });
+        const { data: teachers, error: teachersError } = await selectAll(() => supabase.from('teachers')
+            .select('id, first_name, last_name, email, subject, training_completed, training_score, training_date'));
+        if (teachersError) return res.json({ success: false, message: teachersError.message });
+        const [retoResp, profileResp] = await Promise.all([
+            selectAll(() => supabase.from('activity_responses').select('student_id, activity_id, data, updated_at').like('activity_id', 'reto%')),
+            selectAll(() => supabase.from('activity_responses').select('student_id, activity_id, data, updated_at').eq('activity_id', 'profile'))
+        ]);
+        if (retoResp.error || profileResp.error) return res.json({ success: false, message: (retoResp.error || profileResp.error).message });
+
+        const index = indexResponses([...retoResp.data, ...profileResp.data]);
+        // Docente que cada estudiante escribió en el Reto 0, por materia (teacher_<materia>)
+        const reto0Teachers = new Map(profileResp.data.map(r => [r.student_id, Object.fromEntries(Object.entries(r.data || {})
+            .filter(([key, value]) => key.startsWith('teacher_') && typeof value === 'string' && value.trim())
+            .map(([key, value]) => [key.slice('teacher_'.length), value]))]));
+        let subjectConfig = {};
+        try { subjectConfig = JSON.parse(fs.readFileSync(SUBJECT_CONFIG_FILE, 'utf8')); } catch (e) { /* sin configuración */ }
+        const mapping = readClassTeacherConfig();
+        const assignedSegments = readTeacherSegments();
+        const mappingSegments = indicators.segmentsFromMapping(mapping, teachers);
+
+        const exemptions = readTeacherExemptions();
+        const report = teacherCourses.buildTeacherCourses({
+            students,
+            teachers: teachers.map(t => ({ ...t, exempt: isExemptTeacher(exemptions, t) })),
+            mapping,
+            subjectConfig,
+            subjects: subjectStore.activeSubjects().map(s => s.id),
+            reto0Teachers,
+            retoStatus: (student, subject) => studentRetoStatus(student, index, subject).retos,
+            segmentsOf: t => indicators.teacherSegments(t, assignedSegments, mappingSegments)
+        });
+        return res.json({ success: true, ...report });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
 // API: Get subject configuration per Klasse
-app.get('/api/admin/subject-config', requireAdmin, (req, res) => {
-    const configPath = path.join(__dirname, 'subject_config.json');
+app.get('/api/admin/subject-config', allow('certificates'), (req, res) => {
+    const configPath = SUBJECT_CONFIG_FILE;
     try {
         if (fs.existsSync(configPath)) {
-            const data = jsonstore.read(configPath, {});
+            const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
             return res.json({ success: true, config: data });
         }
         return res.json({ success: true, config: {} });
@@ -1365,11 +1834,19 @@ app.get('/api/admin/subject-config', requireAdmin, (req, res) => {
 });
 
 // API: Save subject configuration
-app.post('/api/admin/subject-config', requirePerm('admin:config'), async (req, res) => {
-    const configData = req.body;
-    const configPath = path.join(__dirname, 'subject_config.json');
+// Se combina con lo guardado: las materias inactivas no salen en la tabla y conservan sus valores.
+app.post('/api/admin/subject-config', devOnly, async (req, res) => {
+    const configData = req.body || {};
+    const configPath = SUBJECT_CONFIG_FILE;
     try {
-        await _enqueue(configPath, () => _writeJsonAtomic(configPath, configData));
+        await _enqueue(configPath, async () => {
+            let current = {};
+            try { current = JSON.parse(await fsp.readFile(configPath, 'utf8')); } catch (e) { /* primera vez */ }
+            Object.entries(configData).forEach(([klasse, values]) => {
+                current[klasse] = { ...(current[klasse] || {}), ...values };
+            });
+            await _writeJsonAtomic(configPath, current);
+        });
         return res.json({ success: true, message: 'Configuración guardada' });
     } catch (e) {
         console.error('Save subject config error:', e);
@@ -1378,11 +1855,11 @@ app.post('/api/admin/subject-config', requirePerm('admin:config'), async (req, r
 });
 
 // API: Get level configuration per Klasse
-app.get('/api/admin/level-config', requireAdmin, (req, res) => {
+app.get('/api/admin/level-config', devOnly, (req, res) => {
     const configPath = path.join(__dirname, 'level_config.json');
     try {
         if (fs.existsSync(configPath)) {
-            const data = jsonstore.read(configPath, {});
+            const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
             return res.json({ success: true, config: data });
         }
         return res.json({ success: true, config: {} });
@@ -1392,7 +1869,7 @@ app.get('/api/admin/level-config', requireAdmin, (req, res) => {
 });
 
 // API: Save level configuration
-app.post('/api/admin/level-config', requirePerm('admin:config'), async (req, res) => {
+app.post('/api/admin/level-config', devOnly, async (req, res) => {
     const configData = req.body;
     const configPath = path.join(__dirname, 'level_config.json');
     try {
@@ -1404,115 +1881,366 @@ app.post('/api/admin/level-config', requirePerm('admin:config'), async (req, res
     }
 });
 
-// API: Get i18n configuration (runs file in safe vm sandbox)
-// Formato de nombres para el navegador.
-//
-// El panel pinta sus listados desde JavaScript, asi que necesita el MISMO
-// criterio que el servidor: si no, la cabecera muestra 'Herrera Pfeiffer' y la
-// tabla de al lado 'HERRERA PFEIFFER FELIX LEANDRO GABRIEL'.
-// Se sirve services/names.js tal cual, sin su module.exports.
-app.get('/js/nombres.js', (req, res) => {
-    const fuente = jsonstoreLeerTexto(path.join(__dirname, 'services', 'names.js'));
-    const partes = [
-        '/* Generado desde services/names.js - no editar a mano. */',
-        '(function () {',
-        fuente.replace(/module\.exports[^;]*;/g, ''),
-        'window.medienpassNombres = { formatear: formatear, corto: corto, iniciales: iniciales };',
-        '})();'
-    ];
-    res.type('application/javascript');
-    res.set('Cache-Control', 'no-cache');
-    res.send(partes.join('\n'));
-});
-
-/** Lee un archivo de texto una sola vez y lo recuerda. */
-const _textoCache = new Map();
-function jsonstoreLeerTexto(ruta) {
-    if (!_textoCache.has(ruta)) {
-        _textoCache.set(ruta, fs.readFileSync(ruta, 'utf8'));
-    }
-    return _textoCache.get(ruta);
-}
-// El diccionario del cliente se genera desde config/i18n/*.json, de modo que
-// servidor y navegador comparten una única fuente de verdad. Antes public/js/i18n.js
-// era un archivo aparte que había que mantener sincronizado a mano.
-app.get('/js/i18n.js', (req, res) => {
-    const bundle = i18n.all();
-    res.type('application/javascript');
-    res.set('Cache-Control', 'no-cache');
-    const lines = [
-        '/* Generado desde config/i18n/*.json - no editar a mano. */',
-        'const i18n = ' + JSON.stringify(bundle) + ';',
-        'if (typeof window !== "undefined") { window.i18n = i18n; }',
-        'if (typeof module !== "undefined" && module.exports) { module.exports = i18n; }'
-    ];
-    res.send(lines.join('\n'));
-});
-
-// API: leer las traducciones (config/i18n/*.json)
-app.get('/api/admin/i18n', requirePerm('admin:i18n'), (req, res) => {
+// API: Get the interface texts of one section (comun, docentes, admin, manuales)
+app.get('/api/admin/i18n', devOnly, (req, res) => {
+    const sections = i18nStore.listSections();
+    const section = sections.some(s => s.id === req.query.section) ? req.query.section : 'comun';
     try {
-        return res.json({ success: true, i18n: i18n.all(), missing: i18n.missingKeys() });
+        return res.json({ success: true, section, sections, i18n: i18nStore.getSection(section) });
     } catch (e) {
-        return res.status(500).json({ success: false, message: e.message });
+        return res.json({ success: false, message: e.message });
     }
 });
 
-// API: guardar traducciones.
-// Antes se generaba un archivo .js con el texto del formulario y se leía con
-// vm.runInNewContext(): lo que un administrador escribiera acababa ejecutándose
-// en el navegador de todos. Ahora son datos JSON y nunca código.
-app.post('/api/admin/i18n', requirePerm('admin:i18n'), async (req, res) => {
+// API: Save the interface texts of one section ({ section, i18n: { de, en, es } }).
+// A body with only { de, en, es } (old format) is saved to the common section.
+app.post('/api/admin/i18n', devOnly, async (req, res) => {
+    const { section = 'comun', i18n } = req.body.i18n ? req.body : { i18n: req.body };
     try {
-        const payload = req.body || {};
-        const saved = {};
-        for (const lang of i18n.languages()) {
-            if (payload[lang]) {
-                saved[lang] = await i18n.save(lang, payload[lang]);
-            }
-        }
-        if (!Object.keys(saved).length) {
-            return res.status(400).json({ success: false, message: 'No se recibió ningún idioma válido.' });
-        }
-        return res.json({ success: true, message: 'Traducciones guardadas', saved });
+        await i18nStore.saveSection(section, i18n);
+        return res.json({ success: true, message: 'Traducciones guardadas' });
     } catch (e) {
         console.error('Save i18n error:', e);
         return res.status(500).json({ success: false, message: e.message });
     }
 });
 
-// API: Get teacher extra roles mapping
-app.get('/api/admin/teacher-roles', requirePerm('admin:users'), (req, res) => {
-    const rolesPath = path.join(__dirname, 'data', 'teacher_roles.json');
+// API: Lista de docentes para Administración › Docentes (con su rol de teacher_roles.json)
+app.get('/api/admin/teachers', allow('lists'), async (req, res) => {
+    if (!supabase) return res.json({ success: true, teachers: [] });
     try {
-        if (fs.existsSync(rolesPath)) {
-            const data = jsonstore.read(rolesPath, {});
-            return res.json({ success: true, roles: data });
-        }
-        return res.json({ success: true, roles: {} });
+        const { data, error } = await selectAll(() => supabase.from('teachers')
+            .select('id, first_name, last_name, email, doc_number, subject, training_completed, training_score, training_date'));
+        if (error) return res.json({ success: false, message: error.message });
+        const roles = access.readRoles(teacherRolesFile);
+        const assignedSegments = readTeacherSegments();
+        const mappingSegments = indicators.segmentsFromMapping(readClassTeacherConfig(), data);
+        const showDoc = res.locals.admin.perms.configure; // el documento es la clave del docente
+        const teachers = (data || []).map(({ doc_number, ...t }) => ({
+            ...t,
+            ...(showDoc ? { doc_number } : {}),
+            role: access.normalizeRole(roles[(t.email || '').trim().toLowerCase()]),
+            segments: indicators.teacherSegments(t, assignedSegments, mappingSegments)
+        }));
+        teachers.sort((a, b) => `${a.last_name || ''} ${a.first_name || ''}`
+            .localeCompare(`${b.last_name || ''} ${b.first_name || ''}`, 'es', { sensitivity: 'base' }));
+        return res.json({ success: true, teachers });
     } catch (e) {
         return res.json({ success: false, message: e.message });
     }
 });
 
-// API: Save teacher extra role
-app.post('/api/admin/teacher-roles', requirePerm('admin:users'), async (req, res) => {
-    const { email, role } = req.body;
-    const rolesPath = path.join(__dirname, 'data', 'teacher_roles.json');
+// API: Editar un docente desde la lista (nombres, apellidos, correo, materia y rol).
+// El documento no se cambia aquí. El rol va por correo en teacher_roles.json ("admin" se guarda
+// como desarrollador, que es el mismo perfil).
+const SIMPLE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TEACHER_FIELDS = 'id, first_name, last_name, email, doc_number, subject, training_completed, training_score, training_date';
+
+app.post('/api/admin/teachers/:id', devOnly, async (req, res) => {
+    const clean = value => String(value == null ? '' : value).trim();
+    const body = req.body || {};
+    const first_name = clean(body.first_name);
+    const last_name = clean(body.last_name);
+    const email = clean(body.email).toLowerCase();
+    const subject = clean(body.subject);
+    const role = access.normalizeRole(clean(body.role));
+    const bad = message => res.status(400).json({ success: false, message });
+    if (!first_name || !last_name || first_name.length > 80 || last_name.length > 80) return bad('Faltan los nombres o los apellidos');
+    if (!SIMPLE_EMAIL_RE.test(email) || email.length > 120) return bad('Correo no válido');
+    if (subject && !subjectStore.isKnown(subject)) return bad('Materia desconocida');
+    if (!access.ASSIGNABLE_ROLES.includes(role)) return bad('Rol no válido');
+    const segments = Array.isArray(body.segments) ? body.segments : null;
+    if (segments && segments.some(s => !classLevels.SEGMENTS.includes(s))) return bad('Segmento no válido');
+    if (!supabase) return res.json({ success: false, message: 'Supabase no configurado' });
     try {
-        let currentRoles = {};
-        if (fs.existsSync(rolesPath)) {
-            currentRoles = jsonstore.read(rolesPath, {});
+        const { data: found, error: findError } = await supabase.from('teachers').select('id, email').eq('id', req.params.id).limit(1);
+        if (findError) return res.json({ success: false, message: findError.message });
+        const current = found && found[0];
+        if (!current) return res.status(404).json({ success: false, message: 'Docente no encontrado' });
+
+        // Nadie cambia su propio perfil ni su correo desde aquí
+        const oldEmail = clean(current.email).toLowerCase();
+        if (clean(res.locals.admin.email).toLowerCase() === oldEmail && (role !== res.locals.admin.role || email !== oldEmail)) {
+            return bad('No puedes cambiar tu propio perfil ni tu correo desde aquí');
         }
-        const lowerEmail = (email || '').trim().toLowerCase();
-        if (lowerEmail) {
-            if (role && role !== 'profesor') {
-                currentRoles[lowerEmail] = role;
-            } else {
-                delete currentRoles[lowerEmail];
-            }
-            await _enqueue(rolesPath, () => _writeJsonAtomic(rolesPath, currentRoles));
+
+        const { data: updated, error } = await supabase.from('teachers')
+            .update({ first_name, last_name, email, subject }).eq('id', req.params.id).select(TEACHER_FIELDS);
+        if (error) return res.json({ success: false, message: error.message });
+        if (!updated || !updated.length) return res.json({ success: false, message: 'La base de datos no aceptó el cambio' });
+
+        await _enqueue(teacherRolesFile, async () => {
+            let roles = {};
+            try { roles = JSON.parse(await fsp.readFile(teacherRolesFile, 'utf8')); } catch (e) { /* sin roles */ }
+            delete roles[oldEmail];
+            if (role !== 'profesor') roles[email] = role;
+            else delete roles[email];
+            await _writeJsonAtomic(teacherRolesFile, roles);
+        });
+
+        // Segmentos: se guardan si llegan y, si cambió el correo, pasan al correo nuevo
+        let assignedSegments = {};
+        await _enqueue(teacherSegmentsFile, async () => {
+            assignedSegments = readTeacherSegments();
+            const previous = assignedSegments[oldEmail];
+            if (oldEmail !== email) delete assignedSegments[oldEmail];
+            if (segments) assignedSegments[email] = classLevels.SEGMENTS.filter(s => segments.includes(s));
+            else if (previous) assignedSegments[email] = previous;
+            if (segments || (previous && oldEmail !== email)) await _writeJsonAtomic(teacherSegmentsFile, assignedSegments);
+        });
+        const { data: allTeachers } = await selectAll(() => supabase.from('teachers').select('first_name, last_name, email'));
+        const mappingSegments = indicators.segmentsFromMapping(readClassTeacherConfig(), allTeachers);
+        return res.json({ success: true, teacher: { ...updated[0], role, segments: indicators.teacherSegments(updated[0], assignedSegments, mappingSegments) } });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Eliminar un docente (desde Docentes y desde los informes de docentes).
+// 1) Copia el registro completo, sus pruebas KMK, su rol, segmentos y excepción en
+//    data/teacher_deletions.json. 2) Borra el docente (y sus pruebas KMK). 3) Quita su correo de
+//    los roles, segmentos y excepciones. El mapeo por clase no se toca: se avisa en cuántas clases
+//    sigue nombrado para que el desarrollador decida en Mapeo.
+app.delete('/api/admin/teachers/:id', devOnly, async (req, res) => {
+    if (!supabase) return res.json({ success: false, message: 'Supabase no configurado' });
+    try {
+        const { data: found, error: findError } = await supabase.from('teachers').select('*').eq('id', req.params.id).limit(1);
+        if (findError) return res.json({ success: false, message: findError.message });
+        const teacher = found && found[0];
+        if (!teacher) return res.status(404).json({ success: false, message: 'Docente no encontrado' });
+        const email = String(teacher.email || '').trim().toLowerCase();
+        if (email && email === String(res.locals.admin.email || '').trim().toLowerCase()) {
+            return res.status(400).json({ success: false, message: 'No puedes eliminar tu propia cuenta' });
         }
+
+        const { data: tests } = await supabase.from('teacher_kmk_tests').select('*').eq('teacher_id', teacher.id);
+        const roles = access.readRoles(teacherRolesFile);
+        const segments = readTeacherSegments();
+        const exemptions = readTeacherExemptions();
+        // Clases del mapeo que lo nombran (comparando con todos los docentes, como los informes)
+        const { data: everyone } = await selectAll(() => supabase.from('teachers').select('id, first_name, last_name, email, subject'));
+        const mapped = teacherSubjects.mappedSubjects(readClassTeacherConfig(), everyone || [teacher], subjects.map(s => s.id)).get(teacher.id) || [];
+        const name = [teacher.first_name, teacher.last_name].filter(Boolean).join(' ').trim() || teacher.email || String(teacher.id);
+
+        // Copia antes de borrar (si no se puede escribir, no se borra)
+        await _enqueue(teacherDeletionsFile, async () => {
+            let log = [];
+            try { log = JSON.parse(await fsp.readFile(teacherDeletionsFile, 'utf8')) || []; } catch (e) { log = []; }
+            log.push({
+                date: new Date().toISOString(), by: res.locals.admin.email, id: teacher.id, name, teacher,
+                kmkTests: tests || [], role: email ? (roles[email] || null) : null,
+                segments: email ? (segments[email] || null) : null, exemption: email ? (exemptions[email] || null) : null
+            });
+            await _writeJsonAtomic(teacherDeletionsFile, log);
+        });
+
+        // Sus pruebas KMK primero (si la tabla las ata al docente, el borrado lo exige)
+        if (tests && tests.length) {
+            const { error: testsError } = await supabase.from('teacher_kmk_tests').delete().eq('teacher_id', teacher.id);
+            if (testsError) return res.json({ success: false, message: testsError.message });
+        }
+        const { data: deleted, error } = await supabase.from('teachers').delete().eq('id', teacher.id).select('id');
+        if (error) return res.json({ success: false, message: error.message });
+        if (!deleted || !deleted.length) return res.json({ success: false, message: 'La base de datos no aceptó el borrado' });
+
+        if (email) {
+            // Quita el correo del archivo tal como está escrito (sin importar mayúsculas)
+            const drop = file => _enqueue(file, async () => {
+                let current;
+                try { current = JSON.parse(await fsp.readFile(file, 'utf8')); } catch (e) { return; }
+                if (!current || typeof current !== 'object' || Array.isArray(current)) return;
+                const keys = Object.keys(current).filter(k => k.trim().toLowerCase() === email);
+                if (!keys.length) return;
+                keys.forEach(k => delete current[k]);
+                await _writeJsonAtomic(file, current);
+            });
+            await drop(teacherRolesFile);
+            await drop(teacherSegmentsFile);
+            await drop(teacherExemptionsFile);
+        }
+        return res.json({
+            success: true, id: teacher.id, name,
+            mappedClasses: mapped.reduce((n, m) => n + m.classes.length, 0)
+        });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// API: Materias (Administración › Materias): todas, con cuántos docentes y clases tiene cada una
+app.get('/api/admin/subjects', devOnly, async (req, res) => {
+    let subjectConfig = {};
+    try { subjectConfig = JSON.parse(fs.readFileSync(SUBJECT_CONFIG_FILE, 'utf8')); } catch (e) { /* sin configuración */ }
+    const teacherCounts = {};
+    if (supabase) {
+        try {
+            const { data } = await selectAll(() => supabase.from('teachers').select('id, subject'));
+            (data || []).forEach(t => { teacherCounts[t.subject] = (teacherCounts[t.subject] || 0) + 1; });
+        } catch (e) { /* sin conteo de docentes */ }
+    }
+    const list = subjects.map(s => ({
+        id: s.id, name: s.name, icon: s.icon, color: s.color, active: s.active !== false, custom: !!s.custom,
+        teachers: teacherCounts[s.id] || 0,
+        classes: Object.values(subjectConfig).filter(c => c && c[s.id] === true).length
+    }));
+    return res.json({ success: true, subjects: list });
+});
+
+// API: Nueva materia (nombre DE/EN/ES, ícono y color). Queda activa, con retos 0 a 6 de contenido
+// genérico (data_generic_subject.js) y, si se pide, habilitada en todas las clases de Configuración.
+app.post('/api/admin/subjects', devOnly, async (req, res) => {
+    const body = req.body || {};
+    try {
+        const result = await _enqueue(subjectStore.CONFIG_FILE, () => subjectStore.createSubject(body, _writeJsonAtomic));
+        if (result.error) return res.status(400).json({ success: false, message: result.error });
+        const s = result.subject;
+        registerSubjectActivities(s);
+        let classes = 0;
+        if (body.enableAll === true) {
+            await _enqueue(SUBJECT_CONFIG_FILE, async () => {
+                let config = {};
+                try { config = JSON.parse(await fsp.readFile(SUBJECT_CONFIG_FILE, 'utf8')) || {}; } catch (e) { /* sin configuración */ }
+                Object.keys(config).forEach(cls => { config[cls] = { ...(config[cls] || {}), [s.id]: true }; });
+                classes = Object.keys(config).length;
+                await _writeJsonAtomic(SUBJECT_CONFIG_FILE, config);
+            });
+        }
+        return res.json({ success: true, subject: { id: s.id, name: s.name, icon: s.icon, color: s.color, active: true, custom: true, teachers: 0, classes } });
+    } catch (e) {
+        console.error('Create subject error:', e);
+        return res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// API: Guardar una materia (nombre DE/EN/ES, ícono, color, activa)
+app.post('/api/admin/subjects/:id', devOnly, async (req, res) => {
+    const { id } = req.params;
+    const body = req.body || {};
+    if (body.active === false && !subjectStore.activeSubjects().some(s => s.id !== id)) {
+        return res.status(400).json({ success: false, message: 'Debe quedar al menos una materia activa' });
+    }
+    try {
+        const result = await _enqueue(subjectStore.CONFIG_FILE, () => subjectStore.saveSubject(id, body, _writeJsonAtomic));
+        if (result.error) return res.status(400).json({ success: false, message: result.error });
+        const s = result.subject;
+        return res.json({ success: true, subject: { id: s.id, name: s.name, icon: s.icon, color: s.color, active: s.active !== false } });
+    } catch (e) {
+        console.error('Save subject error:', e);
+        return res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// ── Año escolar (Administración › Año escolar, solo el desarrollador) ──
+// Lista de años, año en curso y cuántas respuestas hay guardadas en cada uno.
+// Respuestas por año: de Supabase; sin Supabase, del caché local. null si Supabase no respondió.
+async function responsesPerYear() {
+    const counts = {};
+    if (supabase) {
+        try {
+            const { data, error } = await selectAll(() => supabase.from('activity_responses').select('school_year'));
+            if (error) throw error;
+            (data || []).forEach(r => { counts[r.school_year] = (counts[r.school_year] || 0) + 1; });
+            return counts;
+        } catch (e) {
+            console.error('Conteo de respuestas por año:', e.message);
+            return null;
+        }
+    }
+    const cache = readLocalCache();
+    Object.values(cache).forEach(acts => Object.values(acts || {}).forEach(item => {
+        if (item && item.school_year) counts[item.school_year] = (counts[item.school_year] || 0) + 1;
+    }));
+    return counts;
+}
+
+function schoolYearsPayload(counts) {
+    return {
+        active: yearStore.activeYear(),
+        nextStart: yearStore.nextStart(),
+        countsAvailable: !!counts,
+        years: yearStore.list().map(y => ({ ...y, responses: counts ? (counts[y.id] || 0) : null }))
+    };
+}
+
+const SCHOOL_YEAR_ERRORS = {
+    invalid_year: 'adm_anio_err_invalido',
+    duplicate_year: 'adm_anio_err_repetido',
+    unknown_year: 'adm_anio_err_desconocido',
+    active_year: 'adm_anio_err_en_curso',
+    year_in_use: 'adm_anio_err_con_respuestas',
+    counts_unavailable: 'adm_anio_err_sin_conteo'
+};
+function schoolYearError(res, code, status = 400) {
+    return res.status(status).json({ success: false, code, message: res.locals.t(SCHOOL_YEAR_ERRORS[code]) });
+}
+
+app.get('/api/admin/school-years', devOnly, async (req, res) => {
+    return res.json({ success: true, ...schoolYearsPayload(await responsesPerYear()) });
+});
+
+// Agregar un año: llega el año en que empieza (2028 -> 2028 - 2029)
+app.post('/api/admin/school-years', devOnly, async (req, res) => {
+    try {
+        const result = await _enqueue(yearStore.FILE, () => yearStore.add((req.body || {}).start, _writeJsonAtomic));
+        if (result.error) return schoolYearError(res, result.error);
+        return res.json({ success: true, id: result.id, ...schoolYearsPayload(await responsesPerYear()) });
+    } catch (e) {
+        console.error('Agregar año escolar:', e);
+        return res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Año en curso: el que ven los estudiantes y con el que se guardan sus respuestas
+app.put('/api/admin/school-years/active', devOnly, async (req, res) => {
+    try {
+        const result = await _enqueue(yearStore.FILE, () => yearStore.setActive((req.body || {}).id, _writeJsonAtomic));
+        if (result.error) return schoolYearError(res, result.error);
+        return res.json({ success: true, id: result.id, ...schoolYearsPayload(await responsesPerYear()) });
+    } catch (e) {
+        console.error('Año escolar en curso:', e);
+        return res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Quitar un año de la lista (no borra respuestas): solo si no está en curso y no tiene respuestas
+app.delete('/api/admin/school-years/:id', devOnly, async (req, res) => {
+    try {
+        const counts = await responsesPerYear();
+        if (!counts) return schoolYearError(res, 'counts_unavailable', 503);
+        const id = req.params.id;
+        const result = await _enqueue(yearStore.FILE, () => yearStore.remove(id, _writeJsonAtomic, { savedResponses: counts[id] || 0 }));
+        if (result.error) return schoolYearError(res, result.error);
+        return res.json({ success: true, id: result.id, ...schoolYearsPayload(counts) });
+    } catch (e) {
+        console.error('Quitar año escolar:', e);
+        return res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// API: Get teacher extra roles mapping
+app.get('/api/admin/teacher-roles', devOnly, (req, res) => {
+    const roles = access.readRoles(teacherRolesFile);
+    return res.json({ success: true, roles: Object.fromEntries(Object.entries(roles).map(([email, role]) => [email, access.normalizeRole(role)])) });
+});
+
+// API: Save teacher extra role (editor de base de datos). Solo perfiles válidos; nadie cambia el suyo.
+app.post('/api/admin/teacher-roles', devOnly, async (req, res) => {
+    const body = req.body || {};
+    const lowerEmail = String(body.email || '').trim().toLowerCase();
+    const role = access.normalizeRole(body.role);
+    if (!SIMPLE_EMAIL_RE.test(lowerEmail) || lowerEmail.length > 120) return res.status(400).json({ success: false, message: 'Correo no válido' });
+    if (!access.ASSIGNABLE_ROLES.includes(role)) return res.status(400).json({ success: false, message: 'Rol no válido' });
+    if (lowerEmail === String(res.locals.admin.email || '').trim().toLowerCase() && role !== res.locals.admin.role) {
+        return res.status(400).json({ success: false, message: 'No puedes cambiar tu propio perfil' });
+    }
+    try {
+        await _enqueue(teacherRolesFile, async () => {
+            let currentRoles = {};
+            try { currentRoles = JSON.parse(await fsp.readFile(teacherRolesFile, 'utf8')); } catch (e) { /* sin roles */ }
+            Object.keys(currentRoles).filter(k => k.trim().toLowerCase() === lowerEmail).forEach(k => delete currentRoles[k]);
+            if (role !== 'profesor') currentRoles[lowerEmail] = role;
+            await _writeJsonAtomic(teacherRolesFile, currentRoles);
+        });
         return res.json({ success: true, message: 'Rol asignado correctamente' });
     } catch (e) {
         console.error('Save teacher role error:', e);
@@ -1521,26 +2249,38 @@ app.post('/api/admin/teacher-roles', requirePerm('admin:users'), async (req, res
 });
 
 // API: Get teacher mapping configuration
-app.get('/api/admin/teacher-mapping', requireAdmin, (req, res) => {
-    const configPath = path.join(__dirname, 'class_teacher_config.json');
+app.get('/api/admin/teacher-mapping', devOnly, (req, res) => {
     try {
-        if (fs.existsSync(configPath)) {
-            const data = jsonstore.read(configPath, {});
-            return res.json({ success: true, config: data });
-        }
-        return res.json({ success: true, config: {} });
+        return res.json({ success: true, config: readClassTeacherConfig() });
     } catch (e) {
         return res.json({ success: false, message: e.message });
     }
 });
 
+// Mapeo que llega de la tabla editable: { clase: { materia: "NOMBRE DOCENTE" } }.
+// Se quitan los campos vacíos; materias y nombres se validan.
+function cleanTeacherMapping(input) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+    const config = {};
+    for (const [rawClass, row] of Object.entries(input)) {
+        const className = String(rawClass).trim();
+        if (!className || className.length > 60 || !row || typeof row !== 'object' || Array.isArray(row)) return null;
+        config[className] = {};
+        for (const [subject, name] of Object.entries(row)) {
+            if (!subjectStore.isKnown(subject) || typeof name !== 'string' || name.length > 120) return null;
+            if (name.trim()) config[className][subject] = name.trim().replace(/\s+/g, ' ');
+        }
+    }
+    return config;
+}
+
 // API: Save teacher mapping configuration
-app.post('/api/admin/teacher-mapping', requireAdmin, async (req, res) => {
-    const configData = req.body;
-    const configPath = path.join(__dirname, 'class_teacher_config.json');
+app.post('/api/admin/teacher-mapping', devOnly, async (req, res) => {
+    const configData = cleanTeacherMapping(req.body);
+    if (!configData) return res.status(400).json({ success: false, message: 'Mapeo no válido' });
     try {
-        await _enqueue(configPath, () => _writeJsonAtomic(configPath, configData));
-        return res.json({ success: true, message: 'Mapeo de profesores guardado' });
+        await _enqueue(classTeacherConfigFile, () => _writeJsonAtomic(classTeacherConfigFile, configData));
+        return res.json({ success: true, message: 'Mapeo de profesores guardado', config: configData });
     } catch (e) {
         console.error('Save teacher mapping error:', e);
         return res.status(500).json({ success: false, message: e.message });
@@ -1553,65 +2293,22 @@ app.post('/api/admin/teacher-mapping', requireAdmin, async (req, res) => {
 // ════════════════════════════════════════
 // EXECUTIVE DASHBOARD ROUTES
 // ════════════════════════════════════════
+// Página antigua: el dashboard ejecutivo es la pestaña Inicio del panel
 app.get('/admin/executive', requireAdmin, (req, res) => {
-    res.render('admin/executive-dashboard');
+    res.redirect('/admin#inicio');
 });
 
 // API: KPIs for Executive Dashboard
-app.get('/api/admin/kpis', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
+app.get('/api/admin/kpis', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
-        // Cinco consultas en paralelo, cada una pidiendo solo las columnas que
-        // se usan mas abajo. Antes iban en serie y `activity_responses` traia
-        // select('*'): 0,67 MB (incluidas las fotos en base64 del campo data)
-        // para acabar contando identificadores unicos.
-        const [
-            { data: students }, { data: teachers }, { data: responses },
-            { data: incidents }, { data: devices }
-        ] = await Promise.all([
-            supabase.from('students').select('id, class_name'),
-            supabase.from('teachers').select('id, training_completed'),
-            supabase.from('activity_responses').select('student_id'),
-            supabase.from('incidents').select('status'),
-            supabase.from('devices').select('id')
-        ]);
-
-        // Integracion digital: estudiantes con al menos una evidencia
-        // multimedia. La tarjeta del panel se quedaba girando para siempre
-        // porque nadie calculaba este dato ni lo enviaba.
-        let integrationRate = 0;
-        try {
-            const { data: productos } = await supabase
-                .from('multimedia_products').select('student_id');
-            const conEvidencia = new Set((productos || []).map(x => x.student_id)).size;
-            const totalAlumnos = (students || []).length;
-            integrationRate = totalAlumnos > 0
-                ? Math.round((conEvidencia / totalAlumnos) * 100)
-                : 0;
-        } catch (e) {
-            console.error('KPI de integracion digital:', e.message);
-        }
-
-        const totalStudents = students?.length || 0;
-        const totalTeachers = teachers?.length || 0;
-        const certifiedTeachers = teachers?.filter(t => t.training_completed)?.length || 0;
-        const totalDevices = devices?.length || 0;
-        const openIncidents = incidents?.filter(i => i.status === 'open')?.length || 0;
-
-        // Calculate students with progress
-        const studentsWithProgress = new Set(responses?.map(r => r.student_id) || []).size;
-        const progressRate = totalStudents > 0 ? Math.round((studentsWithProgress / totalStudents) * 100) : 0;
-        const teachersCertified = totalTeachers > 0 ? Math.round((certifiedTeachers / totalTeachers) * 100) : 0;
-
+        const data = await loadIndicators();
         return res.json({
             success: true,
             kpis: {
-                totalStudents,
-                progressRate,
-                teachersCertified,
-                integrationRate,
-                totalDevices,
-                openIncidents
+                totalStudents: data.students.total,
+                progressRate: data.students.pct,
+                teachersCertified: data.teachers.pct
             }
         });
     } catch (e) {
@@ -1621,35 +2318,26 @@ app.get('/api/admin/kpis', requireAdmin, cache.cachearLectura(45000), async (req
 });
 
 // API: Progress by Klasse
-app.get('/api/admin/progress-by-klasse', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
+app.get('/api/admin/progress-by-klasse', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
-        const year = req.query.year || '2627';
-        const { data: students } = await supabase.from('students').select('id, class_name');
-        // Solo se usa student_id: pedir select('*') traia ademas el JSONB con
-        // las respuestas completas (fotos incluidas) para acabar contando.
-        const { data: responses } = await supabase
-            .from('activity_responses').select('student_id').eq('school_year', year);
-
-        // Un unico recorrido en lugar de re-filtrar todas las respuestas para
-        // cada uno de los 44 cursos con Array.includes().
-        const activos = new Set((responses || []).map(r => r.student_id));
-        const porCurso = new Map();
-        (students || []).forEach(st => {
-            if (!porCurso.has(st.class_name)) porCurso.set(st.class_name, { total: 0, activos: 0 });
-            const c = porCurso.get(st.class_name);
-            c.total++;
-            if (activos.has(st.id)) c.activos++;
-        });
+        const year = yearStore.resolve(req.query.year); // sin año válido: el año en curso
+        const { data: students } = await selectAll(() => supabase.from('students').select('id, class_name'));
+        const { data: responses } = await selectAll(() => supabase.from('activity_responses').select('*').eq('school_year', year));
 
         const klasseStats = {};
         klassenConfig.klassen.forEach(k => {
             klassenConfig.kurse.forEach(kurs => {
                 const className = k + kurs;
-                const c = porCurso.get(className);
-                klasseStats[className] = (c && c.total > 0)
-                    ? Math.round((c.activos / c.total) * 100)
+                const classStudents = students?.filter(s => s.class_name === className) || [];
+                const studentIds = classStudents.map(s => s.id);
+                const activeStudents = new Set(
+                    responses?.filter(r => studentIds.includes(r.student_id)).map(r => r.student_id) || []
+                ).size;
+                const progress = classStudents.length > 0 
+                    ? Math.round((activeStudents / classStudents.length) * 100) 
                     : 0;
+                klasseStats[className] = progress;
             });
         });
 
@@ -1661,13 +2349,11 @@ app.get('/api/admin/progress-by-klasse', requireAdmin, cache.cachearLectura(4500
 });
 
 // API: Progress by Subject
-app.get('/api/admin/progress-by-subject', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
+app.get('/api/admin/progress-by-subject', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
-        const year = req.query.year || '2627';
-        // Solo se usa activity_id para contar por asignatura.
-        const { data: responses } = await supabase
-            .from('activity_responses').select('activity_id').eq('school_year', year);
+        const year = yearStore.resolve(req.query.year); // sin año válido: el año en curso
+        const { data: responses } = await selectAll(() => supabase.from('activity_responses').select('*').eq('school_year', year));
 
         const subjectCounts = {};
         subjects.forEach(s => subjectCounts[s.id] = 0);
@@ -1681,7 +2367,7 @@ app.get('/api/admin/progress-by-subject', requireAdmin, cache.cachearLectura(450
         });
 
         const data = subjects.map(s => ({
-            subject: s.name.es,
+            subject: s.name[res.locals.lang] || s.name.es,
             count: subjectCounts[s.id]
         }));
         return res.json({ success: true, data });
@@ -1690,32 +2376,24 @@ app.get('/api/admin/progress-by-subject', requireAdmin, cache.cachearLectura(450
     }
 });
 
-// API: Students without progress
-app.get('/api/admin/students-without-progress', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
+// API: Inicio › Estudiantes sin empezar el Medienpass (por clase, en el año elegido). Sin códigos.
+app.get('/api/admin/students-without-progress', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
-        const year = req.query.year || '2627';
-        const { data: students } = await supabase.from('students').select('*');
-        const { data: responses } = await supabase.from('activity_responses').select('student_id').eq('school_year', year);
-
-        const activeStudentIds = new Set(responses?.map(r => r.student_id) || []);
-        const noProgress = students?.filter(s => !activeStudentIds.has(s.id)) || [];
-
-        return res.json({
-            success: true,
-            students: noProgress.map(s => ({
-                id: s.id,
-                name: s.full_name || s.username,
-                class: s.class_name
-            }))
-        });
+        const year = yearStore.resolve(req.query.year); // sin año válido: el año en curso
+        const { data: students } = await selectAll(() => supabase.from('students').select('id, class_name, student_code, full_name, username'));
+        const { data: responses } = await selectAll(() => supabase.from('activity_responses').select('student_id').eq('school_year', year));
+        const startedIds = new Set((responses || []).map(r => r.student_id));
+        const report = noProgress.buildNoProgressReport({ students: students || [], startedIds, sortKey: sortNameKey });
+        return res.json({ success: true, year, yearLabel: yearStore.labelOf(year), ...report });
     } catch (e) {
+        console.error('students-without-progress:', e.message);
         return res.json({ success: false });
     }
 });
 
 // API: Student profile (Reto 0)
-app.get('/api/admin/student-profile/:id', requireAdmin, async (req, res) => {
+app.get('/api/admin/student-profile/:id', allow('lists'), async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No database' });
     try {
         const studentId = req.params.id;
@@ -1746,11 +2424,11 @@ app.get('/api/admin/student-profile/:id', requireAdmin, async (req, res) => {
 });
 
 // API: Pending teachers
-app.get('/api/admin/pending-teachers', requireAdmin, (req, res) => {
+app.get('/api/admin/pending-teachers', devOnly, (req, res) => {
     try {
         let pending = [];
         if (fs.existsSync(pendingTeachersFile)) {
-            pending = jsonstore.read(pendingTeachersFile, {});
+            pending = JSON.parse(fs.readFileSync(pendingTeachersFile, 'utf8'));
         }
         return res.json({ success: true, pending });
     } catch(e) {
@@ -1758,24 +2436,30 @@ app.get('/api/admin/pending-teachers', requireAdmin, (req, res) => {
     }
 });
 
-app.post('/api/admin/approve-teacher/:id', requirePerm('admin:teachers'), cache.invalidarTras(), async (req, res) => {
+app.post('/api/admin/approve-teacher/:id', devOnly, async (req, res) => {
     try {
         let pending = [];
         if (fs.existsSync(pendingTeachersFile)) {
-            pending = jsonstore.read(pendingTeachersFile, {});
+            pending = JSON.parse(fs.readFileSync(pendingTeachersFile, 'utf8'));
         }
         const idx = pending.findIndex(p => p.id === req.params.id);
         if (idx === -1) return res.json({ success: false, message: 'Solicitud no encontrada' });
-        
+
         const teacherData = pending[idx];
-        
+        // Materia elegida en la lista de solicitudes (viene preseleccionada con la que pidió el docente)
+        const subject = String((req.body && req.body.subject) || teacherData.subject || '').trim();
+        if (subject && !subjectStore.isKnown(subject)) {
+            return res.status(400).json({ success: false, message: 'Materia desconocida' });
+        }
+
         if (supabase) {
             const { data: existing } = await supabase.from('teachers').select('id').eq('doc_number', teacherData.doc_number).single();
             if (existing) {
                  await supabase.from('teachers').update({
                      first_name: teacherData.first_name,
                      last_name: teacherData.last_name,
-                     email: teacherData.email
+                     email: teacherData.email,
+                     ...(subject ? { subject } : {})
                  }).eq('id', existing.id);
             } else {
                  await supabase.from('teachers').insert({
@@ -1783,7 +2467,7 @@ app.post('/api/admin/approve-teacher/:id', requirePerm('admin:teachers'), cache.
                      first_name: teacherData.first_name,
                      last_name: teacherData.last_name,
                      email: teacherData.email,
-                     subject: ''
+                     subject
                  });
             }
         }
@@ -1797,11 +2481,11 @@ app.post('/api/admin/approve-teacher/:id', requirePerm('admin:teachers'), cache.
     }
 });
 
-app.post('/api/admin/reject-teacher/:id', requirePerm('admin:teachers'), cache.invalidarTras(), async (req, res) => {
+app.post('/api/admin/reject-teacher/:id', devOnly, async (req, res) => {
     try {
         let pending = [];
         if (fs.existsSync(pendingTeachersFile)) {
-            pending = jsonstore.read(pendingTeachersFile, {});
+            pending = JSON.parse(fs.readFileSync(pendingTeachersFile, 'utf8'));
         }
         pending = pending.filter(p => p.id !== req.params.id);
         await _enqueue(pendingTeachersFile, () => _writeJsonAtomic(pendingTeachersFile, pending));
@@ -1811,90 +2495,155 @@ app.post('/api/admin/reject-teacher/:id', requirePerm('admin:teachers'), cache.i
     }
 });
 
-// API: Teachers status
-app.get('/api/admin/teachers-status', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
+// API: Inicio › Docentes pendientes de certificación. Los exentos van aparte. Cada docente trae la
+// materia registrada y la que dice el mapeo (services/teacher_subjects.js); canEdit: solo el
+// desarrollador corrige materias y da excepciones.
+app.get('/api/admin/teachers-status', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
-        const { data: teachers } = await supabase.from('teachers').select('*');
-        const pending = teachers?.filter(t => !t.training_completed) || [];
-        
+        const { data: teachers, error } = await selectAll(() => supabase.from('teachers')
+            .select('id, first_name, last_name, email, subject, training_completed, training_score'));
+        if (error) return res.json({ success: false, message: error.message });
+        const exemptions = readTeacherExemptions();
+        const subjectIds = subjects.map(s => s.id);
+        const mapped = teacherSubjects.mappedSubjects(readClassTeacherConfig(), teachers, subjectIds);
+        const nameOf = t => [t.first_name, t.last_name].filter(Boolean).join(' ').trim() || t.email || '—';
+        const row = t => ({ id: t.id, name: nameOf(t), email: t.email || '', subject: t.subject || '', score: t.training_score, ...teacherSubjects.reviewSubject(t, mapped.get(t.id)) });
+        const sortByName = (a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
+        const pending = teachers.filter(t => !t.training_completed && !isExemptTeacher(exemptions, t)).map(row).sort(sortByName);
+        const exempt = teachers.filter(t => !t.training_completed && isExemptTeacher(exemptions, t)).map(t => {
+            const info = exemptions[String(t.email || '').trim().toLowerCase()] || {};
+            return { ...row(t), reason: info.reason || '', by: info.by || '', date: info.date || null };
+        }).sort(sortByName);
         return res.json({
             success: true,
-            total: teachers?.length || 0,
-            certified: teachers?.filter(t => t.training_completed)?.length || 0,
-            pending: pending.map(t => ({
-                name: t.first_name + ' ' + t.last_name,
-                subject: t.subject,
-                score: t.training_score
-            }))
+            total: teachers.length,
+            certified: teachers.filter(t => t.training_completed).length,
+            pending,
+            exempt,
+            mappingChanges: teacherSubjects.proposedChanges(teachers, readClassTeacherConfig(), subjectIds).length,
+            canEdit: !!res.locals.admin.perms.configure
         });
     } catch (e) {
-        return res.json({ success: false });
+        return res.json({ success: false, message: e.message });
     }
 });
 
-// ════════════════════════════════════════
-// INVENTORY ROUTES
-// ════════════════════════════════════════
+// Correo de un docente por id (las excepciones se guardan por correo)
+async function teacherById(id) {
+    const { data, error } = await supabase.from('teachers').select('id, first_name, last_name, email, subject').eq('id', id).limit(1);
+    if (error) throw new Error(error.message);
+    return (data && data[0]) || null;
+}
+
+// Excepción de la capacitación KMK: { exempt: true|false, reason }
+app.post('/api/admin/teachers/:id/exemption', devOnly, async (req, res) => {
+    const body = req.body || {};
+    if (typeof body.exempt !== 'boolean') return res.status(400).json({ success: false, message: 'Falta exempt' });
+    if (!supabase) return res.json({ success: false, message: 'Supabase no configurado' });
+    try {
+        const teacher = await teacherById(req.params.id);
+        if (!teacher) return res.status(404).json({ success: false, message: 'Docente no encontrado' });
+        if (!String(teacher.email || '').trim()) return res.status(400).json({ success: false, message: 'El docente no tiene correo' });
+        await _enqueue(teacherExemptionsFile, async () => {
+            const next = teacherSubjects.setExemption(readTeacherExemptions(), teacher.email, body.exempt, { reason: body.reason, by: res.locals.admin.email });
+            await _writeJsonAtomic(teacherExemptionsFile, next);
+        });
+        return res.json({ success: true, exempt: body.exempt });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// Registro de los cambios de materia hechos desde el panel (data/teacher_subject_changes.json)
+async function logSubjectChanges(changes, by) {
+    if (!changes.length) return;
+    await _enqueue(teacherSubjectLogFile, async () => {
+        let log = [];
+        try { log = JSON.parse(await fsp.readFile(teacherSubjectLogFile, 'utf8')) || []; } catch (e) { log = []; }
+        const date = new Date().toISOString();
+        changes.forEach(c => log.push({ date, by, id: c.id, name: c.name, from: c.from, to: c.to }));
+        await _writeJsonAtomic(teacherSubjectLogFile, log.slice(-2000));
+    });
+}
+
+// Corregir la materia de un docente: { subject }
+app.post('/api/admin/teachers/:id/subject', devOnly, async (req, res) => {
+    const subject = String((req.body || {}).subject || '').trim();
+    if (!subjectStore.isKnown(subject)) return res.status(400).json({ success: false, message: 'Materia desconocida' });
+    if (!supabase) return res.json({ success: false, message: 'Supabase no configurado' });
+    try {
+        const teacher = await teacherById(req.params.id);
+        if (!teacher) return res.status(404).json({ success: false, message: 'Docente no encontrado' });
+        if (teacher.subject === subject) return res.json({ success: true, subject, changed: false });
+        const { data: updated, error } = await supabase.from('teachers').update({ subject }).eq('id', teacher.id).select('id, subject');
+        if (error) return res.json({ success: false, message: error.message });
+        if (!updated || !updated.length) return res.json({ success: false, message: 'La base de datos no aceptó el cambio' });
+        await logSubjectChanges([{ id: teacher.id, name: [teacher.first_name, teacher.last_name].join(' ').trim(), from: teacher.subject || '', to: subject }], res.locals.admin.email);
+        return res.json({ success: true, subject, changed: true });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// Administración › Mapeo › Asignatura de cada docente: todos los docentes registrados con su
+// asignatura (la que usan los informes por materia) y la que dice el mapeo.
+app.get('/api/admin/teacher-subjects', devOnly, async (req, res) => {
+    if (!supabase) return res.json({ success: true, teachers: [], mappingChanges: 0 });
+    try {
+        const { data: teachers, error } = await selectAll(() => supabase.from('teachers')
+            .select('id, first_name, last_name, email, subject, training_completed'));
+        if (error) return res.json({ success: false, message: error.message });
+        const subjectIds = subjects.map(s => s.id);
+        const mapping = readClassTeacherConfig();
+        const mapped = teacherSubjects.mappedSubjects(mapping, teachers, subjectIds);
+        const exemptions = readTeacherExemptions();
+        const list = teachers.map(t => ({
+            id: t.id,
+            name: [t.first_name, t.last_name].filter(Boolean).join(' ').trim() || t.email || '—',
+            email: t.email || '',
+            subject: subjectStore.isKnown(t.subject) ? t.subject : '',
+            trained: !!t.training_completed,
+            exempt: isExemptTeacher(exemptions, t),
+            ...teacherSubjects.reviewSubject(t, mapped.get(t.id))
+        })).sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+        return res.json({ success: true, teachers: list, mappingChanges: teacherSubjects.proposedChanges(teachers, mapping, subjectIds).length });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// Aplicar a todos los docentes la materia que dice el mapeo (solo las propuestas sin empate)
+app.post('/api/admin/teacher-subjects/apply', devOnly, async (req, res) => {
+    if (!supabase) return res.json({ success: false, message: 'Supabase no configurado' });
+    try {
+        const { data: teachers, error } = await selectAll(() => supabase.from('teachers').select('id, first_name, last_name, email, subject'));
+        if (error) return res.json({ success: false, message: error.message });
+        const changes = teacherSubjects.proposedChanges(teachers, readClassTeacherConfig(), subjects.map(s => s.id));
+        const done = [];
+        const failed = [];
+        for (const change of changes) {
+            const { data: updated, error: updateError } = await supabase.from('teachers').update({ subject: change.to }).eq('id', change.id).select('id');
+            if (updateError || !updated || !updated.length) failed.push(change.name);
+            else done.push(change);
+        }
+        await logSubjectChanges(done, res.locals.admin.email);
+        return res.json({ success: true, applied: done.length, failed });
+    } catch (e) {
+        return res.json({ success: false, message: e.message });
+    }
+});
+
+// El inventario de equipos se quitó del panel (la tabla devices sigue en Supabase).
+// Los enlaces viejos a /admin/inventory llevan al panel.
 app.get('/admin/inventory', requireAdmin, (req, res) => {
-    res.render('admin/inventory');
-});
-
-app.get('/api/devices', requireAdmin, async (req, res) => {
-    if (!supabase) return res.json({ success: false });
-    try {
-        const { location, status } = req.query;
-        let query = supabase.from('devices').select('*').order('serial_number');
-        
-        if (location) query = query.eq('location', location);
-        if (status) query = query.eq('status', status);
-        
-        const { data, error } = await query;
-        if (error) return res.json({ success: false, message: error.message });
-        return res.json({ success: true, devices: data || [] });
-    } catch (e) {
-        return res.json({ success: false });
-    }
-});
-
-app.post('/api/devices', requireAdmin, cache.invalidarTras(), async (req, res) => {
-    if (!supabase) return res.json({ success: false });
-    try {
-        const { serial_number, type, brand, model, location, status, notes } = req.body;
-        
-        const { data, error } = await supabase
-            .from('devices')
-            .insert({ serial_number, type, brand, model, location, status: status || 'available', notes })
-            .select();
-
-        if (error) return res.json({ success: false, message: error.message });
-        return res.json({ success: true, device: data?.[0] });
-    } catch (e) {
-        return res.json({ success: false });
-    }
-});
-
-app.put('/api/devices/:id', requireAdmin, cache.invalidarTras(), async (req, res) => {
-    if (!supabase) return res.json({ success: false });
-    try {
-        const { serial_number, type, brand, model, location, status, notes } = req.body;
-        
-        const { error } = await supabase
-            .from('devices')
-            .update({ serial_number, type, brand, model, location, status, notes })
-            .eq('id', req.params.id);
-
-        if (error) return res.json({ success: false, message: error.message });
-        return res.json({ success: true });
-    } catch (e) {
-        return res.json({ success: false });
-    }
+    res.redirect('/admin');
 });
 
 // API: Get all records from a DB table
-app.get('/api/admin/db-records/:table', requirePerm('admin:database'), async (req, res) => {
+app.get('/api/admin/db-records/:table', devOnly, async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No Supabase' });
-    const allowedTables = ['students', 'teachers', 'devices', 'incidents', 'multimedia_products', 'activity_responses'];
+    const allowedTables = ['students', 'teachers', 'activity_responses'];
     const { table } = req.params;
     if (!allowedTables.includes(table)) {
         return res.status(400).json({ success: false, message: 'Tabla no permitida' });
@@ -1909,9 +2658,9 @@ app.get('/api/admin/db-records/:table', requirePerm('admin:database'), async (re
 });
 
 // API: Update a single record by id in a DB table
-app.post('/api/admin/db-records/:table/:id', requirePerm('admin:database'), cache.invalidarTras(), async (req, res) => {
+app.post('/api/admin/db-records/:table/:id', devOnly, async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No Supabase' });
-    const allowedTables = ['students', 'teachers', 'devices', 'incidents', 'multimedia_products'];
+    const allowedTables = ['students', 'teachers'];
     const { table, id } = req.params;
     if (!allowedTables.includes(table)) {
         return res.status(400).json({ success: false, message: 'Tabla no permitida' });
@@ -1930,9 +2679,9 @@ app.post('/api/admin/db-records/:table/:id', requirePerm('admin:database'), cach
 });
 
 // API: Create a new record in a DB table
-app.post('/api/admin/db-records/:table', requirePerm('admin:database'), cache.invalidarTras(), async (req, res) => {
+app.post('/api/admin/db-records/:table', devOnly, async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No Supabase' });
-    const allowedTables = ['students', 'teachers', 'devices', 'incidents', 'multimedia_products'];
+    const allowedTables = ['students', 'teachers'];
     const { table } = req.params;
     if (!allowedTables.includes(table)) {
         return res.status(400).json({ success: false, message: 'Tabla no permitida' });
@@ -1947,9 +2696,9 @@ app.post('/api/admin/db-records/:table', requirePerm('admin:database'), cache.in
 });
 
 // API: Delete a record from a DB table
-app.delete('/api/admin/db-records/:table/:id', requirePerm('admin:database'), cache.invalidarTras(), async (req, res) => {
+app.delete('/api/admin/db-records/:table/:id', devOnly, async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'No Supabase' });
-    const allowedTables = ['students', 'teachers', 'devices', 'incidents', 'multimedia_products'];
+    const allowedTables = ['students', 'teachers'];
     const { table, id } = req.params;
     if (!allowedTables.includes(table)) {
         return res.status(400).json({ success: false, message: 'Tabla no permitida' });
@@ -1967,7 +2716,7 @@ app.delete('/api/admin/db-records/:table/:id', requirePerm('admin:database'), ca
 // TEACHER ROUTES (PORTAL DOCENTE - CAPACITACIÓN)
 // ════════════════════════════════════════
 app.get('/teacher/login', (req, res) => {
-    if (req.user && req.user.kind === 'staff') return res.redirect('/teacher/training');
+    if (req.signedCookies.teacher_auth === 'true') return res.redirect('/teacher/training');
     res.render('teacher/login', { error: null, subjects });
 });
 
@@ -1977,9 +2726,11 @@ app.post('/api/teacher/register', async (req, res) => {
         if (!first_name || !last_name || !email || !doc_number) {
             return res.json({ success: false, message: 'Faltan campos obligatorios' });
         }
-        
+        // Materia (opcional): solo una materia activa
+        const subject = subjectStore.isActive(String(req.body.subject || '')) ? req.body.subject : '';
+
         let pending = [];
-        try { pending = jsonstore.read(pendingTeachersFile, {}); } catch(e) {}
+        try { pending = JSON.parse(fs.readFileSync(pendingTeachersFile, 'utf8')); } catch(e) {}
         
         if (pending.find(p => p.doc_number === doc_number || p.email === email)) {
             return res.json({ success: false, message: 'Ya existe una solicitud pendiente para este documento o correo.' });
@@ -1987,7 +2738,7 @@ app.post('/api/teacher/register', async (req, res) => {
 
         pending.push({
             id: Date.now().toString(),
-            first_name, last_name, email, doc_number,
+            first_name, last_name, email, doc_number, subject,
             date: new Date().toISOString()
         });
 
@@ -2002,119 +2753,173 @@ app.post('/teacher/login', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-        return res.render('teacher/login', { error: 'Ingresa tu correo y tu contraseña.', subjects });
+        return res.render('teacher/login', { error: res.locals.t('srv_ingresa_correo_clave'), subjects });
     }
 
-    const profile = await auth.authenticateStaff(email, password, supabase);
+    if (supabase) {
+        try {
+            let cleanEmail = email.trim().toLowerCase();
+            if (!cleanEmail.includes('@')) {
+                cleanEmail += '@colegioaleman.edu.co';
+            }
+            const cleanPassword = password.trim();
+            const { data: teacher, error } = await supabase
+                .from('teachers')
+                .select('*')
+                .eq('email', cleanEmail)
+                .eq('doc_number', cleanPassword)
+                .single();
 
-    if (!profile) {
-        return res.render('teacher/login', { error: 'Correo o contraseña incorrectos.', subjects });
+            if (teacher) {
+                // Sin el documento en la cookie: es la clave del docente
+                const teacherData = {
+                    first_name: teacher.first_name,
+                    last_name: teacher.last_name,
+                    subject: teacher.subject,
+                    email: teacher.email,
+                    id: teacher.id,
+                    role: roleOfEmail(teacher.email)
+                };
+                res.cookie('teacher_auth', 'true', { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true });
+                res.cookie('teacher_data', JSON.stringify(teacherData), { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true });
+                // Idioma inicial según la materia, solo si aún no se eligió uno con los botones
+                if (!req.cookies.lang) {
+                    const subj = (teacher.subject || '').toLowerCase();
+                    const subjectLang = subj === 'aleman' ? 'de' : subj === 'ingles' ? 'en' : 'es';
+                    res.cookie('lang', subjectLang, { maxAge: 365 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
+                }
+                return res.redirect('/teacher/training');
+            } else {
+                return res.render('teacher/login', { error: res.locals.t('srv_credenciales_docente'), subjects });
+            }
+        } catch (e) {
+            console.error('Teacher login error:', e);
+            return res.render('teacher/login', { error: res.locals.t('srv_error_login'), subjects });
+        }
+    } else {
+        return res.render('teacher/login', { error: res.locals.t('srv_sin_base_datos'), subjects });
     }
-
-    if (!auth.can(profile.role, 'teacher:area')) {
-        return res.render('teacher/login', { error: 'Tu perfil no tiene acceso al área docente.', subjects });
-    }
-
-    session.attach(res, {
-        sub: profile.id,
-        kind: 'staff',
-        role: profile.role,
-        name: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
-        email: profile.email,
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        subject: profile.subject || null
-    }, appConfig.sessionConfig().staffTtlHours);
-
-    // El personal con permisos de administración entra directo a su panel.
-    return res.redirect(auth.can(profile.role, 'admin:area') ? '/admin' : '/teacher/training');
 });
 
-// requireTeacher se define arriba, junto al resto de guardias de acceso.
-
-app.get('/teacher/logout', (req, res) => {
-    session.destroy(res);
+// Middleware for teacher auth. El rol se lee en teacher_roles.json en cada petición (no el de la cookie).
+function requireTeacher(req, res, next) {
+    if (req.signedCookies.teacher_auth === 'true' && req.signedCookies.teacher_data) {
+        try {
+            const t = JSON.parse(req.signedCookies.teacher_data);
+            delete t.doc_number; // cookies anteriores lo traían
+            t.role = roleOfEmail(t.email);
+            res.locals.teacher = t;
+            return next();
+        } catch (e) { }
+    }
+    return res.redirect('/teacher/login');
+}
+app.get('/teacher/logout', (req, res) => {
+    res.clearCookie('teacher_auth');
+    res.clearCookie('teacher_data');
     res.redirect('/teacher/login');
 });
 
-app.get('/teacher/training', requireTeacher, (req, res) => {
-    res.render('teacher/training', { part2Competencies });
+// Materia con la que se ve la capacitación o se presenta el test: la elegida o la del docente
+async function trainingSubject(req, res) {
+    const asked = String((req.query && req.query.subject) || (req.body && req.body.subject) || '');
+    if (subjects.some(s => s.id === asked)) return asked;
+    return currentTeacherSubject(res.locals.teacher);
+}
+
+async function teacherTrainingStatus(teacher) {
+    if (!supabase || !teacher || !teacher.id) return { completed: false };
+    try {
+        const { data } = await withTimeout(supabase.from('teachers')
+            .select('training_completed, training_score, training_date').eq('id', teacher.id).maybeSingle(), 4000, 'capacitación del docente');
+        return { completed: !!(data && data.training_completed), score: data && data.training_score, date: data && data.training_date };
+    } catch (e) {
+        return { completed: false };
+    }
+}
+
+app.get('/teacher/training', requireTeacher, async (req, res) => {
+    const subject = await trainingSubject(req, res);
+    // "En tu materia": lo que ya existe para esa asignatura (ejemplos del Reto 0 y preguntas de sus retos)
+    const retoSamples = {};
+    if (subject) {
+        [1, 2, 3, 4, 5, 6].forEach(n => {
+            const activity = allActivities[String(n)].find(a => a.subject === subject);
+            const questions = (retoEvidenceFor(activity, 5) || []).filter(item => item.type === 'radio_group');
+            retoSamples[n] = questions.filter((q, i) => questions.findIndex(other => other.kmk === q.kmk) === i).slice(0, 3);
+        });
+    }
+    res.render('teacher/training', {
+        part2Competencies,
+        subjects: subjects.filter(s => s.active !== false),
+        subject,
+        study: subject ? getReto0Study(subject) : null,
+        retoSamples,
+        kmkAreas: KMK_AREAS, // dimensión de inteligencia artificial de cada competencia
+        status: await teacherTrainingStatus(res.locals.teacher)
+    });
 });
 
-app.get('/teacher/worksheets', requireTeacher, (req, res) => {
-    res.render('teacher/worksheets');
+// El banco de fichas se retiró: la dirección vieja lleva a Capacitación KMK (las hojas de trabajo de
+// Klett siguen en la pestaña «Fichas» de cada competencia)
+app.get('/teacher/worksheets', requireTeacher, (req, res) => res.redirect('/teacher/training'));
+
+// Test KMK de 12 preguntas (data_teacher_test.js). Se califica aquí con lo que envía el formulario.
+app.get('/teacher/evaluation', requireTeacher, async (req, res) => {
+    const subject = await trainingSubject(req, res);
+    res.render('teacher/evaluation', {
+        subjects: subjects.filter(s => s.active !== false),
+        subject,
+        questions: subject ? teacherTest.publicTest(teacherTest.buildTeacherTest(subject)) : null,
+        result: null,
+        status: await teacherTrainingStatus(res.locals.teacher),
+        kmkAreas: KMK_AREAS
+    });
 });
 
-app.get('/teacher/evaluation', requireTeacher, (req, res) => {
-    res.render('teacher/evaluation');
-});
+// Guarda el intento. Quien ya aprobó no pierde la aprobación si repite el test y le va peor.
+async function saveTeacherTestResult(teacher, result) {
+    if (!supabase || !teacher || !teacher.id) return;
+    try {
+        await supabase.from('teacher_kmk_tests').insert({ teacher_id: teacher.id, score: result.score, passed: result.passed });
+        const { data } = await supabase.from('teachers').select('training_completed, training_score').eq('id', teacher.id).maybeSingle();
+        const already = !!(data && data.training_completed);
+        if (result.passed) {
+            const fields = { training_completed: true, training_score: Math.max(result.score, (data && data.training_score) || 0) };
+            if (!already) fields.training_date = new Date().toISOString();
+            await supabase.from('teachers').update(fields).eq('id', teacher.id);
+        } else if (!already) {
+            await supabase.from('teachers').update({ training_completed: false, training_score: result.score }).eq('id', teacher.id);
+        }
+    } catch (e) {
+        console.error('Error guardando el test KMK:', e.message);
+    }
+}
 
 app.post('/teacher/evaluation', requireTeacher, async (req, res) => {
-    // Basic validation of answers
-    const { q1, q2, q3, q4, q5 } = req.body;
-    let correct = 0;
-    if (q1 === 'B') correct++; // Evaluar y analizar = Área 1
-    if (q2 === 'D') correct++; // Proteger medio ambiente = Área 4.4
-    if (q3 === 'A') correct++; // Interactuar, compartir = Área 2
-    if (q4 === 'C') correct++; // Resolver problemas tcs = Área 5.1
-    if (q5 === 'B') correct++; // Objetivo: Empoderar
-
-    const score = (correct / 5) * 100;
-
-    // Save score to DB
-    if (supabase && res.locals.teacher) {
-        try {
-            await supabase.from('teachers').update({ 
-                training_score: score, 
-                training_completed: score >= 75,
-                training_date: new Date().toISOString()
-            }).eq('doc_number', res.locals.teacher.doc_number);
-        } catch (e) { }
-    }
-
-    const feedback = score >= 75 ? '¡Excelente trabajo!' : 'Te sugerimos revisar nuevamente el material de estudio.';
-    res.render('teacher/evaluation', { success: true, score: score, feedback: feedback });
+    const subject = await trainingSubject(req, res);
+    if (!subject) return res.redirect('/teacher/evaluation');
+    const answers = {};
+    Object.entries(req.body || {}).forEach(([key, value]) => { if (key.startsWith('q_')) answers[key.slice(2)] = value; });
+    const result = teacherTest.gradeTeacherTest(teacherTest.buildTeacherTest(subject), answers);
+    const status = await teacherTrainingStatus(res.locals.teacher);
+    await saveTeacherTestResult(res.locals.teacher, result);
+    res.render('teacher/evaluation', {
+        subjects: subjects.filter(s => s.active !== false),
+        subject,
+        questions: null,
+        result,
+        status,
+        kmkAreas: KMK_AREAS
+    });
 });
 
 app.get('/teacher/klasse2-activity', requireTeacher, (req, res) => {
     res.render('teacher/klasse2-activity');
 });
 
-app.get('/teacher/knowledge-test', requireTeacher, (req, res) => {
-    res.render('teacher/knowledge_test', { score: null });
-});
-
-app.post('/teacher/knowledge-test', requireTeacher, async (req, res) => {
-    const { q1, q2, q3, q4, q5, q6 } = req.body;
-    let correct = 0;
-    if (q1 === 'C') correct++; 
-    if (q2 === 'B') correct++; 
-    if (q3 === 'B') correct++; 
-    if (q4 === 'C') correct++; 
-    if (q5 === 'B') correct++; 
-    if (q6 === 'B') correct++; 
-    
-    const score = Math.round((correct / 6) * 100);
-    const passed = score >= 75;
-
-    if (supabase && res.locals.teacher) {
-        try {
-            await supabase.from('teacher_kmk_tests').insert({
-                teacher_id: res.locals.teacher.id,
-                score: score,
-                passed: passed
-            });
-            await supabase.from('teachers').update({ 
-                training_score: score,
-                training_completed: passed
-            }).eq('id', res.locals.teacher.id);
-        } catch (e) {
-            console.error('Error saving kmk test:', e);
-        }
-    }
-
-    res.render('teacher/knowledge_test', { score: score, passed: passed });
-});
+// El test de conocimiento anterior ahora es parte del test de 12 preguntas
+app.all('/teacher/knowledge-test', requireTeacher, (req, res) => res.redirect('/teacher/evaluation'));
 
 app.get('/teacher/logout', (req, res) => {
     res.clearCookie('teacher_auth');
@@ -2128,39 +2933,91 @@ app.get('/teacher/logout', (req, res) => {
 
 app.get('/teacher/download-challenges', requireTeacher, (req, res) => {
     const levelVal = parseInt(req.query.level, 10) || 5;
-    const lang = (req.query.lang || 'es').toLowerCase();
+    // ?lang= permite imprimir en otro idioma; si no viene, el idioma global elegido
+    const lang = i18nStore.normalizeLang((req.query.lang || res.locals.lang).toLowerCase());
 
-    // Map allActivities to resolve evidence based on levelVal
+    // Preguntas del grado elegido (las editadas por los docentes, si las hay)
     const resolvedActivities = {};
     for (const [lvl, acts] of Object.entries(allActivities)) {
-        resolvedActivities[lvl] = acts.map(act => {
-            const cloned = { ...act };
-            const evidenceKey = `evidence_k${levelVal}`;
-            const targetEvidence = cloned[evidenceKey] || cloned.evidence_k5 || cloned.evidence || [];
-            cloned.evidence = targetEvidence;
-            return cloned;
-        });
+        resolvedActivities[lvl] = acts.map(act => ({
+            ...act,
+            evidence: retoEvidenceFor(act, levelVal) || act.evidence_k5 || act.evidence || []
+        }));
     }
 
-    res.render('teacher/challenges-print', { 
-        sharedProfile, 
+    // Las preguntas cambian por materia: ?subject= o, si no viene, la materia del docente
+    const teacherSubject = ((res.locals.teacher && res.locals.teacher.subject) || '').toLowerCase();
+    const subject = validSubject(req.query.subject || teacherSubject || 'aleman');
+
+    res.render('teacher/challenges-print', {
+        reto0: reto0ForGrade(subject, levelVal), // con la evaluación editada de ese grado, si la hay
+        subject,
         allActivities: resolvedActivities,
         level: levelVal,
         lang: lang
     });
 });
 
-app.get('/teacher/student-preview', requireTeacher, (req, res) => {
+app.get('/teacher/student-preview', requireTeacher, async (req, res) => {
     const challengeToolsConfig = readChallengeToolsConfig();
-    res.render('teacher/student-preview', { 
-        sharedProfile, 
-        allActivities: actividadesDeUnGrado(allActivities, 5), 
-        subjects, 
+    res.render('teacher/student-preview', {
+        sharedProfile,
+        reto0BySubject,
+        allActivities,
+        subjects,
         klassenConfig,
         challengeToolsConfig,
-        defaultAgentTools
+        defaultAgentTools: {},
+        kmkAreas: KMK_AREAS,
+        editorAccess: await teacherEditAccess(res.locals.teacher)
     });
 });
+
+// Vista previa del Medienpass visual para el docente: la misma página, sin guardar nada
+app.get('/teacher/visual-preview', requireTeacher, (req, res) => {
+    const subject = validSubject(req.query.subject);
+    const n = Math.min(6, Math.max(0, parseInt(req.query.reto, 10) || 0));
+    const activity = n === 0
+        ? getVisualReto0(subject)
+        : { ...allActivities[String(n)].find(a => a.subject === subject) };
+    if (n > 0) activity.evidence = retoEvidenceFor(activity, 2);
+    res.render('visual/reto', { student: null, ...visualRetoLocals(activity, { preview: true }) });
+});
+
+// ─── Configura tus Retos del 1 al 6: quién puede guardar ───
+// Cada docente guarda las preguntas de su materia; estos roles, las de cualquier materia.
+const EDIT_ANY_SUBJECT_ROLES = ['coordinador', 'directivo', 'admin', 'desarrollador'];
+
+// Materia actual del docente: la de la tabla teachers (el admin puede haberla cambiado después
+// de que inició sesión) o, si no se puede consultar, la de su sesión.
+async function currentTeacherSubject(teacher) {
+    let subject = (teacher && teacher.subject) || '';
+    if (supabase && teacher && teacher.id) {
+        try {
+            const { data } = await withTimeout(supabase.from('teachers').select('subject').eq('id', teacher.id).maybeSingle(), 4000, 'materia del docente');
+            if (data) subject = data.subject || '';
+        } catch (e) { /* se usa la de la sesión */ }
+    }
+    subject = String(subject).trim().toLowerCase();
+    return subjects.some(s => s.id === subject) ? subject : '';
+}
+
+async function teacherEditAccess(teacher) {
+    return {
+        subject: await currentTeacherSubject(teacher),
+        anySubject: EDIT_ANY_SUBJECT_ROLES.includes(teacher && teacher.role)
+    };
+}
+
+// Grado (2-12), materia y reto válidos de una petición del editor, o null. Reto 0: solo su
+// evaluación (desde la pregunta 10) y solo en K3-K12 (el Reto 0 visual no se edita).
+function instrumentTarget({ grade, subject, reto }) {
+    const g = parseInt(grade, 10);
+    const n = parseInt(reto, 10);
+    const validReto = (n >= 1 && n <= 6) || (n === 0 && g >= 3);
+    if (!(g >= 2 && g <= 12) || !validReto || !subjects.some(s => s.id === subject)) return null;
+    return { grade: g, subject, reto: n };
+}
 
 app.post('/api/teacher/challenge-tools', requireTeacher, (req, res) => {
     const { grade, subject, challenge, description } = req.body;
@@ -2175,151 +3032,64 @@ app.post('/api/teacher/challenge-tools', requireTeacher, (req, res) => {
 });
 
 // ════════════════════════════════════════
-// API: 3-OPTION INSTRUMENTS MANAGEMENT & AI
+// API: CONFIGURA TUS RETOS DEL 0 AL 6 (preguntas editadas por los docentes)
 // ════════════════════════════════════════
 app.get('/api/instruments/:grade/:subject/:reto', requireTeacher, (req, res) => {
-    const { grade, subject, reto } = req.params;
-    const custom = instrumentStore.getCustomInstrument(grade, subject, reto);
-    if (custom) {
-        return res.json({ success: true, custom: true, data: custom });
-    }
-    return res.json({ success: true, custom: false, data: null });
+    const target = instrumentTarget(req.params);
+    if (!target) return res.status(400).json({ success: false, error: 'invalid' });
+    const custom = instrumentStore.getCustomInstrument(target.grade, target.subject, target.reto);
+    return res.json({ success: true, custom: !!custom, data: custom || null });
 });
 
-/**
- * Preguntas de un grado concreto, para la vista previa del docente.
- *
- * Esa vista incrustaba las preguntas de los 12 grados y las 10 asignaturas en
- * cada carga (10,5 MB) aunque solo muestra un grado a la vez. Ahora llega el
- * grado inicial y los demas se piden aqui al cambiar de curso.
- */
-app.get('/api/instruments/preguntas/:grade', requireTeacher, (req, res) => {
-    const grado = parseInt(req.params.grade, 10);
-    if (!Number.isFinite(grado)) {
-        return res.status(400).json({ success: false, error: 'Grado inválido.' });
+// Guarda la versión editada para todos los estudiantes de ese grado y materia. Si falla responde
+// { error } con un código que traduce el editor: invalid, forbidden, server o los de
+// instrumentStore.normalizeCustomQuestions (con el índice de la pregunta).
+app.post('/api/instruments/save', requireTeacher, async (req, res) => {
+    const target = instrumentTarget(req.body || {});
+    if (!target) return res.status(400).json({ success: false, error: 'invalid' });
+    const access = await teacherEditAccess(res.locals.teacher);
+    if (!access.anySubject && access.subject !== target.subject) {
+        return res.status(403).json({ success: false, error: 'forbidden' });
     }
-    const claveGrado = `evidence_k${grado}`;
-    const salida = {};
-
-    for (const [nivel, acts] of Object.entries(allActivities)) {
-        salida[nivel] = (acts || []).map(a => ({
-            id: a.id,
-            evidence: a[claveGrado] || a.evidence_k5 || a.evidence || []
-        }));
-    }
-
-    return res.json({ success: true, grade: grado, actividades: salida });
-});
-
-// Catalogo de tipos de pregunta, para que el editor del docente los ofrezca
-// en vez de tenerlos escritos a mano en la plantilla.
-app.get('/api/instruments/question-types', requireTeacher, (req, res) => {
-    return res.json({ success: true, types: questions.catalogo() });
-});
-
-app.post('/api/instruments/save', requireTeacher, (req, res) => {
-    const { grade, subject, reto, mode, questions: preguntas } = req.body;
-    if (!grade || !subject || !reto || !preguntas) {
-        return res.status(400).json({ success: false, error: 'Datos incompletos.' });
-    }
-
-    // Se valida ANTES de guardar: hasta ahora se aceptaba cualquier cosa y el
-    // error aparecia al abrir la actividad, ya en clase y del lado del alumno.
-    const revision = questions.validarInstrumento(preguntas);
-    if (!revision.valido) {
-        return res.status(400).json({
-            success: false,
-            error: 'El instrumento tiene errores y no se guardo.',
-            errores: revision.errores
-        });
-    }
-
-    // Se guarda normalizado, de modo que el estudiante siempre recibe preguntas
-    // con la misma forma vengan del editor, de la IA o de una importacion.
-    const normalizadas = questions.normalizarLista(preguntas);
-    const saved = instrumentStore.saveCustomInstrument(grade, subject, reto, mode, normalizadas);
-    return res.json({ success: true, saved, total: normalizadas.length });
-});
-
-app.post('/api/instruments/reset', requireTeacher, (req, res) => {
-    const { grade, subject, reto } = req.body;
-    if (!grade || !subject || !reto) {
-        return res.status(400).json({ success: false, error: 'Parámetros incompletos.' });
-    }
-    instrumentStore.resetToDefault(grade, subject, reto);
-    return res.json({ success: true, message: 'Restablecido al modo automático del sistema.' });
-});
-
-// Metricas internas: caché de rutas y de archivos JSON.
-app.get('/api/admin/metricas', requirePerm('admin:area'), (req, res) => {
-    return res.json({
-        success: true,
-        cacheRutas: cache.metricas(),
-        cacheArchivos: jsonstore.metrics(),
-        memoriaMB: Math.round(process.memoryUsage().heapUsed / 1048576),
-        activoSegundos: Math.round(process.uptime())
-    });
-});
-
-// Estado de la integración con Google Gemini (diagnóstico para la UI docente)
-app.get('/api/instruments/ai-status', requireTeacher, (req, res) => {
-    return res.json({ success: true, ...getAIStatus() });
-});
-
-app.post('/api/instruments/generate-ai', requireTeacher, async (req, res) => {
-    const { grade, subject, reto, prompt, lang, currentQuestions } = req.body;
-    if (!reto) {
-        return res.status(400).json({ success: false, error: 'Faltan parámetros obligatorios (reto).' });
-    }
-
-    const retoNum = parseInt(reto, 10) || 1;
-    const effectiveGrade = parseInt(grade, 10) || 5;
-    const currentSub = (subject || 'aleman').toLowerCase();
-
-    // Las preguntas enviadas por el editor tienen prioridad; si no llegan, se
-    // toman las preguntas base del Reto/Grado/Asignatura desde data.js
-    let baseQuestions = (Array.isArray(currentQuestions) && currentQuestions.length > 0) ? currentQuestions : [];
-    if (baseQuestions.length === 0) {
-        const acts = allActivities[String(retoNum)] || [];
-        const activeAct = acts.find(a => a.subject === currentSub) || acts[0];
-        if (activeAct) {
-            const evidenceKey = `evidence_k${effectiveGrade}`;
-            baseQuestions = activeAct[evidenceKey] || activeAct.evidence_k5 || activeAct.evidence || [];
-        }
-    }
-
+    const result = instrumentStore.normalizeCustomQuestions(req.body.questions, target);
+    if (result.error) return res.status(400).json({ success: false, error: result.error, index: result.index });
     try {
-        const result = await generateInstrumentAI({
-            grade: effectiveGrade,
-            subject: currentSub,
-            retoNum,
-            prompt,
-            lang: lang || 'es',
-            currentQuestions: baseQuestions
-        });
-
-        return res.json({
-            success: true,
-            questions: result.questions,
-            source: result.source,
-            model: result.model,
-            warning: result.warning,
-            reto: retoNum,
-            totalQuestions: result.questions.length
-        });
+        const saved = instrumentStore.saveCustomInstrument(target.grade, target.subject, target.reto, 'editable',
+            result.questions, res.locals.teacher.email || '');
+        return res.json({ success: true, saved });
     } catch (e) {
-        console.error('AI generation error:', e);
-        return res.status(500).json({ success: false, error: e.message || 'Error al generar preguntas con IA.' });
+        console.error('Save instrument error:', e);
+        return res.status(500).json({ success: false, error: 'server' });
     }
 });
 
+// Vuelve a las preguntas del sistema
+app.post('/api/instruments/reset', requireTeacher, async (req, res) => {
+    const target = instrumentTarget(req.body || {});
+    if (!target) return res.status(400).json({ success: false, error: 'invalid' });
+    const access = await teacherEditAccess(res.locals.teacher);
+    if (!access.anySubject && access.subject !== target.subject) {
+        return res.status(403).json({ success: false, error: 'forbidden' });
+    }
+    try {
+        instrumentStore.resetToDefault(target.grade, target.subject, target.reto);
+        return res.json({ success: true });
+    } catch (e) {
+        console.error('Reset instrument error:', e);
+        return res.status(500).json({ success: false, error: 'server' });
+    }
+});
 
-app.get('/teacher/progress', requireTeacher, (req, res) => {
-    res.render('teacher/progress', {
-        teacher: res.locals.teacher,
-        sharedProfile,
-        allActivities: actividadesSinPreguntas(allActivities)
-    });
+// Consulta los avances: seguimiento de una clase. El combo trae las Klassen de los estudiantes
+// registrados (o, sin base de datos, las de Configuración), en orden natural (K2A … K12D).
+app.get('/teacher/progress', requireTeacher, async (req, res) => {
+    let classList = await getUniqueClasses();
+    if (!classList.length) {
+        try { classList = Object.keys(JSON.parse(fs.readFileSync(SUBJECT_CONFIG_FILE, 'utf8'))); } catch (e) { classList = []; }
+    }
+    classList = [...new Set(classList)].sort((a, b) => a.localeCompare(b, 'es', { numeric: true, sensitivity: 'base' }));
+    res.render('teacher/progress', { teacher: res.locals.teacher, sharedProfile, reto0BySubject, allActivities,
+        customInstruments: instrumentStore.loadAllCustom(), classList, subjectIds: subjects.map(s => s.id) });
 });
 
 app.get('/api/teacher/progress/:className', requireTeacher, async (req, res) => {
@@ -2341,10 +3111,10 @@ app.get('/api/teacher/progress/:className', requireTeacher, async (req, res) => 
 
         const studentIds = students.map(s => s.id);
 
-        const { data: responses, error: rErr } = await supabase
+        const { data: responses, error: rErr } = await selectAll(() => supabase
             .from('activity_responses')
             .select('*')
-            .in('student_id', studentIds);
+            .in('student_id', studentIds));
 
         if (rErr) throw rErr;
 
@@ -2424,90 +3194,8 @@ app.get('/teacher/troubleshooting', requireTeacher, (req, res) => {
     res.render('teacher/troubleshooting');
 });
 
-app.get('/teacher/bitacora', requireTeacher, (req, res) => {
-    res.render('teacher/bitacora', { teacher: res.locals.teacher });
-});
-
-// API: Incidents (CRUD)
-app.get('/api/incidents', requireTeacher, async (req, res) => {
-    if (!supabase) return res.json({ success: false });
-    const teacherId = res.locals.teacher?.id;
-    const teacherRole = res.locals.teacher?.role || 'profesor';
-    try {
-        const { status, classroom } = req.query;
-        let query = supabase.from('incidents').select('*').order('created_at', { ascending: false }).limit(100);
-
-        // Profesores solo ven sus propios incidentes; coordinadores/directivos/admins ven todos.
-        const isAdmin = ['admin', 'desarrollador', 'coordinador', 'directivo'].includes(teacherRole);
-        if (!isAdmin && teacherId) {
-            query = query.eq('reporter_id', teacherId);
-        }
-
-        if (status) query = query.eq('status', status);
-        if (classroom) query = query.eq('classroom', classroom);
-
-        const { data, error } = await query;
-        if (error) return res.json({ success: false, message: error.message });
-        return res.json({ success: true, incidents: data || [] });
-    } catch (e) {
-        return res.json({ success: false });
-    }
-});
-
-app.post('/api/incidents', requireTeacher, async (req, res) => {
-    if (!supabase) return res.json({ success: false });
-    // reporter_id siempre viene del profesor autenticado, nunca del cliente.
-    const reporterId = res.locals.teacher?.id;
-    try {
-        const { classroom, device_type, priority, description } = req.body;
-
-        const { data, error } = await supabase
-            .from('incidents')
-            .insert({
-                classroom,
-                device_type,
-                priority: priority || 'media',
-                description,
-                reporter_id: reporterId,
-                status: 'open'
-            })
-            .select();
-
-        if (error) return res.json({ success: false, message: error.message });
-        return res.json({ success: true, incident: data?.[0] });
-    } catch (e) {
-        return res.json({ success: false });
-    }
-});
-
-app.put('/api/incidents/:id', requireTeacher, async (req, res) => {
-    if (!supabase) return res.json({ success: false });
-    const teacherId = res.locals.teacher?.id;
-    const teacherRole = res.locals.teacher?.role || 'profesor';
-    const isAdmin = ['admin', 'desarrollador', 'coordinador', 'directivo'].includes(teacherRole);
-    try {
-        const { status } = req.body;
-        let updateQuery = supabase.from('incidents')
-            .update({ status, updated_at: new Date().toISOString() })
-            .eq('id', req.params.id);
-
-        // Profesores solo pueden actualizar sus propios incidentes.
-        if (!isAdmin && teacherId) {
-            updateQuery = updateQuery.eq('reporter_id', teacherId);
-        }
-
-        const { error } = await updateQuery;
-        if (error) return res.json({ success: false, message: error.message });
-        return res.json({ success: true });
-    } catch (e) {
-        return res.json({ success: false });
-    }
-});
-
-// NOTA: las rutas /api/instruments/save, /reset y /generate-ai se registran una
-// sola vez más arriba (con requireTeacher, usando services/instrument_store.js).
-// Aquí existían copias duplicadas que Express nunca ejecutaba, porque siempre
-// atiende la primera ruta registrada que coincide con la URL.
+// La bitácora de novedades se retiró (sin tabla en Supabase): la dirección vieja lleva al portal docente.
+app.get('/teacher/bitacora', requireTeacher, (req, res) => res.redirect('/teacher/training'));
 
 // ════════════════════════════════════════
 // KMK TRAINING ROUTES
@@ -2515,11 +3203,11 @@ app.put('/api/incidents/:id', requireTeacher, async (req, res) => {
 
 // API: Get KMK training questions (for quiz)
 app.get('/api/kmk-training/questions', (req, res) => {
-    return res.json({ success: true, questions: kmkTrainingQuestions });
+    return res.json({ success: true, questions: getKmkQuestions(res.locals.lang) });
 });
 
 // API: Submit completed KMK training (teacher marks themselves as trained)
-app.post('/api/kmk-training/complete', requireAdmin, async (req, res) => {
+app.post('/api/kmk-training/complete', devOnly, async (req, res) => {
     if (!supabase) return res.json({ success: false, message: 'Sin Supabase' });
     const { teacher_id, score, total, subject_assigned } = req.body;
     if (!teacher_id) return res.status(400).json({ success: false, message: 'teacher_id requerido' });
@@ -2541,11 +3229,15 @@ app.post('/api/kmk-training/complete', requireAdmin, async (req, res) => {
 });
 
 // API: Get KMK training stats by subject (for monitoring charts)
-app.get('/api/admin/kmk-training-stats', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
+app.get('/api/admin/kmk-training-stats', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
-        const { data: teachers } = await supabase.from('teachers').select('*');
-        if (!teachers) return res.json({ success: true, stats: [], total: 0, trained: 0 });
+        const { data: allTeachers } = await selectAll(() => supabase.from('teachers').select('*'));
+        if (!allTeachers) return res.json({ success: true, stats: [], total: 0, trained: 0 });
+        // Los exentos de la capacitación no cuentan (igual que en el indicador a); la materia es la
+        // asignatura del docente (Mapeo › Asignatura de cada docente)
+        const exemptions = readTeacherExemptions();
+        const teachers = allTeachers.filter(t => !isExemptTeacher(exemptions, t));
 
         const total = teachers.length;
         const trainedTeachers = teachers.filter(t => t.training_completed);
@@ -2555,10 +3247,10 @@ app.get('/api/admin/kmk-training-stats', requireAdmin, cache.cachearLectura(4500
         // Group by subject_assigned
         const subjectMap = {};
         subjects.forEach(s => {
-            subjectMap[s.id] = { subjectId: s.id, subjectName: s.name.es, icon: s.icon, total: 0, trained: 0, teachers: [] };
+            subjectMap[s.id] = { subjectId: s.id, subjectName: s.name[res.locals.lang] || s.name.es, icon: s.icon, total: 0, trained: 0, teachers: [] };
         });
         // Add a catch-all for unassigned
-        subjectMap['_otros'] = { subjectId: '_otros', subjectName: 'Sin asignatura', icon: '📋', total: 0, trained: 0, teachers: [] };
+        subjectMap['_otros'] = { subjectId: '_otros', subjectName: res.locals.t('adm_ts_sin_asignatura'), icon: '📋', total: 0, trained: 0, teachers: [] };
 
         teachers.forEach(t => {
             const subj = t.subject_assigned || t.subject || '_otros';
@@ -2593,12 +3285,12 @@ app.get('/api/admin/kmk-training-stats', requireAdmin, cache.cachearLectura(4500
 });
 
 // API: Get trained teachers list with details
-app.get('/api/admin/kmk-trained-teachers', requireAdmin, async (req, res) => {
+app.get('/api/admin/kmk-trained-teachers', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const { data: teachers } = await supabase
             .from('teachers')
-            .select('id, first_name, last_name, subject, subject_assigned, training_completed, training_date, training_score')
+            .select('id, first_name, last_name, email, subject, subject_assigned, training_completed, training_date, training_score')
             .order('last_name');
         return res.json({ success: true, teachers: teachers || [] });
     } catch (e) {
@@ -2612,32 +3304,48 @@ app.get('/api/admin/kmk-trained-teachers', requireAdmin, async (req, res) => {
 
 // API: Student saves a multimedia product
 app.post('/api/student/multimedia-product', requireLogin, async (req, res) => {
-    if (!supabase) return res.json({ success: true, localOnly: true });
     const studentId = res.locals.student.id;
-    const { activity_id, subject, product_type, description, link, image_url } = req.body;
-    if (!activity_id || !subject || !product_type) {
-        return res.status(400).json({ success: false, message: 'Campos requeridos: activity_id, subject, product_type' });
-    }
+    const { activity_id, links, description, product_type } = req.body || {};
+
+    // Solo retos 1-6: la materia sale de la actividad, no de lo que envíe el navegador
+    const activity = retoResults.retoNumber(activity_id)
+        ? Object.values(allActivities).flat().find(a => a.id === activity_id)
+        : null;
+    if (!activity) return res.status(400).json({ success: false, code: 'bad_activity', message: 'Actividad no válida' });
+
+    const normalized = evidenceLinks.normalizeLinks(links);
+    if (normalized.error) return res.status(400).json({ success: false, code: normalized.error, message: 'Vínculos no válidos' });
+    if (!normalized.links.length) return res.status(400).json({ success: false, code: 'empty', message: 'Falta el vínculo' });
+
+    const type = evidenceLinks.PRODUCT_TYPES.includes(product_type) ? product_type : 'otro';
+    const fields = {
+        subject: activity.subject,
+        product_type: type,
+        description: String(description || '').trim().slice(0, evidenceLinks.MAX_DESCRIPTION_LENGTH),
+        link: normalized.links.join('\n')
+    };
+    if (!supabase) return res.json({ success: true, localOnly: true, links: normalized.links });
     try {
-        // Upsert by student_id + activity_id
+        // Un registro por estudiante y actividad
         const { data: existing } = await supabase
             .from('multimedia_products')
             .select('id')
             .eq('student_id', studentId)
             .eq('activity_id', activity_id)
-            .single();
+            .order('created_at', { ascending: false })
+            .limit(1);
 
         let error;
-        if (existing) {
+        if (existing && existing.length) {
             ({ error } = await supabase.from('multimedia_products')
-                .update({ subject, product_type, description, link, image_url, updated_at: new Date().toISOString() })
-                .eq('id', existing.id));
+                .update({ ...fields, updated_at: new Date().toISOString() })
+                .eq('id', existing[0].id));
         } else {
             ({ error } = await supabase.from('multimedia_products')
-                .insert({ student_id: studentId, activity_id, subject, product_type, description, link, image_url }));
+                .insert({ student_id: studentId, activity_id, ...fields }));
         }
         if (error) return res.json({ success: false, message: error.message });
-        return res.json({ success: true });
+        return res.json({ success: true, links: normalized.links });
     } catch (e) {
         return res.json({ success: false, message: e.message });
     }
@@ -2652,24 +3360,27 @@ app.get('/api/student/multimedia-product/:activityId', requireLogin, async (req,
             .select('*')
             .eq('student_id', res.locals.student.id)
             .eq('activity_id', req.params.activityId)
-            .single();
-        return res.json({ success: true, data: data || null });
+            .order('created_at', { ascending: false })
+            .limit(1);
+        const product = data && data[0];
+        if (!product) return res.json({ success: true, data: null });
+        return res.json({ success: true, data: { ...product, links: evidenceLinks.storedLinks(product.link) } });
     } catch (e) {
         return res.json({ success: true, data: null });
     }
 });
 
 // API: Admin — multimedia stats per subject
-app.get('/api/admin/multimedia-stats', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
+app.get('/api/admin/multimedia-stats', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
-        const { data: students } = await supabase.from('students').select('id');
-        const { data: products } = await supabase.from('multimedia_products').select('*');
+        const { data: students } = await selectAll(() => supabase.from('students').select('id'));
+        const { data: products } = await selectAll(() => supabase.from('multimedia_products').select('*'));
         const totalStudents = students ? students.length : 0;
 
         const subjectStats = {};
         subjects.forEach(s => {
-            subjectStats[s.id] = { subjectId: s.id, subjectName: s.name.es, icon: s.icon, color: s.color, count: 0, studentSet: new Set(), products: [] };
+            subjectStats[s.id] = { subjectId: s.id, subjectName: s.name[res.locals.lang] || s.name.es, icon: s.icon, color: s.color, count: 0, studentSet: new Set(), products: [] };
         });
 
         (products || []).forEach(p => {
@@ -2698,7 +3409,7 @@ app.get('/api/admin/multimedia-stats', requireAdmin, cache.cachearLectura(45000)
 });
 
 // API: Admin — list all multimedia products with details
-app.get('/api/admin/multimedia-products', requireAdmin, async (req, res) => {
+app.get('/api/admin/multimedia-products', allow('reports'), async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
         const { data: products } = await supabase
@@ -2706,108 +3417,204 @@ app.get('/api/admin/multimedia-products', requireAdmin, async (req, res) => {
             .select('*, students(full_name, username, class_name)')
             .order('created_at', { ascending: false })
             .limit(500);
-        return res.json({ success: true, products: products || [] });
+        // El panel solo enlaza vínculos http(s); lo demás se muestra como texto
+        const list = (products || []).map(p => ({
+            ...p,
+            links: evidenceLinks.validLinks(p.link),
+            image_url: evidenceLinks.isValidLink(p.image_url) ? p.image_url : ''
+        }));
+        return res.json({ success: true, products: list });
     } catch (e) {
         return res.json({ success: false, message: e.message });
     }
 });
 
-// API: Admin — Get Reto 0 Diagnostic Stats
-app.get('/api/admin/reto0-stats', requireAdmin, cache.cachearLectura(45000), async (req, res) => {
-    if (!supabase) return res.json({ success: false });
+// ─── Botón AYUDA: videos con enlace (las preguntas frecuentes están en los textos de la página) ───
+app.get('/api/help', requireAnyLogin, (req, res) => {
+    const videos = campaign.getVideos().filter(video => video.url).map(({ id, title, url }) => ({ id, title, url }));
+    const pending = campaign.getVideos().filter(video => !video.url).map(({ id, title }) => ({ id, title }));
+    res.json({ success: true, videos, pending });
+});
+
+// ─── Administración › Capacitación y ayuda ───
+app.get('/api/admin/help-videos', devOnly, (req, res) => {
+    res.json({ success: true, videos: campaign.getVideos() });
+});
+
+app.post('/api/admin/help-videos', devOnly, (req, res) => {
+    const result = campaign.saveVideos((req.body || {}).links);
+    if (result.error) return res.status(400).json({ success: false, code: result.error, id: result.id });
+    res.json({ success: true, videos: result.videos });
+});
+
+// Un envío a la vez. Se guarda el avance para que el panel lo muestre.
+let campaignJob = null;
+
+function campaignState() {
+    return {
+        service: mailer.serviceStatus(),
+        settings: campaign.getSettings(),
+        emails: campaign.getEmails(),
+        stats: campaign.emailStats(),
+        job: campaignJob
+    };
+}
+
+app.get('/api/admin/campaign', devOnly, (req, res) => {
+    res.json({ success: true, ...campaignState() });
+});
+
+app.post('/api/admin/campaign/settings', devOnly, (req, res) => {
+    const result = campaign.saveSettings(req.body || {});
+    if (result.error) return res.status(400).json({ success: false, code: result.error });
+    res.json({ success: true, settings: result.settings });
+});
+
+app.post('/api/admin/campaign/emails/:id', devOnly, (req, res) => {
+    const result = campaign.saveEmail(req.params.id, req.body || {});
+    if (result.error) return res.status(400).json({ success: false, code: result.error });
+    res.json({ success: true, email: result.email });
+});
+
+const campaignEmail = id => campaign.getEmails().find(email => email.id === id);
+const campaignSubjectName = (teacher, lang) => {
+    const subject = subjects.find(s => s.id === (teacher && teacher.subject));
+    return subject ? (subject.name[lang] || subject.name.es) : '';
+};
+
+// Docentes para la campaña: se piden a Supabase cada vez, sin confiar en lo que envíe la página
+async function campaignTeachers() {
+    if (!supabase) return [];
+    const { data, error } = await selectAll(() => supabase.from('teachers').select('id, first_name, last_name, email, subject, training_completed'));
+    if (error) throw new Error(error.message);
+    const exemptions = readTeacherExemptions();
+    return (data || []).map(t => ({ ...t, exempt: isExemptTeacher(exemptions, t) }));
+}
+
+function campaignFilter(body) {
+    const type = ['all', 'untrained', 'subject'].includes(body.type) ? body.type : 'all';
+    return { type, subject: type === 'subject' ? body.subject : undefined };
+}
+
+app.post('/api/admin/campaign/recipients', devOnly, async (req, res) => {
+    const body = req.body || {};
+    const email = campaignEmail(body.emailId);
+    if (!email) return res.status(400).json({ success: false, code: 'unknown' });
     try {
-        const { data: students } = await supabase.from('students').select('id, class_name');
-        const { data: responses } = await supabase
-            .from('activity_responses').select('student_id, data').eq('activity_id', 'profile');
-        
-        if (!responses || !students) return res.json({ success: true, stats: {} });
-
-        const totalStudents = students.length;
-        const completedCount = responses.length;
-        const completionPct = totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0;
-
-        // Group by class
-        const classStats = {};
-        const uniqueClasses = [...new Set(students.map(s => s.class_name))].filter(Boolean).sort();
-        
-        uniqueClasses.forEach(cls => {
-            const classStudents = students.filter(s => s.class_name === cls);
-            const classResponses = responses.filter(r => classStudents.some(s => s.id === r.student_id));
-            classStats[cls] = {
-                total: classStudents.length,
-                completed: classResponses.length,
-                pct: classStudents.length > 0 ? Math.round((classResponses.length / classStudents.length) * 100) : 0
-            };
-        });
-
-        // La clave de respuestas y el umbral estaban incrustados aqui, donde
-        // ningun docente podia revisarlos. Ahora viven en config/reto0_evaluacion.json.
-        const evalConfig = jsonstore.read(
-            path.join(__dirname, 'config', 'reto0_evaluacion.json'),
-            { umbralAprobacion: 16, respuestasCorrectas: {} }
-        );
-        const correctOptions = evalConfig.respuestasCorrectas || {};
-        const umbral = evalConfig.umbralAprobacion || 16;
-        const questionIds = Object.keys(correctOptions);
-
-        // Un solo recorrido en lugar de 21 (uno para aprobados + uno por pregunta).
-        const answered = new Map(questionIds.map(q => [q, 0]));
-        let totalPassing = 0;
-
-        responses.forEach(r => {
-            const data = r.data;
-            if (!data) return;
-            let correctCount = 0;
-            for (const qId of questionIds) {
-                const value = data[qId];
-                if (value != null) {
-                    answered.set(qId, answered.get(qId) + 1);
-                    if (String(value) === correctOptions[qId]) correctCount++;
-                }
-            }
-            if (correctCount >= umbral) totalPassing++;
-        });
-
-        const passingPct = totalStudents > 0 ? Math.round((totalPassing / totalStudents) * 100) : 0;
-
-        const questions = questionIds.map(qId => ({
-            id: qId,
-            answered: answered.get(qId),
-            pct: completedCount > 0 ? Math.round((answered.get(qId) / completedCount) * 100) : 0
-        }));
-
-        return res.json({
+        const selection = campaign.selectRecipients(await campaignTeachers(), email.id, campaignFilter(body));
+        res.json({
             success: true,
-            totalStudents,
-            completedCount,
-            completionPct,
-            totalPassing,
-            passingPct,
-            classStats,
-            questions
+            count: selection.recipients.length,
+            alreadySent: selection.alreadySent,
+            invalid: selection.invalid,
+            external: selection.recipients.filter(r => r.external).map(r => r.to),
+            missingVideos: campaign.renderEmail(email, { teacher: null, subjectName: '' }).missingVideos
         });
     } catch (e) {
-        return res.json({ success: false, message: e.message });
+        res.json({ success: false, message: e.message });
+    }
+});
+
+app.post('/api/admin/campaign/preview', devOnly, (req, res) => {
+    const body = req.body || {};
+    const email = campaignEmail(body.emailId);
+    if (!email) return res.status(400).json({ success: false, code: 'unknown' });
+    const draft = { ...email, ...(typeof body.subject === 'string' ? { subject: body.subject } : {}), ...(typeof body.body === 'string' ? { body: body.body } : {}) };
+    res.json({ success: true, ...campaign.renderEmail(draft, { teacher: { first_name: 'Ana' }, subjectName: campaignSubjectName({ subject: 'matematicas' }, res.locals.lang) }) });
+});
+
+// Prueba: solo al correo de quien está en el panel
+app.post('/api/admin/campaign/test', devOnly, async (req, res) => {
+    const email = campaignEmail((req.body || {}).emailId);
+    if (!email) return res.status(400).json({ success: false, code: 'unknown' });
+    if (!mailer.serviceStatus().configured) return res.status(409).json({ success: false, code: 'not_configured' });
+    let adminUser = {};
+    try { adminUser = JSON.parse(req.signedCookies.admin_user || '{}'); } catch (e) { /* cookie ilegible */ }
+    if (!adminUser.email) return res.status(400).json({ success: false, code: 'no_admin_email' });
+    try {
+        const { subject, html } = campaign.renderEmail(email, { teacher: adminUser, subjectName: campaignSubjectName(adminUser, res.locals.lang) });
+        await mailer.sendMail({ to: adminUser.email, subject: `[Prueba] ${subject}`, html });
+        res.json({ success: true, to: adminUser.email });
+    } catch (e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// Envía la serie elegida. confirmCount debe coincidir con los destinatarios: si cambió, no envía.
+app.post('/api/admin/campaign/send', devOnly, async (req, res) => {
+    const body = req.body || {};
+    const email = campaignEmail(body.emailId);
+    if (!email) return res.status(400).json({ success: false, code: 'unknown' });
+    if (!mailer.serviceStatus().configured) return res.status(409).json({ success: false, code: 'not_configured' });
+    if (campaignJob && campaignJob.running) return res.status(409).json({ success: false, code: 'busy' });
+    if (!campaign.getSettings().appUrl) return res.status(400).json({ success: false, code: 'no_app_url' });
+    try {
+        const { recipients } = campaign.selectRecipients(await campaignTeachers(), email.id, campaignFilter(body));
+        if (Number(body.confirmCount) !== recipients.length) {
+            return res.status(409).json({ success: false, code: 'count_changed', count: recipients.length });
+        }
+        if (!recipients.length) return res.status(400).json({ success: false, code: 'no_recipients' });
+
+        const lang = res.locals.lang;
+        const delay = Number(process.env.CAMPAIGN_DELAY_MS) || 2500; // Exchange admite unos 30 correos por minuto
+        campaignJob = { emailId: email.id, running: true, total: recipients.length, sent: 0, failed: 0, errors: [] };
+        res.json({ success: true, job: campaignJob });
+
+        (async () => {
+            for (const recipient of recipients) {
+                const at = new Date().toISOString();
+                try {
+                    const { subject, html } = campaign.renderEmail(email, { teacher: recipient.teacher, subjectName: campaignSubjectName(recipient.teacher, lang) });
+                    await mailer.sendMail({ to: recipient.to, subject, html });
+                    campaign.appendLog({ emailId: email.id, to: recipient.to, at, ok: true });
+                    campaignJob.sent++;
+                } catch (e) {
+                    campaign.appendLog({ emailId: email.id, to: recipient.to, at, ok: false, error: e.message });
+                    campaignJob.failed++;
+                    if (campaignJob.errors.length < 5) campaignJob.errors.push(`${recipient.to}: ${e.message}`);
+                }
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            campaignJob.running = false;
+        })();
+    } catch (e) {
+        res.json({ success: false, message: e.message });
     }
 });
 
 // ─── Portal de Documentación y Manuales ───
+// Guía de uso (services/user_guide.js): cada perfil ve sus pestañas. Estudiante: la suya; docente:
+// docente y estudiante; directivo y coordinador: además coordinación; desarrollador: todas.
+function guideViewer(res) {
+    if (res.locals.userRole === 'admin') return res.locals.adminRole;
+    if (res.locals.userRole === 'teacher') return roleOfEmail(res.locals.teacher && res.locals.teacher.email);
+    return 'estudiante';
+}
+
 app.get('/docs', requireAnyLogin, (req, res) => {
-    if (res.locals.userRole === 'student') {
-        return res.redirect('/profile');
-    }
-    res.render('docs/user', { userRole: res.locals.userRole, student: res.locals.student, teacher: res.locals.teacher, error: req.query.error || null });
+    const viewer = guideViewer(res);
+    const backLink = res.locals.userRole === 'admin' ? '/admin' : res.locals.userRole === 'teacher' ? '/teacher/training' : '/';
+    res.render('docs/user', {
+        userRole: res.locals.userRole,
+        student: res.locals.student,
+        teacher: res.locals.teacher,
+        guideTabs: userGuide.tabsFor(viewer),
+        guideCommon: userGuide.common(),
+        backLink,
+        // Solo avisos conocidos (no se muestra texto que venga en la dirección)
+        error: req.query.error === 'tecnico' ? res.locals.t('man_g_aviso_tecnico') : null
+    });
 });
 
+// Manual técnico: solo el perfil desarrollador (el rol se lee en teacher_roles.json)
 app.get('/docs/technical', requireAnyLogin, (req, res) => {
-    let isDev = false;
-    if (res.locals.userRole === 'admin') isDev = true;
-    if (res.locals.teacher && res.locals.teacher.role === 'desarrollador') isDev = true;
+    const isDev = res.locals.adminRole === 'desarrollador'
+        || !!(res.locals.teacher && res.locals.teacher.email && roleOfEmail(res.locals.teacher.email) === 'desarrollador');
 
     if (!isDev) {
-        return res.redirect('/docs?error=Acceso+Restringido%3A+El+Manual+Técnico+es+de+uso+exclusivo+para+el+perfil+Desarrollador.');
+        return res.redirect('/docs?error=tecnico');
     }
-    res.render('docs/technical', { userRole: res.locals.userRole, student: res.locals.student, teacher: res.locals.teacher });
+    res.render('docs/technical', { userRole: res.locals.userRole, student: res.locals.student, teacher: res.locals.teacher, techSections: techManual.sections() });
 });
 
 app.get('/docs/user', requireAnyLogin, (req, res) => {

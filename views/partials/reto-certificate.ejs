@@ -1,0 +1,105 @@
+<%# Cuadro "Certificado Medienpass" de los retos 0-6, dentro de #activityForm.
+    Está oculto y solo aparece cuando el estudiante ganó los 7 retos (0 a 6) de la materia
+    (80 % en cada uno; lo calcula el servidor en medienpassFrom, server.js). Entonces pide el correo
+    institucional; al guardarlo aparece el certificado de la materia completa para recortarlo y
+    pegarlo en OneNote. La lógica está en activity.ejs (renderRetoWin). %>
+<%
+const retoMatch = activity.id === 'profile' ? ['', '0'] : /^reto([1-6])_/.exec(activity.id || '');
+%>
+<% if (retoMatch) { %>
+<style>
+    .reto-win { margin: 28px 0 10px; padding: 22px; border-radius: 18px; border: 2px solid #f0ce2d; background: linear-gradient(135deg, #fffbeb, #fdf6d3); }
+    .reto-win-title { margin: 0 0 6px; font-size: 1.2em; color: #111111; display: flex; align-items: center; gap: 8px; }
+    .reto-win-title i { color: #c03928; }
+    .reto-win-status { margin: 0 0 14px; color: #3a3a3a; line-height: 1.5; }
+    .reto-win-email label { display: block; font-weight: 700; color: #111111; margin-bottom: 6px; font-size: 0.95em; }
+    .reto-win-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .reto-win-row input { flex: 1 1 240px; min-width: 0; padding: 11px 14px; border: 2px solid #e2e2e2; border-radius: 10px; font-size: 1em; background: white; }
+    .reto-win-row input:focus { outline: none; border-color: #21529b; }
+    .reto-win-row .save-btn { margin: 0; }
+    .reto-win-error { margin: 8px 0 0; color: #a92106; font-weight: 600; font-size: 0.92em; }
+    .reto-win[hidden], .reto-win [hidden] { display: none !important; }
+
+    /* Certificado apaisado tipo diapositiva, igual al que imprime el panel admin: franja del colegio,
+       banda negra con el logo y el texto a la derecha; textos tipo frase y las dos firmas. */
+    .reto-cert { max-width: 860px; aspect-ratio: 297 / 210; margin: 22px auto 0; display: flex; flex-direction: column; overflow: hidden;
+        background: #ffffff; border: 1px solid #d9d9d9; border-radius: 16px; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1); color: #111111;
+        text-transform: none; letter-spacing: normal; font-family: 'Roboto', 'Segoe UI', Arial, sans-serif; }
+    .reto-cert p { margin: 0; }
+    .reto-cert-flag { height: 10px; flex-shrink: 0; background: linear-gradient(90deg, #111111 0 25%, #c03928 25% 50%, #f0ce2d 50% 75%, #21529b 75% 100%); }
+    .reto-cert-body { flex: 1; display: grid; grid-template-columns: 30% 1fr; min-height: 0; }
+    .reto-cert-side { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 22px 16px;
+        background: #111111; color: #ffffff; text-align: center; border-right: 5px solid #f0ce2d; }
+    .reto-cert-logo { display: block; padding: 8px 12px; background: #ffffff; border-radius: 12px; }
+    .reto-cert-logo img { display: block; width: 100%; max-width: 170px; height: auto; }
+    .reto-cert-brand { font-family: 'Roboto Slab', Georgia, serif; font-weight: 700; font-size: 1.45em; color: #ffffff; }
+    .reto-cert-school { font-size: 0.78em; line-height: 1.4; color: #f0ce2d; }
+    .reto-cert-badge { font-size: 2.4em; }
+    .reto-cert-main { display: flex; flex-direction: column; justify-content: center; gap: 5px; padding: 22px 30px; text-align: left; }
+    .reto-cert-kicker { font-weight: 700; color: #c03928; font-size: 1.05em; }
+    .reto-cert-lead { margin-top: 4px !important; color: #4a4a4a; font-size: 0.92em; }
+    .reto-cert-name { font-family: 'Roboto Slab', Georgia, serif; font-size: 1.7em; font-weight: 700; line-height: 1.15; padding-bottom: 5px; border-bottom: 3px solid #f0ce2d; }
+    .reto-cert-class { color: #3a3a3a; font-size: 0.92em; }
+    .reto-cert-reto { font-size: 1.15em; font-weight: 700; color: #21529b; }
+    .reto-cert-retos { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin: 4px 0 2px; }
+    .reto-cert-chip { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 2px; border-radius: 10px; background: #21529b; color: #dbe7f7; font-size: 0.76em; line-height: 1.2; }
+    .reto-cert-chip strong { font-size: 1.05em; color: #ffffff; }
+    .reto-cert-email { font-family: ui-monospace, Consolas, monospace; color: #212121; word-break: break-all; font-size: 0.88em; }
+    .reto-cert-date { color: #4a4a4a; font-size: 0.86em; }
+    .reto-cert-signs { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 14px; }
+    .reto-cert-sign { display: flex; flex-direction: column; gap: 1px; padding-top: 6px; border-top: 1.5px solid #111111; text-align: center; }
+    .reto-cert-sign strong { font-size: 0.88em; }
+    .reto-cert-sign span { font-size: 0.8em; color: #c03928; font-weight: 600; }
+    .reto-cert-hint { margin: 12px 0 0; text-align: center; color: #92400e; font-weight: 600; }
+    @media (max-width: 680px) {
+        .reto-cert { aspect-ratio: auto; }
+        .reto-cert-body { grid-template-columns: 1fr; }
+        .reto-cert-side { flex-direction: row; flex-wrap: wrap; padding: 14px; border-right: 0; border-bottom: 5px solid #f0ce2d; }
+        .reto-cert-logo img { max-width: 110px; }
+        .reto-cert-main { padding: 18px 16px; }
+        .reto-cert-retos { grid-template-columns: repeat(4, 1fr); }
+    }
+</style>
+<section class="reto-win" id="retoWin" aria-live="polite" hidden>
+    <h3 class="reto-win-title"><i class="fas fa-award"></i> <span data-i18n="est_reto_cert_titulo"><%= locals.t('est_reto_cert_titulo') %></span></h3>
+    <p class="reto-win-status" id="retoWinStatus"></p>
+    <div class="reto-win-email">
+        <label for="institutional_email"><span data-i18n="est_correo_institucional"><%= locals.t('est_correo_institucional') %></span></label>
+        <div class="reto-win-row">
+            <input type="email" id="institutional_email" inputmode="email" autocomplete="email"
+                placeholder="<%= locals.t('est_correo_placeholder') %>" data-i18n-placeholder="est_correo_placeholder">
+            <button type="button" class="save-btn" id="retoEmailBtn"><i class="fas fa-envelope"></i> <span data-i18n="est_guardar_correo"><%= locals.t('est_guardar_correo') %></span></button>
+        </div>
+        <p class="reto-win-error" id="retoEmailError" hidden></p>
+    </div>
+
+    <div class="reto-cert" id="retoCertificate" hidden>
+        <div class="reto-cert-flag" aria-hidden="true"></div>
+        <div class="reto-cert-body">
+            <div class="reto-cert-side">
+                <span class="reto-cert-logo"><img src="/img/escudo-colegio.png" alt="Colegio Alemán · Deutsche Schule Barranquilla"></span>
+                <span class="reto-cert-brand notranslate" translate="no">Medienpass</span>
+                <span class="reto-cert-school">Deutsche Schule Barranquilla<br>Colegio Alemán</span>
+                <span class="reto-cert-badge" aria-hidden="true">🏆</span>
+            </div>
+            <div class="reto-cert-main">
+                <p class="reto-cert-kicker"><span data-i18n="est_cert_titulo"><%= locals.t('est_cert_titulo') %></span></p>
+                <p class="reto-cert-lead"><span data-i18n="est_cert_otorga"><%= locals.t('est_cert_otorga') %></span></p>
+                <p class="reto-cert-name"><%= locals.studentNames ? locals.studentNames(student).full : (student.full_name || student.username) %></p>
+                <p class="reto-cert-class"><span data-i18n="est_cert_clase"><%= locals.t('est_cert_clase') %></span> <%= student.class_name %></p>
+                <p class="reto-cert-lead"><span data-i18n="est_cert_completo"><%= locals.t('est_cert_completo') %></span></p>
+                <p class="reto-cert-reto" id="retoCertTitle"></p>
+                <div class="reto-cert-retos" id="retoCertRetos"></div>
+                <p class="reto-cert-email" id="retoCertEmail"></p>
+                <p class="reto-cert-date" id="retoCertDate"></p>
+                <%# Firmas: claves est_cert_firma1_* y est_cert_firma2_* (las mismas del panel admin) %>
+                <div class="reto-cert-signs">
+                    <div class="reto-cert-sign"><strong data-i18n="est_cert_firma1_nombre"><%= locals.t('est_cert_firma1_nombre') %></strong><span data-i18n="est_cert_firma1_cargo"><%= locals.t('est_cert_firma1_cargo') %></span></div>
+                    <div class="reto-cert-sign"><strong data-i18n="est_cert_firma2_nombre"><%= locals.t('est_cert_firma2_nombre') %></strong><span data-i18n="est_cert_firma2_cargo"><%= locals.t('est_cert_firma2_cargo') %></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p class="reto-cert-hint" id="retoCertHint" hidden><span data-i18n="est_reto_cert_recortar"><%= locals.t('est_reto_cert_recortar') %></span></p>
+</section>
+<% } %>

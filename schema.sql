@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS students (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     class_name TEXT NOT NULL DEFAULT '4D',
+    full_name TEXT,
+    student_code TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -29,6 +31,9 @@ CREATE TABLE IF NOT EXISTS activity_responses (
 CREATE INDEX IF NOT EXISTS idx_activity_responses_student ON activity_responses(student_id);
 CREATE INDEX IF NOT EXISTS idx_activity_responses_activity ON activity_responses(activity_id);
 CREATE INDEX IF NOT EXISTS idx_students_username ON students(username);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_students_student_code_unique
+    ON students (btrim(student_code))
+    WHERE student_code IS NOT NULL AND btrim(student_code) <> '';
 
 -- 4. Enable Row Level Security
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
@@ -66,18 +71,7 @@ CREATE TRIGGER set_updated_at
 -- NEW TABLES FOR PSP 3.1
 -- ============================================
 
--- 8. Create incidents table for bitacora de novedades
-CREATE TABLE IF NOT EXISTS incidents (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    reporter_id UUID,
-    classroom TEXT NOT NULL,
-    device_type TEXT,
-    description TEXT NOT NULL,
-    priority TEXT DEFAULT 'media',
-    status TEXT DEFAULT 'open',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- 8. (Retirada) La bitácora de novedades ya no existe: la app no usa la tabla incidents.
 
 -- 9. Create devices table for inventory
 CREATE TABLE IF NOT EXISTS devices (
@@ -104,17 +98,13 @@ CREATE TABLE IF NOT EXISTS device_loans (
 );
 
 -- 11. Enable RLS and create policies for new tables
-ALTER TABLE incidents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE devices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE device_loans ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow all operations on incidents" ON incidents FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on devices" ON devices FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on device_loans" ON device_loans FOR ALL USING (true) WITH CHECK (true);
 
 -- 12. Create indexes for new tables
-CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);
-CREATE INDEX IF NOT EXISTS idx_incidents_classroom ON incidents(classroom);
 CREATE INDEX IF NOT EXISTS idx_devices_location ON devices(location);
 CREATE INDEX IF NOT EXISTS idx_devices_status ON devices(status);
 CREATE INDEX IF NOT EXISTS idx_device_loans_device ON device_loans(device_id);

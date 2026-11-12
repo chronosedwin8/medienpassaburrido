@@ -1,16 +1,22 @@
 </main>
-<footer>
-    <p data-i18n="schoolFooter"><%= t('schoolFooter') %></p>
-    <% if (typeof teacher !== 'undefined' && teacher) { %>
-        <div style="margin-top:10px;"><a href="/docs" style="color:#fbbf24;font-weight:bold;text-decoration:none;"><i class="fas fa-book"></i> 📚 Manual de Usuario</a></div>
-    <% } %>
+<footer class="dsb-footer">
+    <div class="dsb-flag" aria-hidden="true"></div>
+    <div class="dsb-footer-inner">
+        <img src="/img/logo-colegio.png" width="511" height="360" alt="Colegio Alemán · Deutsche Schule Barranquilla">
+        <p data-i18n="schoolFooter"><%= locals.t('schoolFooter') %></p>
+        <% if (typeof teacher !== 'undefined' && teacher) { %>
+            <a href="/docs"><i class="fas fa-book"></i> <span data-i18n="ftr_manual_de_usuario"><%= locals.t('ftr_manual_de_usuario') %></span></a>
+        <% } %>
+    </div>
 </footer>
+
+<%- include('help-button') %>
+
+<%# Lector inmersivo (las páginas de los retos lo piden con { reader: true }) %>
+<% if (locals.reader) { %><%- include('reader') %><% } %>
 
 <!-- Toast notification container -->
 <div id="toast-container"></div>
-    <div id="autosaveToast" class="toast">Datos guardados</div>
-<script src="<%= v('/js/lang.js') %>"></script>
-    <script src="<%= v('/js/autosave.js') %>"></script>
 </body>
 
 </html>

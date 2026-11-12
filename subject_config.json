@@ -9,7 +9,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K10B": {
     "aleman": true,
@@ -21,7 +22,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K10C": {
     "aleman": true,
@@ -33,7 +35,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K11A": {
     "aleman": true,
@@ -45,7 +48,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K11B": {
     "aleman": true,
@@ -57,7 +61,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K11C": {
     "aleman": true,
@@ -69,7 +74,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K12A": {
     "aleman": true,
@@ -81,7 +87,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K1A": {
     "aleman": true,
@@ -93,7 +100,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K1B": {
     "aleman": true,
@@ -105,7 +113,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K1C": {
     "aleman": true,
@@ -117,7 +126,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K1D": {
     "aleman": true,
@@ -129,7 +139,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K2A": {
     "aleman": true,
@@ -141,7 +152,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K2B": {
     "aleman": true,
@@ -153,7 +165,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K2C": {
     "aleman": true,
@@ -165,7 +178,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K2D": {
     "aleman": true,
@@ -177,7 +191,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K3A": {
     "aleman": true,
@@ -189,7 +204,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K3B": {
     "aleman": true,
@@ -201,7 +217,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K3C": {
     "aleman": true,
@@ -213,7 +230,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K3D": {
     "aleman": true,
@@ -225,7 +243,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K4A": {
     "aleman": true,
@@ -237,7 +256,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K4B": {
     "aleman": true,
@@ -249,7 +269,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K4C": {
     "aleman": true,
@@ -261,7 +282,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K4D": {
     "aleman": true,
@@ -273,7 +295,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K5A": {
     "aleman": true,
@@ -285,7 +308,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K5B": {
     "aleman": true,
@@ -297,7 +321,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K5C": {
     "aleman": true,
@@ -309,7 +334,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K5D": {
     "aleman": true,
@@ -321,7 +347,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K6A": {
     "aleman": true,
@@ -333,7 +360,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K6B": {
     "aleman": true,
@@ -345,7 +373,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K6C": {
     "aleman": true,
@@ -357,7 +386,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K6D": {
     "aleman": true,
@@ -369,7 +399,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K7A": {
     "aleman": true,
@@ -381,7 +412,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K7B": {
     "aleman": true,
@@ -393,7 +425,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K7C": {
     "aleman": true,
@@ -405,7 +438,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K7D": {
     "aleman": true,
@@ -417,7 +451,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K8A": {
     "aleman": true,
@@ -429,7 +464,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K8B": {
     "aleman": true,
@@ -441,7 +477,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K8C": {
     "aleman": true,
@@ -453,7 +490,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K8D": {
     "aleman": true,
@@ -465,7 +503,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K9A": {
     "aleman": true,
@@ -477,7 +516,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K9B": {
     "aleman": true,
@@ -489,7 +529,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "K9C": {
     "aleman": true,
@@ -501,7 +542,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "KIN1": {
     "aleman": true,
@@ -513,7 +555,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "KIN2": {
     "aleman": true,
@@ -525,7 +568,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "KIN3": {
     "aleman": true,
@@ -537,7 +581,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "KKP1": {
     "aleman": true,
@@ -549,7 +594,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "KKP2": {
     "aleman": true,
@@ -561,7 +607,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "KKP3": {
     "aleman": true,
@@ -573,7 +620,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "PK1": {
     "aleman": true,
@@ -585,7 +633,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "PK2": {
     "aleman": true,
@@ -597,7 +646,8 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   },
   "PK3": {
     "aleman": true,
@@ -609,6 +659,7 @@
     "matematicas": true,
     "musica": true,
     "arte": true,
-    "mint_sach": true
+    "mint_sach": true,
+    "deportes": true
   }
 }

@@ -1,0 +1,93 @@
+<%# Botón AYUDA de estudiantes y docentes: videos (Administración › Capacitación y ayuda) y preguntas frecuentes. %>
+<style>
+.help-fab {
+    position: fixed; right: 18px; bottom: 18px; z-index: 900;
+    display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px;
+    font: inherit; font-size: 1em; font-weight: 800; letter-spacing: .03em; color: #fff;
+    background: #c03928; border: 3px solid #fff; border-radius: 999px; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+.help-fab:hover, .help-fab:focus-visible { background: #a92106; }
+.help-dialog { width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 0; border-radius: 16px; color: #212121; }
+.help-dialog::backdrop { background: rgba(17, 17, 17, .55); }
+.help-head { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; background: #c03928; color: #fff; }
+.help-head h2 { margin: 0; font-size: 1.25em; color: #fff; }
+.help-close { width: 40px; height: 40px; font-size: 1.2em; color: #fff; background: rgba(255,255,255,.2); border: 0; border-radius: 50%; cursor: pointer; }
+.help-body { padding: 16px 20px 22px; }
+.help-body h3 { margin: 14px 0 8px; font-size: 1.05em; color: #111111; }
+.help-video { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 8px; color: #212121; text-decoration: none; background: #fdf6d3; border-radius: 10px; font-weight: 600; }
+.help-video:hover, .help-video:focus-visible { background: #fbec8c; }
+.help-video.is-pending { color: #64748b; background: #f1f5f9; }
+.help-faq { margin-bottom: 8px; padding: 10px 12px; background: #f8fafc; border-radius: 10px; }
+.help-faq summary { font-weight: 700; cursor: pointer; }
+.help-faq p { margin: 8px 0 0; line-height: 1.45; color: #475569; }
+@media print { .help-fab, .help-dialog { display: none !important; } }
+</style>
+<button type="button" class="help-fab" id="helpOpen" aria-haspopup="dialog">
+    <span aria-hidden="true">❓</span> <span data-i18n="est_ayu_boton"><%= locals.t('est_ayu_boton') %></span>
+</button>
+<dialog class="help-dialog" id="helpDialog" aria-labelledby="helpTitle">
+    <div class="help-head">
+        <h2 id="helpTitle"><span aria-hidden="true">❓</span> <span data-i18n="est_ayu_boton"><%= locals.t('est_ayu_boton') %></span></h2>
+        <button type="button" class="help-close" id="helpClose" aria-label="<%= locals.t('est_ayu_cerrar') %>" data-i18n-aria-label="est_ayu_cerrar">✕</button>
+    </div>
+    <div class="help-body">
+        <h3 id="helpVideosTitle" data-i18n="est_ayu_videos" hidden><%= locals.t('est_ayu_videos') %></h3>
+        <div id="helpVideos"></div>
+        <h3 data-i18n="est_ayu_preguntas"><%= locals.t('est_ayu_preguntas') %></h3>
+        <% [1, 2, 3, 4, 5, 6].forEach(n => { %>
+        <details class="help-faq">
+            <summary data-i18n="est_ayu_q<%= n %>"><%= locals.t('est_ayu_q' + n) %></summary>
+            <p data-i18n="est_ayu_a<%= n %>"><%= locals.t('est_ayu_a' + n) %></p>
+        </details>
+        <% }) %>
+        <h3 data-i18n="est_ayu_contacto_titulo"><%= locals.t('est_ayu_contacto_titulo') %></h3>
+        <p data-i18n="est_ayu_contacto"><%= locals.t('est_ayu_contacto') %></p>
+    </div>
+</dialog>
+<script>
+(function () {
+    const dialog = document.getElementById('helpDialog');
+    const list = document.getElementById('helpVideos');
+    const currentLang = () => (window.langUtils ? window.langUtils.getLang() : document.documentElement.lang) || 'es';
+    const text = value => (value && (value[currentLang()] || value.es)) || '';
+    let help = null;
+
+    function renderVideos() {
+        list.textContent = '';
+        if (!help) return;
+        document.getElementById('helpVideosTitle').hidden = false;
+        help.videos.forEach(video => {
+            const link = document.createElement('a');
+            link.className = 'help-video';
+            link.href = video.url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.textContent = '▶️ ' + text(video.title);
+            list.append(link);
+        });
+        help.pending.forEach(video => {
+            const row = document.createElement('div');
+            row.className = 'help-video is-pending';
+            row.textContent = '🕒 ' + text(video.title) + ' · ' + window.t('est_ayu_proximamente');
+            list.append(row);
+        });
+    }
+
+    document.getElementById('helpOpen').addEventListener('click', async () => {
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+        else dialog.setAttribute('open', '');
+        if (!help) {
+            try {
+                const response = await fetch('/api/help', { headers: { Accept: 'application/json' }, redirect: 'manual' });
+                const data = response.ok ? await response.json() : null;
+                if (data && data.success) help = data;
+            } catch (e) { /* sin sesión: solo preguntas frecuentes */ }
+        }
+        renderVideos();
+    });
+    document.getElementById('helpClose').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+    document.addEventListener('langchange', renderVideos);
+})();
+</script>

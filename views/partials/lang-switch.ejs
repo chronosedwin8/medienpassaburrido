@@ -1,0 +1,15 @@
+<%# Selector de idioma DE | EN | ES para páginas sin cabecera propia. Lo maneja /js/lang.js
+    (clase lang-btn + data-lang) y la elección vale para todos los portales.
+    Estilo del colegio: pastilla blanca y el idioma elegido en negro. %>
+<style>
+    .lang-switch { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: #fff; border: 1px solid #e2e2e2; }
+    .lang-switch .lang-btn { width: auto; margin: 0; border: 0; background: transparent; padding: 5px 10px; border-radius: 999px; font-family: inherit; font-size: 12px; font-weight: 700; line-height: 1.2; color: #54595f; cursor: pointer; box-shadow: none; }
+    .lang-switch .lang-btn.active { background: #111111; color: #fff; }
+    .lang-switch .lang-btn:hover { color: #111111; transform: none !important; box-shadow: none !important; filter: none; }
+    .lang-switch .lang-btn.active:hover { color: #fff; }
+</style>
+<div class="lang-switch" role="group" aria-label="Idioma / Sprache / Language">
+    <button type="button" class="lang-btn <%= lang === 'de' ? 'active' : '' %>" data-lang="de">DE</button>
+    <button type="button" class="lang-btn <%= lang === 'en' ? 'active' : '' %>" data-lang="en">EN</button>
+    <button type="button" class="lang-btn <%= lang === 'es' ? 'active' : '' %>" data-lang="es">ES</button>
+</div>

@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<%= lang %>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Previsualización de Retos (Modo Estudiante) - Medienpass</title>
+    <%- i18nScripts() %>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -26,7 +27,7 @@
 
     <style>
         body {
-            background-color: var(--mp-bg);
+            background-color: #f8fafc;
             background-image: 
                 radial-gradient(at 0% 0%, rgba(241,245,249,1) 0, transparent 50%), 
                 radial-gradient(at 50% 0%, rgba(224,231,255,0.4) 0, transparent 50%),
@@ -43,7 +44,7 @@
         /* Legal Sheet Page Styling (8.5" x 14" aspect feel) */
         .legal-page-card {
             background: #ffffff;
-            border: 1px solid var(--mp-border-strong);
+            border: 1px solid #cbd5e1;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
             border-radius: 1rem;
             padding: 2.5rem;
@@ -58,7 +59,7 @@
 
         .legal-page-card:hover {
             box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.12), 0 10px 12px -5px rgba(0, 0, 0, 0.06);
-            border-color: var(--mp-text-faint);
+            border-color: #94a3b8;
         }
 
         /* High Contrast Clear Scrollbar */
@@ -67,13 +68,13 @@
             height: 10px;
         }
         ::-webkit-scrollbar-track {
-            background: var(--mp-border);
+            background: #e2e8f0;
             border-radius: 9999px;
         }
         ::-webkit-scrollbar-thumb {
-            background: var(--mp-text-soft);
+            background: #475569;
             border-radius: 9999px;
-            border: 2px solid var(--mp-border);
+            border: 2px solid #e2e8f0;
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #1e293b;
@@ -117,31 +118,20 @@
             }
         }
     </style>
+    <%- include('../partials/brand-head') %>
 </head>
 <body class="min-h-screen text-slate-800 antialiased pb-12">
 
-    <!-- Top Glass Header -->
-    <header class="glass-header sticky top-0 z-40 w-full px-6 py-4 shadow-xl no-print">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div class="flex items-center space-x-3">
-                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-                    <i class="fa-solid fa-graduation-cap text-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-lg md:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-                        <span>Portal Docente</span>
-                        <span class="text-xs bg-indigo-500/30 text-indigo-300 font-semibold px-2 py-0.5 rounded-full border border-indigo-400/20 uppercase tracking-wider">Modo Estudiante</span>
-                    </h1>
-                    <p class="text-xs text-slate-400 font-medium">Previsualización interactiva de Retos por grado y competencias KMK</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <a href="/teacher/progress" class="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700/80 rounded-xl transition border border-slate-700/60 flex items-center gap-2">
-                    <i class="fa-solid fa-chevron-left text-xs"></i> Volver a Monitoreo
-                </a>
-            </div>
-        </div>
-    </header>
+    <!-- Encabezado del colegio: Configura tus Retos del 0 al 6 (antes Modo Estudiante),
+         con acceso a Consulta los avances y al portal docente -->
+    <%- include('../partials/brand-page-header', {
+        pageTitle: 'doc_nav_configura_retos',
+        pageSubtitle: 'doc_prev_previsualizacion_interactiva_de',
+        pageLinks: [
+            { href: '/teacher/progress', icon: 'fa-chart-line', key: 'doc_nav_consulta_avances' },
+            { href: '/teacher/training', icon: 'fa-arrow-left', key: 'doc_ts_volver_al_portal' }
+        ]
+    }) %>
 
     <main class="max-w-7xl mx-auto px-4 md:px-6 mt-8 space-y-8">
         
@@ -162,25 +152,41 @@
     </main>
 
     <!-- Instrument Editor Logic -->
-    <script src="<%= v('/js/instrument-editor.js') %>"></script>
+    <script src="/js/instrument-editor.js"></script>
 
     <!-- JS Logic -->
     <script>
         const allActivities = <%- JSON.stringify(allActivities) %>;
         const sharedProfile = <%- JSON.stringify(sharedProfile) %>;
+        const reto0BySubject = <%- JSON.stringify(typeof reto0BySubject !== 'undefined' ? reto0BySubject : {}) %>;
         const subjects = <%- JSON.stringify(subjects) %>;
         const challengeToolsConfig = <%- JSON.stringify(challengeToolsConfig || {}) %>;
         const defaultAgentTools = <%- JSON.stringify(defaultAgentTools || {}) %>;
-        const teacherData = <%- JSON.stringify(typeof teacher !== 'undefined' ? teacher : null) %>;
-        
+        const editorAccess = <%- JSON.stringify(typeof editorAccess !== 'undefined' ? editorAccess : { subject: '', anySubject: false }) %>;
+        // Materias activas (las inactivas se ocultan desde Administración › Materias)
+        const activeSubjectList = subjects.filter(s => s.active !== false);
+
         // Current simulation state
         let currentGrade = 5;
-        let currentLang = 'es';
-        let rawSub = (teacherData && teacherData.subject) ? teacherData.subject.toLowerCase() : 'aleman';
-        if (rawSub.includes('aleman') || rawSub.includes('deutsch')) rawSub = 'aleman';
-        else if (rawSub.includes('ingles') || rawSub.includes('english')) rawSub = 'english';
-        else if (rawSub.includes('tecno')) rawSub = 'tecnologia';
-        let currentSubject = rawSub;
+        let currentLang = '<%= lang %>'; // idioma global elegido con los botones DE/EN/ES
+        // Abre en la materia del docente (si está activa) o en la primera materia activa
+        let currentSubject = activeSubjectList.some(s => s.id === editorAccess.subject)
+            ? editorAccess.subject : ((activeSubjectList[0] || subjects[0] || {}).id || 'aleman');
+
+        // Datos para el editor de retos (public/js/instrument-editor.js)
+        window.editorConfig = {
+            kmkAreas: <%- JSON.stringify(typeof kmkAreas !== 'undefined' ? kmkAreas : []) %>,
+            access: editorAccess,
+            subjects,
+            // Preguntas del sistema de un reto para un grado y una materia.
+            // Reto 0: su evaluación (las preguntas con quiz, desde la 10).
+            getSystemQuestions: (reto, grade, subject) => {
+                if (reto === 0) return (((reto0BySubject && reto0BySubject[subject]) || sharedProfile).evidence || []).filter(q => q.quiz);
+                const acts = allActivities[String(reto)] || [];
+                const act = acts.find(a => a.subject === subject) || acts[0] || {};
+                return act[`evidence_k${grade}`] || act.evidence_k5 || act.evidence || [];
+            }
+        };
 
         // Default selected reto is Reto 0
         window.currentSelectedReto = 0;
@@ -197,33 +203,6 @@
             10: { title: "Klasse 10", desc: "Avanzado + 4" },
             11: { title: "Klasse 11", desc: "Avanzado + 5" },
             12: { title: "Klasse 12", desc: "Avanzado + 6" }
-        };
-
-        const kmkCompetencies = {
-            es: [
-                "1. Búsqueda y Procesamiento de Información",
-                "2. Comunicación y Cooperación",
-                "3. Producción y Presentación",
-                "4. Protección y Seguridad",
-                "5. Resolución de Problemas y Acción",
-                "6. Análisis y Reflexión"
-            ],
-            de: [
-                "1. Suchen, Verarbeiten und Aufbewahren",
-                "2. Kommunizieren und Kooperieren",
-                "3. Produzieren und Präsentieren",
-                "4. Schützen und Sicher Agieren",
-                "5. Problemlösen und Handeln",
-                "6. Analysieren und Reflektieren"
-            ],
-            en: [
-                "1. Search, Process, and Store",
-                "2. Communicate and Cooperate",
-                "3. Produce and Present",
-                "4. Protect and Act Safely",
-                "5. Problem Solving and Action",
-                "6. Analyze and Reflect"
-            ]
         };
 
         const inputPlaceholders = {
@@ -243,6 +222,8 @@
             }
 
             renderSubjectSelectors();
+            window.instrumentEditor.switchInstrumentMode();
+            window.instrumentEditor.renderEditorAccess();
             selectRetoFilter(0);
             updateBadges();
             updateUI();
@@ -265,22 +246,15 @@
             const subLabel = document.getElementById('sidebarSubjectActiveLabel');
             if (subLabel) {
                 const found = subjects.find(s => s.id === currentSubject);
-                const subName = found ? (found.name[currentLang] || found.name.es) : 'Sin Seleccionar';
+                const subName = found ? (found.name[currentLang] || found.name.es) : window.t('doc_prev_js_sin_seleccionar');
                 subLabel.innerText = subName;
-            }
-
-            // Mode badge
-            const modeLabel = document.getElementById('sidebarModeActiveLabel');
-            if (modeLabel) {
-                const mode = window.currentInstrumentMode;
-                modeLabel.innerText = mode === 'auto' ? 'AUTOMÁTICA' : mode === 'editable' ? 'EDITABLE' : mode === 'ai' ? 'IA' : 'SIN SELECCIONAR';
             }
 
             // Reto badge
             const retoLabel = document.getElementById('sidebarRetoActiveLabel');
             if (retoLabel) {
                 const r = window.currentSelectedReto;
-                retoLabel.innerText = (r !== null && r !== undefined) ? (r === 0 ? 'Reto 0 (Intro)' : `Reto ${r}`) : 'Sin Seleccionar';
+                retoLabel.innerText = (r !== null && r !== undefined) ? (r === 0 ? window.t('doc_prev_js_reto0_intro') : `${window.t('doc_prev_js_reto')} ${r}`) : window.t('doc_prev_js_sin_seleccionar');
             }
         }
 
@@ -288,9 +262,9 @@
             const sidebarContainer = document.getElementById('sidebarSubjectSelector');
             if (sidebarContainer) sidebarContainer.innerHTML = '';
             
-            // Filter subjects that have activities
-            const activeSubjects = subjects.filter(sub => {
-                const hasAct = Object.values(allActivities).some(acts => 
+            // Materias activas que tienen retos
+            const activeSubjects = activeSubjectList.filter(sub => {
+                const hasAct = Object.values(allActivities).some(acts =>
                     acts.some(a => a.subject === sub.id)
                 ) || (sub.id === 'tecnologia');
                 return hasAct;
@@ -316,34 +290,9 @@
             });
         }
 
-        // Preguntas ya descargadas, por grado. La pagina llega con el grado 5;
-        // los demas se piden al servidor la primera vez que se seleccionan.
-        const preguntasPorGrado = { 5: true };
-
-        async function cargarPreguntasDelGrado(g) {
-            if (!g || preguntasPorGrado[g]) return;
-            try {
-                const r = await fetch('/api/instruments/preguntas/' + g);
-                const j = await r.json();
-                if (!j.success) return;
-                // Se sustituye la evidencia de cada actividad por la del grado pedido.
-                Object.entries(j.actividades).forEach(([nivel, lista]) => {
-                    const destino = allActivities[nivel] || [];
-                    lista.forEach(nueva => {
-                        const act = destino.find(a => a.id === nueva.id);
-                        if (act) act.evidence = nueva.evidence;
-                    });
-                });
-                preguntasPorGrado[g] = true;
-            } catch (e) {
-                console.warn('No se pudieron cargar las preguntas del grado', g, e);
-            }
-        }
-
-        async function changeGrade(g) {
+        function changeGrade(g) {
             currentGrade = g;
             window.currentGrade = g;
-            await cargarPreguntasDelGrado(g);
             
             const sidebarGradeSelect = document.getElementById('sidebarGradeSelect');
             if (sidebarGradeSelect) {
@@ -374,10 +323,18 @@
             renderSubjectSelectors();
             if (window.instrumentEditor && window.instrumentEditor.renderReviewSequenceList) {
                 window.instrumentEditor.renderReviewSequenceList();
+                window.instrumentEditor.renderEditorAccess();
             }
             updateBadges();
             updateUI();
         }
+
+        // Los botones de idioma cambian el idioma de toda la app (/js/lang.js); esta vista se
+        // redibuja al recibir el aviso, salvo que ya esté en ese idioma.
+        document.addEventListener('langchange', (e) => {
+            const lang = e.detail && e.detail.lang;
+            if (lang && lang !== currentLang) changeLang(lang);
+        });
 
         function changeSubject(subId) {
             currentSubject = subId;
@@ -385,6 +342,7 @@
             renderSubjectSelectors();
             if (window.instrumentEditor && window.instrumentEditor.loadReviewSequence) {
                 window.instrumentEditor.loadReviewSequence();
+                window.instrumentEditor.renderEditorAccess();
             }
             updateBadges();
             updateUI();
@@ -411,7 +369,7 @@
 
         function printPDF() {
             const g = currentGrade !== null ? currentGrade : 5;
-            window.open(`/teacher/download-challenges?level=${g}&lang=${currentLang}`, '_blank');
+            window.open(`/teacher/download-challenges?level=${g}&lang=${currentLang}&subject=${encodeURIComponent(currentSubject)}`, '_blank');
         }
 
         function updateUI() {
@@ -425,11 +383,26 @@
                 container.innerHTML = `
                     <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-3 shadow-sm max-w-2xl mx-auto">
                         <span class="text-4xl">🎯</span>
-                        <h4 class="font-extrabold text-slate-700 text-lg">Ningún reto seleccionado</h4>
-                        <p class="text-xs text-slate-500 max-w-md mx-auto">Selecciona un reto del 0 al 6 en la sección 5 del menú lateral para visualizar la hoja tamaño Legal.</p>
+                        <h4 class="font-extrabold text-slate-700 text-lg">${window.t('doc_prev_js_ningun_reto')}</h4>
+                        <p class="text-xs text-slate-500 max-w-md mx-auto">${window.t('doc_prev_js_ningun_reto_ayuda')}</p>
                     </div>
                 `;
                 return;
+            }
+
+            // Prekínder a K2: estas preguntas se ven en el Medienpass visual
+            if (currentGrade === 2) {
+                const notice = document.createElement('div');
+                notice.className = 'flex flex-wrap items-center justify-between gap-3 p-4 mb-4 rounded-2xl bg-amber-50 border border-amber-200 text-sm font-semibold text-amber-900 no-print';
+                const noticeText = document.createElement('span');
+                noticeText.textContent = window.t('doc_prev_visual_aviso');
+                const noticeLink = document.createElement('a');
+                noticeLink.id = 'visualPreviewLink';
+                noticeLink.className = 'px-4 py-2 rounded-xl bg-amber-600 text-white font-bold no-underline';
+                noticeLink.href = `/teacher/visual-preview?subject=${encodeURIComponent(currentSubject)}&reto=${selReto}`;
+                noticeLink.textContent = window.t('doc_prev_visual_boton');
+                notice.append(noticeText, noticeLink);
+                container.appendChild(notice);
             }
 
             if (selReto === 0) {
@@ -469,32 +442,37 @@
             const topMetaLine = document.createElement('div');
             topMetaLine.className = 'flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-200 pb-2 font-mono tracking-wider';
             topMetaLine.innerHTML = `
-                <span>MEDIENPASS — DOCUMENTO OFICIAL DE REVISIÓN (FORMATO LEGAL 8.5" x 14")</span>
-                <span>RETO 0</span>
+                <span>${window.t('doc_prev_js_documento_oficial')}</span>
+                <span>${window.t('doc_prev_js_reto').toUpperCase()} 0</span>
             `;
             card.appendChild(topMetaLine);
 
             // Card Header
+            const activeProfile = (reto0BySubject && reto0BySubject[currentSubject]) || sharedProfile;
+            const profileIcon = activeProfile.icon || '👤';
+            const profileTitle = getLangText(activeProfile.title) || reto0Title;
+            const profileSub = getLangText(activeProfile.subtitle) || reto0Sub;
+
             const header = document.createElement('div');
             header.className = 'flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-5';
             header.innerHTML = `
                 <div class="flex items-center space-x-4">
                     <div class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-3xl shadow-inner">
-                        👤
+                        ${profileIcon}
                     </div>
                     <div>
                         <h4 class="font-extrabold text-slate-800 text-xl leading-snug">
-                            ${reto0Title}
+                            ${profileTitle}
                         </h4>
                         <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mt-0.5">
-                            ${reto0Sub}
+                            ${profileSub}
                         </p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 no-print">
                     <button onclick="window.instrumentEditor.toggleRetoReviewStatus(0)" 
                             class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition border flex items-center gap-1.5 ${isReviewed ? 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-sm' : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'}">
-                        ${isReviewed ? '✅ Revisado y Habilitado' : '⏳ Pendiente de Revisión'}
+                        ${isReviewed ? window.t('doc_prev_js_revisado') : window.t('doc_prev_js_pendiente_revision')}
                     </button>
                     <span class="text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-200 px-2.5 py-1 rounded-lg uppercase tracking-wider">
                         ${reto0Badge}
@@ -507,7 +485,12 @@
             const qList = document.createElement('div');
             qList.className = 'space-y-5';
 
-            (sharedProfile.evidence || []).forEach((q, idx) => {
+            // Preguntas 1 a 9 (datos y preguntas abiertas): fijas. Desde la 10 (la evaluación) se
+            // editan en K3-K12, como los retos 1 a 6; en el Medienpass visual se muestran sin editar.
+            const editReto0 = currentGrade !== null && currentGrade >= 3;
+            const profileEvidence = (activeProfile.evidence && activeProfile.evidence.length > 0) ? activeProfile.evidence : (sharedProfile.evidence || []);
+            const fixedEvidence = editReto0 ? profileEvidence.filter(q => !q.quiz) : profileEvidence;
+            fixedEvidence.forEach((q, idx) => {
                 const label = getLangText(q.label);
                 const questionDiv = document.createElement('div');
                 
@@ -550,46 +533,65 @@
 
             card.appendChild(qList);
 
+            if (editReto0) card.appendChild(createReto0Editor());
+
             // Legal Footer
             const footer = document.createElement('div');
             footer.className = 'pt-6 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400 font-medium font-mono';
             footer.innerHTML = `
                 <span>Colegio Alemán Barranquilla — MedienPass</span>
-                <span>Hoja Tamaño Legal (216mm x 356mm)</span>
+                <span>${window.t('doc_prev_js_hoja_legal')}</span>
             `;
             card.appendChild(footer);
 
             return card;
         }
 
-        function createRetoCard(retoNum) {
-            const effectiveGrade = currentGrade !== null ? currentGrade : 5;
-
-            // Find activity from allActivities list based on currentSubject
-            const acts = allActivities[String(retoNum)] || [];
-            const activeAct = acts.find(a => a.subject === currentSubject) || acts[0];
-
-            const mode = window.currentInstrumentMode || 'auto';
-
-            // Determine question list based on mode
-            let questions = [];
-            if (mode === 'editable' || mode === 'ai') {
-                if (!window.customQuestionsCache[retoNum] || window.customQuestionsCache[retoNum].length === 0) {
-                    const evidenceKey = `evidence_k${effectiveGrade}`;
-                    const baseQ = activeAct.evidence || [];
-                    window.customQuestionsCache[retoNum] = JSON.parse(JSON.stringify(baseQ));
-                }
-                questions = window.customQuestionsCache[retoNum];
-            } else {
-                const evidenceKey = `evidence_k${effectiveGrade}`;
-                questions = activeAct.evidence || [];
+        // Evaluación del Reto 0 (desde la pregunta 10): tarjetas editables, como en los retos 1 a 6.
+        // Las preguntas se piden al servidor (versión editada o del sistema) la primera vez.
+        function createReto0Editor() {
+            const editor = window.instrumentEditor;
+            const state = editor.getEditorState(0);
+            if (!state) editor.ensureInstrumentLoaded(0);
+            const box = document.createElement('div');
+            box.className = 'space-y-6 pt-4 border-t-4 border-amber-300';
+            if (!state || state.status === 'loading') {
+                box.innerHTML = `<p class="text-slate-500 text-sm text-center py-6"><i class="fa-solid fa-spinner animate-spin"></i> ${window.t('doc_inst_js_cargando')}</p>`;
+                return box;
             }
+            if (state.status === 'error') {
+                box.innerHTML = `
+                    <div class="text-center py-6 space-y-3">
+                        <p class="text-rose-600 text-sm font-semibold">${window.t('doc_inst_js_error_carga')}</p>
+                        <button onclick="window.instrumentEditor.ensureInstrumentLoaded(0)" class="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg"><i class="fa-solid fa-rotate-right"></i> ${window.t('doc_inst_js_reintentar')}</button>
+                    </div>`;
+                return box;
+            }
+            box.insertAdjacentHTML('beforeend', editor.renderCompetenceHeader(0));
+            state.questions.forEach((q, idx) => box.insertAdjacentHTML('beforeend', editor.renderEditableQuestionCard(q, 0, idx)));
+            const canSave = editorAccess.anySubject || editorAccess.subject === currentSubject;
+            box.insertAdjacentHTML('beforeend', `
+                <div class="flex flex-wrap items-center justify-end gap-2 no-print">
+                    <button onclick="addNewQuestionToEditor()" class="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-2"><i class="fa-solid fa-plus"></i> ${window.t('doc_inst_anadir_pregunta')}</button>
+                    <button onclick="saveCustomInstrumentToServer()" ${canSave ? '' : 'disabled title="' + window.t('doc_inst_js_err_forbidden').replace(/"/g, '&quot;') + '"'} class="editor-save-bottom px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-xs font-extrabold flex items-center gap-2 shadow ${canSave ? '' : 'opacity-50 cursor-not-allowed'}"><i class="fa-solid fa-floppy-disk"></i> ${window.t('doc_inst_guardar_cambios')}</button>
+                </div>`);
+            return box;
+        }
+
+        // Reto 1-6 (solo modo editable): la competencia KMK del reto arriba y una tarjeta editable por
+        // pregunta. Las preguntas se piden al servidor (versión editada o del sistema) la primera vez
+        // que se abre ese grado, materia y reto.
+        function createRetoCard(retoNum) {
+            const acts = allActivities[String(retoNum)] || [];
+            const activeAct = acts.find(a => a.subject === currentSubject) || acts[0] || {};
+            const editor = window.instrumentEditor;
+            const state = editor.getEditorState(retoNum);
+            if (!state) editor.ensureInstrumentLoaded(retoNum);
 
             const card = document.createElement('div');
             card.className = `legal-page-card animate-fade-in space-y-6 border-t-4`;
-            card.style.borderTopColor = activeAct.color || 'var(--mp-accent)';
+            card.style.borderTopColor = activeAct.color || '#3b82f6';
 
-            // Title & Subtitle
             const title = getLangText(activeAct.title);
             const subtitle = getLangText(activeAct.subtitle);
 
@@ -600,8 +602,8 @@
             const topMetaLine = document.createElement('div');
             topMetaLine.className = 'flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-200 pb-2 font-mono tracking-wider';
             topMetaLine.innerHTML = `
-                <span>MEDIENPASS — DOCUMENTO OFICIAL DE REVISIÓN (FORMATO LEGAL 8.5" x 14")</span>
-                <span>RETO ${retoNum}</span>
+                <span>${window.t('doc_prev_js_documento_oficial')}</span>
+                <span>${window.t('doc_prev_js_reto').toUpperCase()} ${retoNum}</span>
             `;
             card.appendChild(topMetaLine);
 
@@ -623,203 +625,47 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3 no-print">
-                    <button onclick="window.instrumentEditor.toggleRetoReviewStatus(${retoNum})" 
+                    <button onclick="window.instrumentEditor.toggleRetoReviewStatus(${retoNum})"
                             class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition border flex items-center gap-1.5 ${isReviewed ? 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-sm' : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'}">
-                        ${isReviewed ? '✅ Revisado y Habilitado' : '⏳ Pendiente de Revisión'}
+                        ${isReviewed ? window.t('doc_prev_js_revisado') : window.t('doc_prev_js_pendiente_revision')}
                     </button>
-                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider ${mode === 'editable' ? 'bg-amber-100 text-amber-800 border border-amber-300' : mode === 'ai' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-indigo-100 text-indigo-800 border border-indigo-200'}">
-                        ${mode === 'editable' ? '✏️ Editable' : mode === 'ai' ? '🤖 IA' : '⚡ Automática'}
+                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
+                        ✏️ ${window.t('doc_inst_editable')}
                     </span>
                     <div class="text-xs bg-slate-100 text-slate-700 font-extrabold px-3 py-1 rounded-lg border border-slate-200">
-                        Reto ${retoNum}
+                        ${window.t('doc_prev_js_reto')} ${retoNum}
                     </div>
                 </div>
             `;
             card.appendChild(header);
 
-            // Agent panel removed as requested
-
             // Questions list
             const qList = document.createElement('div');
             qList.className = 'space-y-6';
 
-            if (questions.length === 0) {
-                const emptyMsg = currentLang === 'de' ? 'Keine Fragen für diese Herausforderung konfiguriert.' : currentLang === 'en' ? 'No questions configured for this challenge.' : 'No hay configuración de preguntas para este reto.';
-                qList.innerHTML = `<p class="text-slate-400 italic text-sm text-center py-4">${emptyMsg}</p>`;
+            if (!state || state.status === 'loading') {
+                qList.innerHTML = `<p class="text-slate-500 text-sm text-center py-6"><i class="fa-solid fa-spinner animate-spin"></i> ${window.t('doc_inst_js_cargando')}</p>`;
+            } else if (state.status === 'error') {
+                qList.innerHTML = `
+                    <div class="text-center py-6 space-y-3">
+                        <p class="text-rose-600 text-sm font-semibold">${window.t('doc_inst_js_error_carga')}</p>
+                        <button onclick="window.instrumentEditor.ensureInstrumentLoaded(${retoNum})" class="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg"><i class="fa-solid fa-rotate-right"></i> ${window.t('doc_inst_js_reintentar')}</button>
+                    </div>`;
             } else {
-                // If mode === 'ai', load base questions to show original vs modified preview
-                const evidenceKey = `evidence_k${effectiveGrade}`;
-                const baseQuestions = activeAct.evidence || [];
-
-                if (mode === 'ai') {
-                    const aiBanner = document.createElement('div');
-                    aiBanner.className = 'bg-emerald-50 border-2 border-emerald-300 rounded-xl p-4 text-xs text-emerald-900 font-bold flex items-center justify-between no-print shadow-sm';
-                    aiBanner.innerHTML = `
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-xl">🤖</span>
-                            <div>
-                                <h5 class="text-sm font-extrabold text-emerald-950">VISTA PRELIMINAR DE ADAPTACIÓN CON IA (FORMATO LEGAL)</h5>
-                                <p class="text-[11px] text-emerald-800 font-medium">Se muestran las ${questions.length} preguntas del reto comparando la versión original y la versión ajustada.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="saveCustomInstrumentToServer()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition shadow flex items-center gap-1">
-                                <i class="fa-solid fa-floppy-disk"></i> Guardar ${questions.length} Preguntas
-                            </button>
-                            <button onclick="undoAICustomization()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-lg text-xs transition shadow flex items-center gap-1">
-                                <i class="fa-solid fa-rotate-left"></i> Deshacer
-                            </button>
-                        </div>
-                    `;
-                    qList.appendChild(aiBanner);
+                qList.insertAdjacentHTML('beforeend', editor.renderCompetenceHeader(retoNum));
+                if (state.questions.length === 0) {
+                    qList.insertAdjacentHTML('beforeend', `<p class="text-slate-400 italic text-sm text-center py-4">${window.t('doc_prog_js_sin_config')}</p>`);
                 }
-
-                questions.forEach((q, idx) => {
-                    if (mode === 'editable' && window.instrumentEditor) {
-                        const formCardHtml = window.instrumentEditor.renderEditableQuestionCard(q, retoNum, idx);
-                        const wrapper = document.createElement('div');
-                        wrapper.innerHTML = formCardHtml;
-                        qList.appendChild(wrapper);
-                        return;
-                    }
-
-                    const label = getLangText(q.label);
-                    const hintText = getLangText(q.hint);
-                    const kmkTag = (kmkCompetencies[currentLang] && kmkCompetencies[currentLang][idx]) ? kmkCompetencies[currentLang][idx] : `KMK ${idx+1}`;
-
-                    if (mode === 'ai') {
-                        // AI Dual Preview Card showing Base Question + AI Modified Question
-                        const originalQ = baseQuestions[idx] || q;
-                        const origLabel = getLangText(originalQ.label);
-
-                        const questionDiv = document.createElement('div');
-                        questionDiv.className = 'space-y-3 bg-emerald-50/40 border-2 border-emerald-300/80 p-4 rounded-xl shadow-sm relative animate-fade-in';
-
-                        let inputField = '';
-                        if (q.type === 'textarea') {
-                            inputField = `<textarea disabled placeholder="${inputPlaceholders[currentLang] || inputPlaceholders.es}" rows="2" class="w-full px-4 py-2 rounded-xl border border-emerald-200 bg-white text-slate-500 text-sm resize-none select-none"></textarea>`;
-                        } else if (q.options && q.options.length > 0) {
-                            let optionsHtml = '<div class="space-y-2 mt-2">';
-                            q.options.forEach(opt => {
-                                const optText = getLangText(opt);
-                                optionsHtml += `
-                                    <label class="flex items-center gap-3 p-2.5 rounded-xl border border-emerald-200 bg-white text-xs text-slate-700 font-medium select-none">
-                                        <input type="radio" disabled name="sim_ai_${q.id}" class="w-4 h-4 text-emerald-600 border-slate-300">
-                                        <span>${optText}</span>
-                                    </label>
-                                `;
-                            });
-                            optionsHtml += '</div>';
-                            inputField = optionsHtml;
-                        } else {
-                            inputField = `<input type="text" disabled placeholder="${inputPlaceholders[currentLang] || inputPlaceholders.es}" class="w-full px-4 py-2 rounded-xl border border-emerald-200 bg-white text-slate-500 text-sm select-none">`;
-                        }
-
-                        let hintBox = '';
-                        if (hintText) {
-                            hintBox = `
-                                <div class="flex items-start gap-2 bg-emerald-100/70 border border-emerald-300/80 rounded-xl p-2.5 text-xs text-emerald-900">
-                                    <span class="text-emerald-600 font-bold flex-shrink-0 mt-0.5"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
-                                    <div class="font-medium leading-relaxed">
-                                        <strong class="font-bold text-emerald-950">Pista / Enfoque IA:</strong> ${hintText}
-                                    </div>
-                                </div>
-                            `;
-                        }
-
-                        questionDiv.innerHTML = `
-                            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200/80 pb-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-6 h-6 rounded-md bg-emerald-600 text-white font-extrabold flex items-center justify-center text-xs shadow-sm">${idx+1}</span>
-                                    <span class="text-xs font-extrabold text-emerald-900 uppercase tracking-wider">Pregunta ${idx+1} de ${questions.length} (Vista Preliminar IA)</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <button onclick="speakQuestionText(this)" data-label="${label.replace(/"/g, '&quot;')}" data-hint="${hintText.replace(/"/g, '&quot;')}" class="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold rounded-lg text-[10px] transition border border-emerald-300 shadow-sm flex items-center gap-1.5 no-print" title="Escuchar pregunta en voz alta">
-                                        <i class="fa-solid fa-volume-high text-emerald-700"></i> Lector Inmersivo
-                                    </button>
-                                    <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded border border-emerald-300 flex items-center gap-1">
-                                        <i class="fa-solid fa-robot text-emerald-600"></i> ${kmkTag}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- 1. Pregunta Base (Original) -->
-                            <div class="bg-slate-100/90 border border-slate-200/80 rounded-lg p-2.5 space-y-1">
-                                <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                                    <i class="fa-solid fa-bookmark text-blue-500"></i> Pregunta Base (Original del Sistema):
-                                </span>
-                                <p class="text-xs text-slate-700 font-semibold pl-2">${origLabel}</p>
-                            </div>
-
-                            <!-- 2. Pregunta Modificada por IA -->
-                            <div class="bg-white border border-emerald-300 rounded-lg p-3 space-y-2 shadow-sm">
-                                <span class="text-[10px] font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1">
-                                    <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i> Pregunta Modificada por IA (Según Prompt):
-                                </span>
-                                <h5 class="text-sm font-bold text-slate-900 leading-snug pl-2">${label}</h5>
-                                ${inputField}
-                                ${hintBox}
-                            </div>
-                        `;
-                        qList.appendChild(questionDiv);
-                        return;
-                    }
-
-                    const questionDiv = document.createElement('div');
-                    questionDiv.className = 'space-y-2 border-b border-slate-100 pb-4 last:border-b-0 last:pb-0';
-
-                    let inputField = '';
-                    if (q.type === 'textarea') {
-                        inputField = `<textarea disabled placeholder="${inputPlaceholders[currentLang] || inputPlaceholders.es}" rows="2" class="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-400 text-sm resize-none select-none"></textarea>`;
-                    } else if (q.options && q.options.length > 0) {
-                        let optionsHtml = '<div class="space-y-2 mt-2">';
-                        q.options.forEach(opt => {
-                            const optText = getLangText(opt);
-                            optionsHtml += `
-                                <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white cursor-not-allowed hover:bg-slate-50 transition text-sm text-slate-600 font-medium select-none">
-                                    <input type="radio" disabled name="sim_${q.id}" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500">
-                                    <span>${optText}</span>
-                                </label>
-                            `;
-                        });
-                        optionsHtml += '</div>';
-                        inputField = optionsHtml;
-                    } else {
-                        inputField = `<input type="text" disabled placeholder="${inputPlaceholders[currentLang] || inputPlaceholders.es}" class="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-400 text-sm select-none">`;
-                    }
-
-                    let hintBox = '';
-                    if (hintText) {
-                        hintBox = `
-                            <div class="flex items-start gap-2 bg-amber-50/60 border border-amber-200/80 rounded-xl p-3 text-xs text-amber-900/80">
-                                <span class="text-amber-500 font-medium text-sm flex-shrink-0 mt-0.5"><i class="fa-solid fa-lightbulb"></i></span>
-                                <div class="font-medium leading-relaxed">
-                                    <strong class="font-bold text-amber-900">${currentLang === 'de' ? 'Hinweis:' : currentLang === 'en' ? 'Hint:' : 'Pista:'}</strong> ${hintText}
-                                </div>
-                            </div>
-                        `;
-                    }
-
-                    questionDiv.innerHTML = `
-                        <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                            <div class="text-sm font-extrabold text-slate-800 flex items-start gap-2 max-w-[70%]">
-                                <span class="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 text-xs mt-0.5 font-black text-white" style="background: ${activeAct.color || 'var(--mp-accent)'}">${idx+1}</span>
-                                <span>${label}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button onclick="speakQuestionText(this)" data-label="${label.replace(/"/g, '&quot;')}" data-hint="${hintText.replace(/"/g, '&quot;')}" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-[10px] transition border border-indigo-200 shadow-sm flex items-center gap-1.5 no-print" title="Escuchar pregunta en voz alta">
-                                    <i class="fa-solid fa-volume-high text-indigo-600"></i> Lector Inmersivo
-                                </button>
-                                <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded border border-slate-200 shadow-sm flex items-center gap-1.5">
-                                    <i class="fa-solid fa-tag text-[8px] text-blue-500"></i> ${kmkTag}
-                                </span>
-                            </div>
-                        </div>
-                        ${inputField}
-                        ${hintBox}
-                    `;
-                    qList.appendChild(questionDiv);
+                state.questions.forEach((q, idx) => {
+                    qList.insertAdjacentHTML('beforeend', editor.renderEditableQuestionCard(q, retoNum, idx));
                 });
+                // Acciones también al final de la hoja (las mismas de la barra lateral)
+                const canSave = editorAccess.anySubject || editorAccess.subject === currentSubject;
+                qList.insertAdjacentHTML('beforeend', `
+                    <div class="flex flex-wrap items-center justify-end gap-2 no-print">
+                        <button onclick="addNewQuestionToEditor()" class="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-2"><i class="fa-solid fa-plus"></i> ${window.t('doc_inst_anadir_pregunta')}</button>
+                        <button onclick="saveCustomInstrumentToServer()" ${canSave ? '' : 'disabled title="' + window.t('doc_inst_js_err_forbidden').replace(/"/g, '&quot;') + '"'} class="editor-save-bottom px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-xs font-extrabold flex items-center gap-2 shadow ${canSave ? '' : 'opacity-50 cursor-not-allowed'}"><i class="fa-solid fa-floppy-disk"></i> ${window.t('doc_inst_guardar_cambios')}</button>
+                    </div>`);
             }
 
             card.appendChild(qList);
@@ -829,7 +675,7 @@
             footer.className = 'pt-6 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400 font-medium font-mono';
             footer.innerHTML = `
                 <span>Colegio Alemán Barranquilla — MedienPass</span>
-                <span>Hoja Tamaño Legal (216mm x 356mm)</span>
+                <span>${window.t('doc_prev_js_hoja_legal')}</span>
             `;
             card.appendChild(footer);
 
@@ -869,65 +715,18 @@
                         btn.disabled = false;
                     }, 2000);
                 } else {
-                    alert('Error al guardar la configuración: ' + (result.error || 'Intente de nuevo.'));
+                    alert(window.t('doc_prev_error_al_guardar_la_configuracion') + (result.error || 'Intente de nuevo.'));
                     btn.disabled = false;
                     btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Guardar`;
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error al conectar con el servidor.');
+                alert(window.t('doc_prev_error_al_conectar_con_el_servidor'));
                 btn.disabled = false;
                 btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Guardar`;
             }
         }
-
-        // ─── Lector Inmersivo por Voz (Speech Synthesis API) ───
-        function speakQuestionText(btn) {
-            if (!('speechSynthesis' in window)) {
-                alert('El Lector Inmersivo por voz no está soportado en este navegador.');
-                return;
-            }
-
-            const label = btn.getAttribute('data-label') || '';
-            const hint = btn.getAttribute('data-hint') || '';
-
-            window.speechSynthesis.cancel(); // Detener cualquier locución activa
-
-            const langMap = { es: 'es-ES', de: 'de-DE', en: 'en-US' };
-            const langCode = langMap[window.currentLang || 'es'] || 'es-ES';
-
-            let textToSpeak = label;
-            if (hint) {
-                const hintPrefix = (window.currentLang === 'de') ? 'Hinweis: ' : (window.currentLang === 'en') ? 'Hint: ' : 'Pista: ';
-                textToSpeak += `. ${hintPrefix} ${hint}`;
-            }
-
-            const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            utterance.lang = langCode;
-            utterance.rate = 0.92; // Ritmo pedagógico pausado y claro
-            utterance.pitch = 1.0;
-
-            const origHtml = btn.innerHTML;
-            btn.innerHTML = `<i class="fa-solid fa-volume-high animate-bounce text-amber-600"></i> Leyendo...`;
-            btn.classList.add('bg-amber-100', 'text-amber-900', 'border-amber-400');
-
-            utterance.onend = () => {
-                btn.innerHTML = origHtml;
-                btn.classList.remove('bg-amber-100', 'text-amber-900', 'border-amber-400');
-            };
-            utterance.onerror = () => {
-                btn.innerHTML = origHtml;
-                btn.classList.remove('bg-amber-100', 'text-amber-900', 'border-amber-400');
-            };
-
-            window.speechSynthesis.speak(utterance);
-        }
-
-        function stopImmersiveReader() {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-            }
-        }
     </script>
+<%- include('../partials/help-button') %>
 </body>
 </html>

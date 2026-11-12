@@ -1,39 +1,35 @@
 {
   "KLASSE 2 (K2A)": {
     "aleman": "JAVIER REGINO ESCOBAR",
-    "arte": "JAVIER REGINO ESCOBAR",
     "espanol": "KAREN CARDONA PATRON",
     "ingles": "MARÍA CLAUDIA DE VICARÍA",
-    "matematicas": "JAVIER REGINO ESCOBAR",
     "musica": "JOSE AUGUSTO MEJÍA TEJEDA",
-    "tecnologia": "MIGUEL MEJÍA CUADRADO"
+    "tecnologia": "MIGUEL MEJÍA CUADRADO",
+    "deportes": "ENRIQUE ANTONIO MERCADO BARRERA"
   },
   "KLASSE 2 (K2B)": {
     "aleman": "ALINA TAMARA TRAWIN",
-    "arte": "ALINA TAMARA TRAWIN",
     "espanol": "GLORIA ELENA GRIMALDO ACEVEDO",
     "ingles": "MARÍA CLAUDIA DE VICARÍA",
-    "matematicas": "ALINA TAMARA TRAWIN",
     "musica": "JOSE AUGUSTO MEJÍA TEJEDA",
-    "tecnologia": "MIGUEL MEJÍA CUADRADO"
+    "tecnologia": "MIGUEL MEJÍA CUADRADO",
+    "deportes": "JOSIMAR ISMAEL CERVANTES HERNANDEZ"
   },
   "KLASSE 2 (K2C)": {
     "aleman": "ALDAIR ENRIQUE RUIZ MEDINA",
-    "arte": "ALDAIR ENRIQUE RUIZ MEDINA",
     "espanol": "SOLANGEL BALENTINE FOLGOSO",
     "ingles": "MARIA ANGELICA DE ARCO CASTRILLON",
-    "matematicas": "ALDAIR ENRIQUE RUIZ MEDINA",
     "musica": "JOSE AUGUSTO MEJÍA TEJEDA",
-    "tecnologia": "MIGUEL MEJÍA CUADRADO"
+    "tecnologia": "MIGUEL MEJÍA CUADRADO",
+    "deportes": "JOSIMAR ISMAEL CERVANTES HERNANDEZ"
   },
   "KLASSE 2 (K2D)": {
     "aleman": "ADRIANA CAROLINA VEGA GUTIERREZ",
-    "arte": "ADRIANA CAROLINA VEGA GUTIERREZ",
     "espanol": "SILVANA TERRAZA HENRÍQUEZ",
     "ingles": "MARIA ANGELICA DE ARCO CASTRILLON",
-    "matematicas": "ADRIANA CAROLINA VEGA GUTIERREZ",
     "musica": "JOSE AUGUSTO MEJÍA TEJEDA",
-    "tecnologia": "MIGUEL MEJÍA CUADRADO"
+    "tecnologia": "MIGUEL MEJÍA CUADRADO",
+    "deportes": "JOSIMAR ISMAEL CERVANTES HERNANDEZ"
   },
   "KLASSE 3 (K3A)": {
     "aleman": "STEFANY JINETE PORRAS",
@@ -44,7 +40,8 @@
     "matematicas": "MARCELA IRENE ORTIZ HERNANDEZ",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "JULIA HEIDBREDER",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "JOSIMAR ISMAEL CERVANTES HERNANDEZ"
   },
   "KLASSE 3 (K3B)": {
     "aleman": "GIPSY ANDREA BARRERA MARTINEZ",
@@ -55,7 +52,8 @@
     "matematicas": "ALEJANDRA SOLANO GOENAGA",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "JULIA HEIDBREDER",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "JOSIMAR ISMAEL CERVANTES HERNANDEZ"
   },
   "KLASSE 3 (K3C)": {
     "aleman": "LOURDES CRISTINA GARCÍA QUINTERO",
@@ -66,7 +64,8 @@
     "matematicas": "MARÍA INMACULADA MOSQUERA CAPDEVILLA",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "JULIA HEIDBREDER",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "JOSIMAR ISMAEL CERVANTES HERNANDEZ"
   },
   "KLASSE 3 (K3D)": {
     "aleman": "MARIA AUXILIADORA GARCÍA QUINTERO",
@@ -77,7 +76,8 @@
     "matematicas": "ALEJANDRA SOLANO GOENAGA",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "STEFANIE STEUP",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "JOSIMAR ISMAEL CERVANTES HERNANDEZ"
   },
   "KLASSE 4 (K4A)": {
     "aleman": "SARAI DE SHAROM DIAZ SEIJA",
@@ -89,7 +89,8 @@
     "matematicas": "LAURA MARCELA GOMEZ CASTELLANOS",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "JULIA HEIDBREDER",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "JOSIMAR ISMAEL CERVANTES HERNANDEZ"
   },
   "KLASSE 4 (K4B)": {
     "aleman": "STEFANIE STEUP",
@@ -100,8 +101,8 @@
     "ingles": "MARÍA EUGENIA ROMÁN RIVEROS",
     "matematicas": "LAURA MARCELA GOMEZ CASTELLANOS",
     "musica": "JUAN RESTREPO VARGAS",
-    "mint_sach": "STEFANIE STEUP",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "JOSIMAR ISMAEL CERVANTES HERNANDEZ"
   },
   "KLASSE 4 (K4C)": {
     "aleman": "SARAI DE SHAROM DIAZ SEIJA",
@@ -113,7 +114,8 @@
     "matematicas": "ALEJANDRA SOLANO GOENAGA",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "JULIA HEIDBREDER",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "JOSIMAR ISMAEL CERVANTES HERNANDEZ"
   },
   "KLASSE 4 (K4D)": {
     "aleman": "SARAI DE SHAROM DIAZ SEIJA",
@@ -125,7 +127,8 @@
     "matematicas": "LAURA MARCELA GOMEZ CASTELLANOS",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "JULIA HEIDBREDER",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "JOSIMAR ISMAEL CERVANTES HERNANDEZ"
   },
   "KLASSE 5 (K5A)": {
     "aleman": "SARAI DE SHAROM DIAZ SEIJA",
@@ -137,7 +140,8 @@
     "matematicas": "JUAN CARLOS JIMÉNEZ JIMÉNEZ",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "JEREMIAS ARTURO VERGARA DUQUE",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "BORIS LEV ACEVEDO MUÑOZ"
   },
   "KLASSE 5 (K5B)": {
     "aleman": "SARAI DE SHAROM DIAZ SEIJA",
@@ -149,7 +153,8 @@
     "matematicas": "LAURA MARCELA GOMEZ CASTELLANOS",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "JULIA HEIDBREDER",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "BORIS LEV ACEVEDO MUÑOZ"
   },
   "KLASSE 5 (K5C)": {
     "aleman": "SARAI DE SHAROM DIAZ SEIJA",
@@ -161,7 +166,8 @@
     "matematicas": "JUAN CARLOS JIMÉNEZ JIMÉNEZ",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "JULIA HEIDBREDER",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "BORIS LEV ACEVEDO MUÑOZ"
   },
   "KLASSE 5 (K5D)": {
     "aleman": "SARAI DE SHAROM DIAZ SEIJA",
@@ -173,7 +179,8 @@
     "matematicas": "JUAN CARLOS JIMÉNEZ JIMÉNEZ",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "STEFANIE STEUP",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "BORIS LEV ACEVEDO MUÑOZ"
   },
   "KLASSE 6 (K6A)": {
     "aleman": "SARAI DE SHAROM DIAZ SEIJA",
@@ -184,8 +191,8 @@
     "ingles": "ADOLFO MARIO BALAGUERA GARCIA",
     "matematicas": "MÓNICA PATRICIA PÁEZ VILLA",
     "musica": "JUAN RESTREPO VARGAS",
-    "mint_sach": "SARAI DE SHAROM DIAZ SEIJA",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "BORIS LEV ACEVEDO MUÑOZ"
   },
   "KLASSE 6 (K6B)": {
     "aleman": "JAIDER DAVID DE LA HOZ GARCIA",
@@ -197,7 +204,8 @@
     "matematicas": "MÓNICA PATRICIA PÁEZ VILLA",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "SARAI DE SHAROM DIAZ SEIJA",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "BORIS LEV ACEVEDO MUÑOZ"
   },
   "KLASSE 6 (K6C)": {
     "aleman": "MARIA SOCHE SANCHEZ",
@@ -209,7 +217,8 @@
     "matematicas": "LAURA MARCELA GOMEZ CASTELLANOS",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "SARAI DE SHAROM DIAZ SEIJA",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "BORIS LEV ACEVEDO MUÑOZ"
   },
   "KLASSE 6 (K6D)": {
     "aleman": "ROSA CATHERINE TORRES NIETO",
@@ -221,6 +230,7 @@
     "matematicas": "MÓNICA PATRICIA PÁEZ VILLA",
     "musica": "JUAN RESTREPO VARGAS",
     "mint_sach": "STEFANIE STEUP",
-    "tecnologia": "LUIS CARLOS ACERO RONDERO"
+    "tecnologia": "LUIS CARLOS ACERO RONDERO",
+    "deportes": "BORIS LEV ACEVEDO MUÑOZ"
   }
 }

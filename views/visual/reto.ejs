@@ -1,0 +1,50 @@
+<%- include('../partials/header') %>
+<link rel="stylesheet" href="/css/visual.css">
+<%
+const safeJson = value => JSON.stringify(value).replace(/</g, '\\u003c');
+const backUrl = preview ? '/teacher/student-preview' : '/?subject=' + encodeURIComponent(activity.subject);
+%>
+<div class="vis-page" style="--vis-color: <%= activity.color || '#4f46e5' %>;">
+    <div class="vis-title-row">
+        <a class="vis-back" href="<%= backUrl %>" aria-label="<%= locals.t('est_vis_volver') %>" data-i18n-aria-label="est_vis_volver">⬅️</a>
+        <span class="vis-title-picture" aria-hidden="true"><%= pictures.topic %></span>
+        <h2 class="vis-title" id="visRetoTitle"></h2>
+    </div>
+    <% if (preview) { %>
+    <p class="vis-preview-note" data-i18n="est_vis_vista_previa"><%= locals.t('est_vis_vista_previa') %></p>
+    <% } %>
+    <div class="vis-progress" id="visProgress" aria-hidden="true"></div>
+    <div id="visualReto" class="vis-stage" aria-live="polite"></div>
+
+    <% if (reto > 0 && !preview) { %>
+    <section class="vis-adult" id="visAdult" hidden>
+        <button type="button" class="vis-adult-toggle" id="visAdultToggle" aria-expanded="false" aria-controls="visAdultForm">
+            <span aria-hidden="true">📎</span> <span data-i18n="est_vis_adulto"><%= locals.t('est_vis_adulto') %></span>
+        </button>
+        <div id="visAdultForm" hidden>
+            <p data-i18n="est_vis_adulto_intro"><%= locals.t('est_vis_adulto_intro') %></p>
+            <% [1, 2, 3].forEach(n => { %>
+            <label for="vis_link_<%= n %>"><span data-i18n="est_ev_vinculo"><%= locals.t('est_ev_vinculo') %></span> <%= n %></label>
+            <input type="url" id="vis_link_<%= n %>" class="vis-link" placeholder="https://..." autocomplete="off">
+            <% }) %>
+            <button type="button" class="vis-button" id="visAdultSave"><span data-i18n="est_ev_guardar"><%= locals.t('est_ev_guardar') %></span></button>
+            <p id="visAdultStatus" role="status"></p>
+        </div>
+    </section>
+    <% } %>
+</div>
+<script>
+    window.VISUAL_RETO = <%- safeJson({
+        id: activity.id,
+        subject: activity.subject,
+        reto,
+        preview,
+        backUrl,
+        title: activity.title,
+        subjectName,
+        competences: activity.competences || (competence ? [competence] : []),
+        questions: activity.evidence.filter(item => item.type === 'radio_group')
+    }) %>;
+</script>
+<script src="/js/visual.js"></script>
+<%- include('../partials/footer') %>

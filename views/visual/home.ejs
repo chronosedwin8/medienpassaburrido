@@ -1,0 +1,46 @@
+<%- include('../partials/header') %>
+<link rel="stylesheet" href="/css/visual.css">
+<%
+const langAttr = obj => JSON.stringify(obj).replace(/&/g, '&amp;').replace(/'/g, '&#39;');
+const langText = obj => (obj && (obj[locals.lang] || obj.es)) || '';
+%>
+<div class="vis-page">
+<% if (!selected) { %>
+    <div class="vis-title-row">
+        <h2 class="vis-title" data-i18n="est_vis_elige_materia"><%= locals.t('est_vis_elige_materia') %></h2>
+        <button type="button" class="vis-speak" data-speak-key="est_vis_elige_materia" aria-label="<%= locals.t('est_vis_escuchar') %>" data-i18n-aria-label="est_vis_escuchar">🔊</button>
+    </div>
+    <div class="vis-subjects">
+        <% subjects.forEach(s => { %>
+        <a class="vis-subject" href="/?subject=<%= encodeURIComponent(s.id) %>" style="--vis-color: <%= s.color %>;" data-speak-text='<%- langAttr(s.name) %>'>
+            <span class="vis-subject-picture" aria-hidden="true"><%= pictureOf(s.id) %></span>
+            <span class="vis-subject-name" data-lang-content='<%- langAttr(s.name) %>'><%= langText(s.name) %></span>
+        </a>
+        <% }) %>
+    </div>
+<% } else { %>
+    <div class="vis-title-row">
+        <a class="vis-back" href="/" aria-label="<%= locals.t('est_vis_otra_materia') %>" data-i18n-aria-label="est_vis_otra_materia">⬅️</a>
+        <span class="vis-title-picture" aria-hidden="true"><%= pictureOf(selected.id) %></span>
+        <h2 class="vis-title" data-lang-content='<%- langAttr(selected.name) %>'><%= langText(selected.name) %></h2>
+    </div>
+    <ol class="vis-path" style="--vis-color: <%= selected.color %>;">
+        <% stops.forEach(stop => { %>
+        <li>
+            <<%= stop.locked ? 'span' : 'a' %> class="vis-stop <%= stop.won ? 'is-won' : '' %> <%= stop.locked ? 'is-locked' : '' %>" <% if (!stop.locked) { %>href="<%= stop.href %>"<% } %>>
+                <span class="vis-stop-number"><%= stop.n %></span>
+                <span class="vis-stop-picture" aria-hidden="true"><%= stop.locked ? '🔒' : stop.icon %></span>
+                <% if (stop.title) { %>
+                <span class="vis-stop-name" data-lang-content='<%- langAttr(stop.title) %>'><%= langText(stop.title) %></span>
+                <% } else { %>
+                <span class="vis-stop-name" data-i18n="est_vis_empezar_aqui"><%= locals.t('est_vis_empezar_aqui') %></span>
+                <% } %>
+                <span class="vis-stop-stars" aria-label="<%= stop.won ? '3' : stop.started ? '1' : '0' %> ⭐"><%= stop.won ? '⭐⭐⭐' : stop.started ? '⭐' : '' %></span>
+            </<%= stop.locked ? 'span' : 'a' %>>
+        </li>
+        <% }) %>
+    </ol>
+<% } %>
+</div>
+<script src="/js/visual.js"></script>
+<%- include('../partials/footer') %>

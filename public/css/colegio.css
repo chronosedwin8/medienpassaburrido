@@ -1,0 +1,621 @@
+/* ══════════════════════════════════════════════════════════════
+   Identidad del Colegio Alemán · Deutsche Schule Barranquilla
+   Estilo de colegioaleman.edu.co: fondo blanco, texto negro, rojo #C03928 en las acciones,
+   dorado #F0CE2D y azul #21529B de acento, tipografía Roboto / Roboto Slab y la franja con
+   los colores de Alemania y Colombia de la iguana del escudo.
+   Se carga al final de <head> (views/partials/brand-head.ejs) en todas las páginas.
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+    --dsb-black: #111111;
+    --dsb-ink: #212121;
+    --dsb-red: #c03928;
+    --dsb-red-dark: #a92106;
+    --dsb-red-soft: #fbe6e3;
+    --dsb-gold: #f0ce2d;
+    --dsb-gold-soft: #fdf6d3;
+    --dsb-blue: #21529b;
+    --dsb-blue-dark: #1c244b;
+    --dsb-blue-soft: #eaf1fa;
+    --dsb-green: #1f8a4c;
+    --dsb-green-soft: #e6f4ec;
+    --dsb-gray-bg: #f6f6f6;
+    --dsb-gray: #a6a9ab;
+    --dsb-muted: #54595f;
+    --dsb-border: #e2e2e2;
+    --dsb-font: 'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --dsb-font-display: 'Roboto Slab', 'Roboto', Georgia, serif;
+    /* Alemania (negro, rojo, oro) y Colombia (amarillo, azul, rojo), como la iguana */
+    --dsb-flag: linear-gradient(90deg,
+        #111111 0 16.66%, #c03928 16.66% 33.33%, #f0ce2d 33.33% 75%,
+        #21529b 75% 87.5%, #c03928 87.5% 100%);
+
+    /* Tokens que ya usaban style.css, sidebar.css y el panel */
+    --primary: var(--dsb-blue);
+    --primary-light: #5b8bcd;
+    --primary-dark: var(--dsb-blue-dark);
+    --accent: var(--dsb-red);
+    --accent-light: var(--dsb-gold);
+    --bg: var(--dsb-gray-bg);
+    --text: var(--dsb-ink);
+    --text-secondary: var(--dsb-muted);
+    --border-focus: #5b8bcd;
+    --font: var(--dsb-font);
+    --admin-bg: var(--dsb-gray-bg);
+    --admin-primary: var(--dsb-blue);
+    --admin-dark: var(--dsb-blue-dark);
+}
+
+/* ── Base ── */
+body {
+    font-family: var(--dsb-font);
+    color: var(--dsb-ink);
+    background-color: var(--dsb-gray-bg);
+    background-image: none;
+}
+
+[hidden] { display: none !important; }
+
+:focus-visible { outline: 3px solid var(--dsb-blue); outline-offset: 2px; }
+
+/* ── Logo + marca (views/partials/brand-logo.ejs) ── */
+.dsb-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    color: var(--dsb-black);
+    text-decoration: none;
+}
+.dsb-logo { display: block; height: 52px; width: auto; flex-shrink: 0; }
+.dsb-brand-divider { width: 1px; height: 38px; background: var(--dsb-border); flex-shrink: 0; }
+.dsb-brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.dsb-brand-text strong {
+    font-family: var(--dsb-font);
+    font-weight: 900;
+    font-size: 1.12rem;
+    letter-spacing: 0.16em;
+    color: var(--dsb-black);
+}
+.dsb-brand-text small {
+    margin-top: 3px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dsb-red);
+    white-space: nowrap;
+}
+
+/* Franja Alemania · Colombia */
+.dsb-flag { height: 4px; background: var(--dsb-flag); }
+
+/* ══════════════════════════════════════════
+   Encabezado del portal estudiante (views/partials/header.ejs)
+   ══════════════════════════════════════════ */
+.dsb-top { position: sticky; top: 0; z-index: 200; }
+
+header.dsb-header {
+    position: relative;
+    top: auto;
+    background: #ffffff !important; /* style.css pinta todos los <header> de azul oscuro con !important */
+    color: var(--dsb-ink);
+    box-shadow: none;
+    min-width: 0;
+    width: 100%;
+}
+header.dsb-header::after { display: none; }
+
+.dsb-header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 20px;
+    flex-wrap: wrap;
+}
+
+.dsb-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Botones del encabezado */
+.dsb-btn,
+.dsb-btn-outline,
+.dsb-icon-btn {
+    font-family: var(--dsb-font);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.dsb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--dsb-red);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+.dsb-btn:hover { background: var(--dsb-red-dark); color: #ffffff; }
+.dsb-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 15px;
+    border: 1.5px solid var(--dsb-black);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--dsb-black);
+    font-weight: 700;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+.dsb-btn-outline:hover { background: var(--dsb-black); color: #ffffff; }
+.dsb-icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid var(--dsb-border);
+    background: #ffffff;
+    color: var(--dsb-black);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+.dsb-icon-btn:hover { border-color: var(--dsb-red); color: var(--dsb-red); }
+
+/* Selector de idioma */
+.dsb-lang {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--dsb-border);
+    border-radius: 999px;
+    background: #ffffff;
+}
+.dsb-lang .lang-btn {
+    width: auto;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-family: var(--dsb-font);
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--dsb-muted);
+    cursor: pointer;
+    box-shadow: none;
+}
+.dsb-lang .lang-btn:hover { color: var(--dsb-black); transform: none !important; box-shadow: none !important; }
+.dsb-lang .lang-btn.active { background: var(--dsb-black); color: #ffffff; }
+
+/* Barra del estudiante: el nombre siempre a la vista (no se oculta al bajar) */
+.dsb-student-bar { background: var(--dsb-black); color: #ffffff; }
+.dsb-student-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 8px 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px 14px;
+    flex-wrap: wrap;
+}
+.dsb-student-who { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 260px; }
+.dsb-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--dsb-gold);
+    color: var(--dsb-black);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 1rem;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.dsb-student-label {
+    display: block;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.62);
+    line-height: 1.2;
+}
+.dsb-student-name {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #ffffff;
+    overflow-wrap: anywhere;
+}
+.dsb-student-facts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dsb-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+.dsb-chip.is-class { background: var(--dsb-red); }
+.dsb-chip.is-year { background: var(--dsb-gold); color: var(--dsb-black); }
+
+/* ── Encabezado de páginas sin menú (views/partials/brand-page-header.ejs) ── */
+.dsb-page-header {
+    position: sticky;
+    top: 0;
+    z-index: 300;
+    background: #ffffff;
+    color: var(--dsb-ink);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+.dsb-page-header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px 22px;
+    flex-wrap: wrap;
+}
+.dsb-page-title { flex: 1 1 240px; min-width: 0; padding-left: 20px; border-left: 1px solid var(--dsb-border); }
+.dsb-page-title h1 {
+    margin: 0;
+    font-family: var(--dsb-font-display);
+    font-size: 1.3rem !important; /* style.css fija h1 en 2.8em con !important */
+    font-weight: 700 !important;
+    letter-spacing: 0;
+    line-height: 1.2;
+    color: var(--dsb-black);
+    animation: none;
+}
+.dsb-page-title p { margin: 3px 0 0; font-size: 0.85rem; color: var(--dsb-muted); }
+@media (max-width: 720px) {
+    .dsb-page-header { position: relative; }
+    .dsb-page-header-inner { padding: 8px 16px; }
+    .dsb-page-title { flex-basis: 100%; padding-left: 0; border-left: 0; }
+}
+
+/* ── Pie de página ── */
+footer.dsb-footer {
+    margin-top: 48px;
+    padding: 0;
+    border-top: 0;
+    background: #ffffff;
+    color: var(--dsb-muted);
+    text-align: center;
+    font-size: 0.86rem;
+}
+.dsb-footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 22px 24px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px 18px;
+    flex-wrap: wrap;
+}
+.dsb-footer-inner img { height: 48px; width: auto; }
+.dsb-footer-inner p { margin: 0; }
+.dsb-footer-inner a { color: var(--dsb-red); font-weight: 700; text-decoration: none; }
+@media (max-width: 720px) {
+    .dsb-footer-inner { padding-bottom: 90px; } /* que el botón AYUDA no tape el pie */
+}
+
+/* ══════════════════════════════════════════
+   Inicio del estudiante (views/index.ejs)
+   ══════════════════════════════════════════ */
+.dsb-hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+    gap: 20px 36px;
+    align-items: center;
+    margin: 8px 0 28px;
+    padding: 30px 34px;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+.dsb-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 6px;
+    background: var(--dsb-flag);
+}
+.dsb-eyebrow {
+    margin: 0 0 8px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--dsb-red);
+}
+.dsb-hero-title {
+    margin: 0;
+    font-family: var(--dsb-font-display);
+    font-weight: 700 !important; /* style.css fija h1 en 2.8em / 900 con !important */
+    font-size: clamp(1.8rem, 4.4vw, 2.7rem) !important;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    color: var(--dsb-black);
+    overflow-wrap: anywhere;
+    animation: none;
+}
+.dsb-hero-sub { margin: 10px 0 0; font-size: 1.05rem; color: var(--dsb-muted); }
+.dsb-facts {
+    margin: 0;
+    padding: 18px 20px;
+    border-radius: 14px;
+    background: var(--dsb-gray-bg);
+    display: grid;
+    gap: 12px;
+}
+.dsb-facts div { display: grid; gap: 2px; }
+.dsb-facts dt {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--dsb-muted);
+}
+.dsb-facts dd { margin: 0; font-size: 1rem; font-weight: 700; color: var(--dsb-black); overflow-wrap: anywhere; }
+.dsb-facts dd i { color: var(--dsb-red); margin-right: 6px; }
+
+/* Selectores de asignatura y reto */
+.large-subject-select-container,
+.challenge-combo-container {
+    background: #ffffff;
+    border: 1px solid var(--dsb-border);
+    border-radius: 18px;
+    padding: 22px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+.challenge-combo-container { flex-direction: column; justify-content: flex-start; }
+.subject-combo-label {
+    color: var(--dsb-black);
+    font-size: 0.86rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+}
+.subject-combo-label i { color: var(--dsb-red); }
+.large-subject-combo {
+    max-width: none;
+    border: 2px solid var(--dsb-border);
+    border-radius: 12px;
+    background-color: #ffffff;
+    color: var(--dsb-black);
+    font-family: var(--dsb-font);
+    font-size: 1.05rem;
+    font-weight: 700;
+    box-shadow: none;
+}
+.large-subject-combo:hover { border-color: var(--dsb-gray); background-color: #ffffff; }
+.large-subject-combo:focus { border-color: var(--dsb-blue); box-shadow: 0 0 0 4px rgba(33, 82, 155, 0.15); }
+
+.no-subject-placeholder {
+    background: #ffffff;
+    border: 2px dashed #d4d4d4;
+    border-radius: 18px;
+}
+.placeholder-main { color: var(--dsb-black); }
+
+/* Botones de los retos */
+.pastel-sub-activity-btn {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    min-width: 260px;
+    max-width: 380px;
+    flex: 1 1 260px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1.5px solid var(--dsb-border);
+    border-left: 6px solid var(--dsb-red);
+    color: var(--dsb-black);
+    font-size: 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    text-decoration: none;
+}
+.pastel-sub-activity-btn:hover {
+    background: #ffffff;
+    border-color: var(--dsb-red);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+.sub-btn-content { display: flex; align-items: center; gap: 12px; }
+.sub-btn-icon { font-size: 1.6rem; line-height: 1; }
+.sub-btn-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sub-btn-title { font-weight: 700; line-height: 1.3; color: var(--dsb-black); }
+.sub-btn-progress-text { font-size: 0.82rem; font-weight: 700; color: var(--dsb-muted); }
+.sub-btn-progress-container { height: 8px; border-radius: 999px; background: #ececec; overflow: hidden; }
+.sub-btn-progress-fill { height: 100%; border-radius: 999px; background: var(--dsb-red); transition: width 0.4s ease; }
+.pastel-sub-activity-btn.sub-btn-completed { border-left-color: var(--dsb-green); }
+.pastel-sub-activity-btn.sub-btn-completed .sub-btn-progress-fill { background: var(--dsb-green); }
+.pastel-sub-activity-btn.sub-btn-completed .sub-btn-progress-text { color: var(--dsb-green); }
+.pastel-sub-activity-btn.sub-btn-not-started { border-left-color: var(--dsb-gray); }
+
+/* Competencia KMK de cada pregunta de los retos (views/activity.ejs) */
+.kmk-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 0 0 8px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--dsb-blue-soft);
+    color: var(--dsb-blue);
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+.kmk-tag i { font-size: 0.85em; }
+
+/* Inteligencia artificial: etiqueta de la pregunta y recuadro de la competencia del reto */
+.ai-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 2px;
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: var(--dsb-black, #111111);
+    color: var(--dsb-gold, #f0ce2d);
+    font-size: 0.92em;
+    letter-spacing: 0.02em;
+}
+.ai-focus {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 4px 0 18px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: #111111;
+    color: #ffffff;
+    border-left: 6px solid var(--dsb-gold, #f0ce2d);
+    text-align: left;
+}
+.ai-focus p { margin: 0; line-height: 1.5; font-size: 0.92rem; color: #f2f2f2; }
+.ai-focus strong { color: var(--dsb-gold, #f0ce2d); }
+.ai-focus-icon { font-size: 1.6rem; line-height: 1; }
+/* Temática del reto (Tecnología 1-3: «Misión OASIS», Ready Player One) */
+.reto-theme {
+    display: flex; align-items: flex-start; gap: 12px; margin: 4px 0 12px; padding: 14px 16px;
+    border-radius: 12px; text-align: left; color: #ffffff;
+    background: linear-gradient(135deg, #21529b, #3b1e6d); border-left: 6px solid var(--dsb-gold, #f0ce2d);
+}
+.reto-theme p { margin: 0; line-height: 1.5; font-size: 0.95rem; font-weight: 600; }
+.reto-theme-icon { font-size: 1.7rem; line-height: 1; }
+.concept-ai { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: #111111; color: #f2f2f2; font-size: 0.88em; text-align: left; }
+.concept-ai strong { color: var(--dsb-gold, #f0ce2d); }
+
+/* Ventana de bienvenida */
+.welcome-modal-card { border-radius: 20px; border-top: 6px solid var(--dsb-red); }
+.welcome-modal-title { font-family: var(--dsb-font-display); color: var(--dsb-black); }
+.welcome-modal-text { color: var(--dsb-red-dark); background: var(--dsb-red-soft); border-color: #f2c4bd; }
+.welcome-modal-btn { background: var(--dsb-red); border-radius: 999px; box-shadow: none; }
+.welcome-modal-btn:hover { background: var(--dsb-red-dark); box-shadow: none; }
+
+/* ══════════════════════════════════════════
+   Ingreso (views/login.ejs y portal docente)
+   ══════════════════════════════════════════ */
+.login-container { padding: 32px 16px 8px; }
+.login-card {
+    max-width: 480px;
+    padding: 36px 34px 30px;
+    border: 0;
+    border-radius: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 18px 40px rgba(0, 0, 0, 0.08);
+}
+.login-card::before {
+    top: 0;
+    right: 0;
+    left: 0;
+    width: auto;
+    height: 6px;
+    background: var(--dsb-flag);
+}
+.login-card h2 { font-family: var(--dsb-font-display); color: var(--dsb-black); }
+.login-logo { display: block; width: 190px; max-width: 70%; height: auto; margin: 0 auto 10px; }
+.login-btn {
+    background: var(--dsb-red);
+    border-radius: 999px;
+    box-shadow: none;
+    font-family: var(--dsb-font);
+    font-weight: 700;
+    animation: dsbPulse 3s infinite;
+}
+.login-btn:hover { background: var(--dsb-red-dark); box-shadow: 0 8px 20px rgba(192, 57, 40, 0.25); }
+.login-btn:disabled { animation: none; }
+@keyframes dsbPulse {
+    0% { box-shadow: 0 0 0 0 rgba(192, 57, 40, 0.35); }
+    70% { box-shadow: 0 0 0 14px rgba(192, 57, 40, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(192, 57, 40, 0); }
+}
+.login-lang-btn { border-radius: 999px; font-family: var(--dsb-font); }
+.login-lang-btn .login-lang-flag { display: none; }
+.login-lang-btn:hover { background: #ffffff; border-color: var(--dsb-black); color: var(--dsb-black); }
+.login-lang-btn.active { background: var(--dsb-black); border-color: var(--dsb-black); color: #ffffff; }
+.form-group label { color: var(--dsb-black); }
+.form-group input,
+.form-group select,
+.form-group textarea {
+    border-radius: 12px;
+    font-family: var(--dsb-font);
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--dsb-blue);
+    box-shadow: 0 0 0 4px rgba(33, 82, 155, 0.14);
+}
+
+/* ══════════════════════════════════════════
+   Panel admin (views/admin/dashboard.ejs): botones y tarjetas
+   ══════════════════════════════════════════ */
+.admin-card { border-radius: 16px; }
+.admin-card h2 { color: var(--dsb-black); }
+.admin-card h2 > i:first-child { color: var(--dsb-red); }
+.btn-primary { background: var(--dsb-blue); border-color: var(--dsb-blue); }
+.btn-primary:hover { background: var(--dsb-blue-dark); }
+
+/* Inicio del panel: filtros de periodo y año en una fila */
+.filters label { margin: 0; }
+.filters select { width: auto; min-width: 190px; max-width: 100%; background-color: #ffffff; }
+.filters button { border-radius: 999px; padding: 8px 18px; font-weight: 700; }
+.filters button:hover { background: var(--dsb-blue-dark); }
+
+/* ══════════════════════════════════════════
+   Celular
+   ══════════════════════════════════════════ */
+@media (max-width: 720px) {
+    .dsb-header-inner { padding: 8px 16px; }
+    .dsb-logo { height: 42px; }
+    .dsb-brand { gap: 10px; }
+    .dsb-brand-divider { height: 30px; }
+    .dsb-brand-text strong { font-size: 0.98rem; letter-spacing: 0.12em; }
+    .dsb-student-inner { padding: 7px 16px; }
+    .dsb-hero { grid-template-columns: 1fr; padding: 24px 20px; }
+    .dsb-tools .dsb-hide-sm { display: none; }
+
+    /* En el celular solo queda fija la barra con el nombre (la del logo sube con la página) */
+    .dsb-top { display: contents; }
+    header.dsb-header { position: relative; }
+    .dsb-student-bar { position: sticky; top: 0; z-index: 200; }
+}
+
+@media (max-width: 420px) {
+    .dsb-brand-text small { display: none; }
+    .dsb-brand-divider { display: none; }
+    .dsb-logo { height: 38px; }
+    .dsb-tools { gap: 6px; }
+    .dsb-lang .lang-btn { padding: 5px 8px; }
+    .pastel-sub-activity-btn { min-width: 0; max-width: none; }
+}
+
+@media print {
+    .dsb-top, .dsb-student-bar, header.dsb-header, footer.dsb-footer { display: none !important; }
+}

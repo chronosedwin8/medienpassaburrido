@@ -1,0 +1,143 @@
+<%# Menú lateral del panel admin, con el estilo del portal docente (partials/sidebar.ejs y
+    /css/sidebar.css): logo, accesos a la izquierda y, abajo, año escolar, idioma, usuario y salir.
+    Desarrollador: Inicio · Administración · Indicadores.
+    Directivo y coordinador: Inicio · Consultas (solo lectura) · Indicadores.
+    Los botones llaman a navigate() de admin/dashboard.ejs, que deja la sección en la URL
+    (p. ej. #indicadores/matriz). La misma lista de secciones está en ADMIN_SECTIONS del panel. %>
+<%
+const navAccess = (typeof access !== 'undefined' && access) || {};
+const isDeveloper = !!navAccess.isDeveloper;
+const adminNav = [
+    { main: 'inicio', icon: 'fa-gauge-high', key: 'adm_nav_inicio' },
+    isDeveloper
+        ? { main: 'administracion', icon: 'fa-folder-tree', key: 'adm_nav_administracion', subs: [
+            { sub: 'estudiantes', icon: 'fa-user-graduate', key: 'adm_nav_estudiantes' },
+            { sub: 'docentes', icon: 'fa-user-tie', key: 'adm_nav_docentes' },
+            { sub: 'materias', icon: 'fa-book-open', key: 'adm_nav_materias' },
+            { sub: 'anio', icon: 'fa-calendar-days', key: 'adm_nav_anio_escolar' },
+            { sub: 'configuracion', icon: 'fa-sliders', key: 'adm_nav_configuracion' },
+            { sub: 'certificados', icon: 'fa-award', key: 'adm_nav_certificados' },
+            { sub: 'mapeo', icon: 'fa-chalkboard-user', key: 'adm_nav_mapeo' },
+            { sub: 'ayuda', icon: 'fa-circle-question', key: 'adm_nav_capacitacion_ayuda' },
+            { sub: 'idiomas', icon: 'fa-language', key: 'adm_nav_idiomas' }
+        ] }
+        : { main: 'consultas', icon: 'fa-magnifying-glass', key: 'adm_nav_consultas', subs: [
+            { sub: 'estudiantes', icon: 'fa-user-graduate', key: 'adm_nav_estudiantes' },
+            { sub: 'docentes', icon: 'fa-user-tie', key: 'adm_nav_docentes' },
+            { sub: 'certificados', icon: 'fa-award', key: 'adm_nav_certificados' }
+        ] },
+    { main: 'indicadores', icon: 'fa-chart-pie', key: 'adm_nav_indicadores', subs: [
+        { sub: 'kpis', icon: 'fa-bullseye', key: 'adm_nav_kpis' },
+        { sub: 'docentes_cursos', icon: 'fa-chalkboard-user', key: 'adm_nav_docentes_cursos' },
+        { sub: 'avance', icon: 'fa-list-check', key: 'adm_nav_avance_retos' },
+        { sub: 'matriz', icon: 'fa-table-cells-large', key: 'adm_nav_matriz' },
+        { sub: 'multimedia', icon: 'fa-photo-film', key: 'adm_nav_multimedia' },
+        { sub: 'kmk', icon: 'fa-graduation-cap', key: 'adm_nav_kmk' },
+        { sub: 'grupos', icon: 'fa-users', key: 'adm_nav_grupos' },
+        { sub: 'psp', icon: 'fa-chart-line', key: 'adm_nav_psp' }
+    ] }
+];
+const user = (typeof adminUser !== 'undefined' && adminUser) || {};
+const userName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || 'Admin';
+const userInitials = ((user.first_name || '').charAt(0) + (user.last_name || '').charAt(0)).toUpperCase() || 'A';
+const roleKey = ['desarrollador', 'coordinador', 'directivo'].includes(user.role) ? user.role : 'desarrollador';
+%>
+<button type="button" class="mobile-nav-toggle no-print" id="mobileNavToggle" aria-controls="sidebar" aria-expanded="false" aria-label="<%= locals.t('adm_menu') %>" data-i18n-aria-label="adm_menu">
+    <i class="fas fa-bars"></i>
+</button>
+
+<aside class="sidebar admin-sidebar no-print" id="sidebar" aria-label="MedienPass">
+    <div class="sidebar-brand">
+        <a href="/admin#inicio" class="sidebar-logo" onclick="if (typeof navigate === 'function') { event.preventDefault(); navigate('inicio'); }">
+            <img class="sidebar-logo-img" src="/img/logo-colegio.png" width="511" height="360" alt="Colegio Alemán · Deutsche Schule Barranquilla">
+            <div class="logo-text">
+                <span class="logo-title notranslate" translate="no">MEDIENPASS</span>
+                <span class="logo-subtitle"><span data-i18n="adm_brand_sub"><%= locals.t('adm_brand_sub') %></span></span>
+            </div>
+        </a>
+        <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" title="<%= locals.t('doc_nav_colapsar_menu') %>" data-i18n-title="doc_nav_colapsar_menu">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    </div>
+    <div class="sidebar-flag" aria-hidden="true"></div>
+
+    <nav class="sidebar-menu">
+        <% adminNav.forEach(item => { %>
+            <% if (!item.subs) { %>
+                <div class="menu-item">
+                    <button type="button" class="menu-link admin-tab" data-main="<%= item.main %>" onclick="navigate('<%= item.main %>')">
+                        <span class="link-left"><i class="fas <%= item.icon %>"></i><span class="link-text"><span data-i18n="<%= item.key %>"><%= locals.t(item.key) %></span></span></span>
+                    </button>
+                </div>
+            <% } else { %>
+                <div class="menu-label admin-group" data-main="<%= item.main %>"><i class="fas <%= item.icon %>" aria-hidden="true"></i> <span data-i18n="<%= item.key %>"><%= locals.t(item.key) %></span></div>
+                <% item.subs.forEach(s => { %>
+                    <div class="menu-item">
+                        <button type="button" class="menu-link admin-subtab" data-main="<%= item.main %>" data-sub="<%= s.sub %>" onclick="navigate('<%= item.main %>', '<%= s.sub %>')">
+                            <span class="link-left"><i class="fas <%= s.icon %>"></i><span class="link-text"><span data-i18n="<%= s.key %>"><%= locals.t(s.key) %></span></span></span>
+                        </button>
+                    </div>
+                <% }) %>
+            <% } %>
+        <% }) %>
+
+        <div class="menu-label"><span data-i18n="doc_nav_documentacion"><%= locals.t('doc_nav_documentacion') %></span></div>
+        <div class="menu-item">
+            <a class="menu-link" href="/docs" target="_blank" rel="noopener">
+                <span class="link-left"><i class="fas fa-book-open"></i><span class="link-text"><span data-i18n="adm_go_guide"><%= locals.t('adm_go_guide') %></span></span></span>
+            </a>
+        </div>
+        <div class="menu-item">
+            <a class="menu-link" href="/">
+                <span class="link-left"><i class="fas fa-home"></i><span class="link-text"><span data-i18n="adm_go_app"><%= locals.t('adm_go_app') %></span></span></span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="sidebar-footer">
+        <span class="admin-year-chip" id="adminYearChip" title="<%= locals.t('adm_anio_en_curso') %>" data-i18n-title="adm_anio_en_curso">
+            <i class="fas fa-calendar-days" aria-hidden="true"></i>
+            <span class="link-text"><span data-i18n="adm_anio_en_curso"><%= locals.t('adm_anio_en_curso') %></span>:</span>
+            <strong class="notranslate" translate="no"><%= (locals.schoolYear || {}).label || '' %></strong>
+        </span>
+        <div class="admin-sidebar-lang"><%- include('lang-switch') %></div>
+        <div class="user-profile" title="<%= user.email || '' %>">
+            <div class="user-avatar"><%= userInitials %></div>
+            <div class="user-info">
+                <span class="user-name"><%= userName %></span>
+                <span class="user-role admin-role" data-i18n="adm_role_<%= roleKey %>"><%= locals.t('adm_role_' + roleKey) %></span>
+            </div>
+        </div>
+        <a href="/admin/logout" class="menu-link admin-logout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="link-text"><span data-i18n="adm_logout"><%= locals.t('adm_logout') %></span></span>
+        </a>
+    </div>
+</aside>
+<div class="sidebar-overlay no-print" id="sidebarOverlay"></div>
+
+<script>
+    (function () {
+        const sidebar = document.getElementById('sidebar');
+        const toggle = document.getElementById('sidebarToggleBtn');
+        const mobile = document.getElementById('mobileNavToggle');
+        const overlay = document.getElementById('sidebarOverlay');
+        document.body.classList.add('has-sidebar');
+        // En el celular el botón ☰ pasa al lado del menú abierto y se vuelve ✕ para cerrarlo
+        const setMobile = open => {
+            sidebar.classList.toggle('mobile-open', open);
+            document.body.classList.toggle('admin-menu-open', open);
+            mobile.setAttribute('aria-expanded', String(open));
+            mobile.querySelector('i').className = open ? 'fas fa-xmark' : 'fas fa-bars';
+        };
+        toggle.addEventListener('click', () => {
+            const collapsed = sidebar.classList.toggle('collapsed');
+            document.body.classList.toggle('sidebar-collapsed', collapsed);
+            toggle.querySelector('i').className = collapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+        });
+        mobile.addEventListener('click', () => setMobile(!sidebar.classList.contains('mobile-open')));
+        overlay.addEventListener('click', () => setMobile(false));
+        // En el celular, el menú se cierra al elegir una sección
+        sidebar.addEventListener('click', e => { if (e.target.closest('.admin-tab, .admin-subtab')) setMobile(false); });
+    })();
+</script>

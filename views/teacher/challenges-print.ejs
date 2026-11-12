@@ -50,11 +50,12 @@
       }
     %>
     <title><%= txt.bookletTitle %> - Klasse <%= level %></title>
+    <link rel="icon" type="image/png" href="/img/logo-colegio-192.png">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            color: var(--mp-text);
+            color: #1e293b;
             background-color: #ffffff;
             margin: 0;
             padding: 40px;
@@ -62,23 +63,24 @@
         }
         .header {
             text-align: center;
-            border-bottom: 3px solid #0284c7;
+            border-bottom: 3px solid #c03928;
             padding-bottom: 20px;
             margin-bottom: 40px;
         }
+        .header-logo { display: block; width: 170px; height: auto; margin: 0 auto 10px; }
         .header h1 {
             font-size: 28px;
-            color: var(--mp-text);
+            color: #0f172a;
             margin: 0;
         }
         .header p {
             font-size: 16px;
-            color: var(--mp-text-faint);
+            color: #64748b;
             margin: 5px 0 0 0;
         }
         .grade-badge {
             display: inline-block;
-            background: #0284c7;
+            background: #111111;
             color: white;
             padding: 4px 12px;
             border-radius: 9999px;
@@ -97,8 +99,8 @@
         }
         .reto-card {
             page-break-inside: avoid;
-            background: var(--mp-bg);
-            border: 1px solid var(--mp-border);
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 28px;
             margin-bottom: 35px;
@@ -107,7 +109,7 @@
         .reto-header {
             display: flex;
             align-items: center;
-            border-bottom: 2px solid var(--mp-border-strong);
+            border-bottom: 2px solid #cbd5e1;
             padding-bottom: 16px;
             margin-bottom: 20px;
         }
@@ -121,12 +123,12 @@
         .reto-title {
             font-size: 22px;
             font-weight: 700;
-            color: var(--mp-text);
+            color: #0f172a;
             margin: 0;
         }
         .reto-subtitle {
             font-size: 15px;
-            color: var(--mp-text-soft);
+            color: #475569;
             margin: 4px 0 0 0;
         }
         .question-item {
@@ -137,23 +139,23 @@
         .question-label {
             font-size: 15px;
             font-weight: 600;
-            color: var(--mp-text);
+            color: #334155;
             margin-bottom: 4px;
         }
         .question-hint {
             font-size: 12px;
-            color: var(--mp-text-faint);
+            color: #64748b;
             font-style: italic;
             margin-bottom: 8px;
         }
         .answer-box {
             background: #ffffff;
-            border: 1px dashed var(--mp-border-strong);
+            border: 1px dashed #cbd5e1;
             border-radius: 6px;
             min-height: 45px;
             padding: 10px;
             font-size: 14px;
-            color: var(--mp-text-faint);
+            color: #94a3b8;
         }
         .print-options {
             margin: 10px 0 15px 0;
@@ -165,12 +167,12 @@
             display: flex;
             align-items: center;
             font-size: 14px;
-            color: var(--mp-text);
+            color: #334155;
         }
         .checkbox-box {
             width: 16px;
             height: 16px;
-            border: 2px solid var(--mp-text-faint);
+            border: 2px solid #64748b;
             border-radius: 3px;
             margin-right: 10px;
             flex-shrink: 0;
@@ -198,7 +200,7 @@
         @media print {
             body { padding: 0; background: white; }
             .print-btn-container { display: none; }
-            .reto-card { box-shadow: none; border: 1px solid var(--mp-border-strong); background: #fafafa; }
+            .reto-card { box-shadow: none; border: 1px solid #cbd5e1; background: #fafafa; }
         }
     </style>
 </head>
@@ -209,25 +211,26 @@
     </div>
 
     <div class="header">
+        <img class="header-logo" src="/img/logo-colegio.png" width="511" height="360" alt="Colegio Alemán · Deutsche Schule Barranquilla">
         <div class="institution">Deutsche Schule - Medienpass</div>
         <h1><%= txt.bookletTitle %></h1>
         <p><%= txt.overview %></p>
         <span class="grade-badge"><%= txt.grade %>: <%= level %></span>
     </div>
 
-    <!-- RETO 0: ESTE SOY YO (SHARED PROFILE) -->
-    <div class="reto-card" style="border-top: 5px solid var(--mp-accent);">
+    <!-- RETO 0: ESTE SOY YO (de la materia: datos personales, reflexión y evaluación de 10 preguntas) -->
+    <div class="reto-card" style="border-top: 5px solid #3b82f6;">
         <div class="reto-header">
-            <div class="reto-icon">👤</div>
+            <div class="reto-icon"><%= reto0.icon || '👤' %></div>
             <div class="reto-title-group">
-                <h2 class="reto-title"><%= txt.profileTitle %></h2>
-                <p class="reto-subtitle"><%= txt.profileSubtitle %></p>
+                <h2 class="reto-title"><%= getLangStr(reto0.title, lang) || txt.profileTitle %></h2>
+                <p class="reto-subtitle"><%= getLangStr(reto0.subtitle, lang) || txt.profileSubtitle %></p>
             </div>
         </div>
         <div class="questions-list">
-            <% sharedProfile.evidence.forEach(function(q, index) { %>
+            <% reto0.evidence.forEach(function(q, index) { %>
                 <% if (q.type === 'label') { %>
-                    <h3 style="font-size: 16px; font-weight: 700; color: var(--mp-text); margin-top: 25px; margin-bottom: 12px; border-bottom: 1px solid var(--mp-border); padding-bottom: 6px;"><%= getLangStr(q.label, lang) %></h3>
+                    <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 25px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;"><%= getLangStr(q.label, lang) %></h3>
                 <% } else { %>
                     <div class="question-item">
                         <div class="question-label"><%= getLangStr(q.label, lang) %></div>
@@ -254,8 +257,8 @@
 
     <!-- RETOS 1 AL 6 -->
     <% for(let i = 1; i <= 6; i++) { 
-        // Find reto in the resolved allActivities list (any subject is fine since they share questions for the same grade/level)
-        let reto = allActivities[String(i)][0]; // German, English or Spanish activity
+        // El reto de la materia elegida (cada materia tiene sus propias preguntas)
+        let reto = allActivities[String(i)].find(a => a.subject === subject) || allActivities[String(i)][0];
         let titleVal = getLangStr(reto.title, lang);
         let subtitleVal = getLangStr(reto.subtitle, lang);
     %>
@@ -271,7 +274,7 @@
                 <% if(reto.evidence && reto.evidence.length > 0) { %>
                     <% reto.evidence.forEach(function(q) { %>
                         <div class="question-item">
-                            <div class="question-label"><%= getLangStr(q.label, lang) %></div>
+                            <div class="question-label"><%= getLangStr(q.label, lang) %><% if (q.kmk) { %> <span style="font-size: 0.75em; font-weight: 700; color: #4338ca; border: 1px solid #c7d2fe; border-radius: 6px; padding: 0 5px; white-space: nowrap;">KMK <%= q.kmk %></span><% } %></div>
                             <% if (q.hint && getLangStr(q.hint, lang)) { %>
                                 <div class="question-hint"><strong><%= txt.hint %></strong> <%= getLangStr(q.hint, lang) %></div>
                             <% } %>
@@ -290,7 +293,7 @@
                         </div>
                     <% }); %>
                 <% } else { %>
-                    <p style="color: var(--mp-text-faint); font-style: italic;"><%= txt.noQuestions %></p>
+                    <p style="color: #64748b; font-style: italic;"><%= txt.noQuestions %></p>
                 <% } %>
             </div>
         </div>

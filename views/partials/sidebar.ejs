@@ -17,131 +17,49 @@
 <aside class="sidebar" id="sidebar">
     <!-- Sidebar Header / Brand -->
     <div class="sidebar-brand">
-        <a href="/" class="sidebar-logo">
-            <span class="logo-emoji"><%= context === 'admin' ? '🛡️' : '🏫' %></span>
+        <a href="/teacher/training" class="sidebar-logo">
+            <img class="sidebar-logo-img" src="/img/logo-colegio.png" width="511" height="360" alt="Colegio Alemán · Deutsche Schule Barranquilla">
             <div class="logo-text">
                 <span class="logo-title notranslate" translate="no">MEDIENPASS</span>
-                <span class="logo-subtitle"><%= context === 'admin' ? 'Administración' : 'Portal Docente' %></span>
+                <span class="logo-subtitle"><span data-i18n="doc_nav_portal_docente"><%= locals.t('doc_nav_portal_docente') %></span></span>
             </div>
         </a>
-        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Colapsar menú">
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="<%= locals.t('doc_nav_colapsar_menu') %>" data-i18n-title="doc_nav_colapsar_menu">
             <i class="fas fa-chevron-left"></i>
         </button>
     </div>
+    <div class="sidebar-flag" aria-hidden="true"></div>
 
     <!-- Sidebar Menu -->
     <nav class="sidebar-menu">
-        <% if (context === 'admin') { %>
-            <!-- 🛡️ Admin Menu -->
-            <div class="menu-label">Navegación</div>
-            
-            <div class="menu-item">
-                <a class="menu-link <%= activeItem === 'executive' ? 'active' : '' %>" id="menu-executive" onclick="switchMainTab('executive')">
-                    <div class="link-left">
-                        <i class="fas fa-chart-line"></i>
-                        <span class="link-text">Dashboard Ejecutivo</span>
-                    </div>
-                </a>
-            </div>
-
-            <!-- CONTENIDOS Accordion Group -->
-            <div class="menu-item">
-                <a class="menu-link <%= ['students', 'config', 'reports', 'mapping', 'i18n'].includes(activeItem) ? 'active' : '' %>" id="menu-group-contenidos" onclick="toggleSubmenu('submenu-contenidos')">
-                    <div class="link-left">
-                        <i class="fas fa-th-large"></i>
-                        <span class="link-text">Contenidos</span>
-                    </div>
-                    <i class="fas fa-chevron-down arrow-icon"></i>
-                </a>
-                <div class="submenu <%= ['students', 'config', 'reports', 'mapping', 'i18n'].includes(activeItem) ? 'open' : '' %>" id="submenu-contenidos">
-                    <a class="submenu-link <%= activeItem === 'students' ? 'active' : '' %>" id="submenu-students" onclick="switchMainTab('contenidos'); switchSub('students')">
-                        👥 Estudiantes
-                    </a>
-                    <a class="submenu-link <%= activeItem === 'config' ? 'active' : '' %>" id="submenu-config" onclick="switchMainTab('contenidos'); switchSub('config')">
-                        ⚙️ Configuración
-                    </a>
-                    <a class="submenu-link <%= activeItem === 'reports' ? 'active' : '' %>" id="submenu-reports" onclick="switchMainTab('contenidos'); switchSub('reports')">
-                        📄 Reportes & Diplomas
-                    </a>
-                    <a class="submenu-link <%= activeItem === 'mapping' ? 'active' : '' %>" id="submenu-mapping" onclick="switchMainTab('contenidos'); switchSub('mapping')">
-                        🔗 Mapeo Profesores
-                    </a>
-                    <a class="submenu-link <%= activeItem === 'i18n' ? 'active' : '' %>" id="submenu-i18n" onclick="switchMainTab('contenidos'); switchSub('i18n'); loadI18n();">
-                        🌐 Textos & BD
-                    </a>
-                </div>
-            </div>
-
-            <!-- MONITOREO Accordion Group -->
-            <div class="menu-item">
-                <a class="menu-link <%= ['monitoreo', 'kmk-stats', 'mm-stats', 'reto0-stats', 'teachers-status', 'psp-matrix', 'psp-indicators'].includes(activeItem) ? 'active' : '' %>" id="menu-group-monitoreo" onclick="toggleSubmenu('submenu-monitoreo')">
-                    <div class="link-left">
-                        <i class="fas fa-eye"></i>
-                        <span class="link-text">Monitoreo</span>
-                    </div>
-                    <i class="fas fa-chevron-down arrow-icon"></i>
-                </a>
-                <div class="submenu <%= ['monitoreo', 'kmk-stats', 'mm-stats', 'reto0-stats', 'teachers-status', 'psp-matrix', 'psp-indicators'].includes(activeItem) ? 'open' : '' %>" id="submenu-monitoreo">
-                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('kpi-goals-card')">
-                        🎯 KPIs Institucionales
-                    </a>
-                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('kmk-docente-card')">
-                        🎓 Capacitación KMK
-                    </a>
-                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('grupos-docente-card')">
-                        👨‍🏫 Grupos por Docente
-                    </a>
-                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('matriz-global-card')">
-                        📊 Matriz Global
-                    </a>
-                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('productos-multimedia-card')">
-                        📹 Productos Multimedia
-                    </a>
-                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('psp-estudiante-card')">
-                        📈 PSP por Estudiante
-                    </a>
-                    <a class="submenu-link" onclick="switchMainTab('monitoreo'); scrollToCard('reto0-diagnostico-card')">
-                        📋 Reto 0 Diagnóstico
-                    </a>
-                </div>
-            </div>
-
-            <div class="menu-item">
-                <a class="menu-link <%= activeItem === 'inventory' ? 'active' : '' %>" id="menu-inventory" onclick="switchMainTab('inventory')">
-                    <div class="link-left">
-                        <i class="fas fa-laptop"></i>
-                        <span class="link-text">Inventario</span>
-                    </div>
-                </a>
-            </div>
-
-            <div class="menu-label">Enlaces</div>
-            <div class="menu-item">
-                <a href="/docs/technical" target="_blank" class="menu-link">
-                    <div class="link-left">
-                        <i class="fas fa-code"></i>
-                        <span class="link-text">Manual Técnico</span>
-                    </div>
-                </a>
-            </div>
-            <div class="menu-item">
-                <a href="/" class="menu-link">
-                    <div class="link-left">
-                        <i class="fas fa-home"></i>
-                        <span class="link-text">Ir al App</span>
-                    </div>
-                </a>
-            </div>
-
-        <% } else if (context === 'teacher') { %>
-            <!-- 👨‍🏫 Teacher Menu -->
-            <div class="menu-label">Mi Portal</div>
+            <!-- 👨‍🏫 Teacher Menu (el panel admin usa partials/admin-sidebar.ejs, con este mismo estilo) -->
+            <div class="menu-label"><span data-i18n="doc_nav_mi_portal"><%= locals.t('doc_nav_mi_portal') %></span></div>
             
             <div class="menu-item">
                 <a href="/teacher/training" class="menu-link <%= activeItem === 'training' ? 'active' : '' %>">
                     <div class="link-left">
                         <i class="fas fa-graduation-cap"></i>
-                        <span class="link-text">Capacitación KMK</span>
+                        <span class="link-text"><span data-i18n="doc_nav_capacitacion_kmk"><%= locals.t('doc_nav_capacitacion_kmk') %></span></span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="menu-item">
+                <a href="/teacher/evaluation" class="menu-link <%= activeItem === 'evaluation' ? 'active' : '' %>">
+                    <div class="link-left">
+                        <i class="fas fa-clipboard-check"></i>
+                        <span class="link-text"><span data-i18n="doc_nav_test_kmk"><%= locals.t('doc_nav_test_kmk') %></span></span>
+                    </div>
+                </a>
+            </div>
+
+            <%# Configura tus Retos del 0 al 6: el editor de preguntas (antes "Modo Estudiante").
+                Consulta los avances: el seguimiento de la clase (antes en "Configura tus Retos"). %>
+            <div class="menu-item">
+                <a href="/teacher/student-preview" class="menu-link <%= activeItem === 'preview' ? 'active' : '' %>">
+                    <div class="link-left">
+                        <i class="fas fa-pen-to-square"></i>
+                        <span class="link-text"><span data-i18n="doc_nav_configura_retos"><%= locals.t('doc_nav_configura_retos') %></span></span>
                     </div>
                 </a>
             </div>
@@ -149,54 +67,18 @@
             <div class="menu-item">
                 <a href="/teacher/progress" class="menu-link <%= activeItem === 'progress' ? 'active' : '' %>">
                     <div class="link-left">
-                        <i class="fas fa-users-cog"></i>
-                        <span class="link-text">Monitoreo Alumnos</span>
+                        <i class="fas fa-chart-line"></i>
+                        <span class="link-text"><span data-i18n="doc_nav_consulta_avances"><%= locals.t('doc_nav_consulta_avances') %></span></span>
                     </div>
                 </a>
             </div>
 
-            <div class="menu-item">
-                <a href="/teacher/student-preview" class="menu-link <%= activeItem === 'preview' ? 'active' : '' %>">
-                    <div class="link-left">
-                        <i class="fas fa-eye"></i>
-                        <span class="link-text">Modo Estudiante</span>
-                    </div>
-                </a>
-            </div>
-
-            <div class="menu-item">
-                <a href="/teacher/worksheets" class="menu-link <%= activeItem === 'worksheets' ? 'active' : '' %>">
-                    <div class="link-left">
-                        <i class="fas fa-file-invoice"></i>
-                        <span class="link-text">Fichas Interactivas</span>
-                    </div>
-                </a>
-            </div>
-
-            <div class="menu-item">
-                <a href="/teacher/bitacora" class="menu-link <%= activeItem === 'bitacora' ? 'active' : '' %>">
-                    <div class="link-left">
-                        <i class="fas fa-book"></i>
-                        <span class="link-text">Bitácora</span>
-                    </div>
-                </a>
-            </div>
-
-            <div class="menu-item">
-                <a href="/teacher/troubleshooting" class="menu-link <%= activeItem === 'troubleshooting' ? 'active' : '' %>">
-                    <div class="link-left">
-                        <i class="fas fa-tools"></i>
-                        <span class="link-text">Troubleshooting</span>
-                    </div>
-                </a>
-            </div>
-
-            <div class="menu-label">Documentación</div>
+            <div class="menu-label"><span data-i18n="doc_nav_documentacion"><%= locals.t('doc_nav_documentacion') %></span></div>
             <div class="menu-item">
                 <a href="/docs" target="_blank" class="menu-link">
                     <div class="link-left">
                         <i class="fas fa-book-open"></i>
-                        <span class="link-text">Manual de Usuario</span>
+                        <span class="link-text"><span data-i18n="doc_nav_manual_de_usuario"><%= locals.t('doc_nav_manual_de_usuario') %></span></span>
                     </div>
                 </a>
             </div>
@@ -204,56 +86,41 @@
                 <a href="/" class="menu-link">
                     <div class="link-left">
                         <i class="fas fa-home"></i>
-                        <span class="link-text">Ir al App Estudiante</span>
+                        <span class="link-text"><span data-i18n="doc_nav_ir_al_app_estudiante"><%= locals.t('doc_nav_ir_al_app_estudiante') %></span></span>
                     </div>
                 </a>
             </div>
-        <% } %>
     </nav>
-
-    <!-- Idioma: el personal no tenia forma de cambiarlo desde la interfaz,
-         aunque el servidor ya respetaba ?lang=. Son enlaces, asi que funcionan
-         sin JavaScript igual que en el area del estudiante. -->
-    <% if (typeof languages !== 'undefined' && languages) { %>
-    <nav class="sidebar-langs" aria-label="Idioma">
-        <% languages.forEach(function (l) { %>
-            <a class="sidebar-langs__item <%= lang === l ? 'is-active' : '' %>"
-               href="?lang=<%= l %>" hreflang="<%= l %>"><%= l.toUpperCase() %></a>
-        <% }); %>
-    </nav>
-    <% } %>
 
     <!-- Sidebar Footer / User Section -->
     <div class="sidebar-footer">
+        <!-- Sidebar Language Switcher -->
+        <div class="dsb-lang sidebar-lang-switch" role="group" aria-label="Idioma / Sprache / Language">
+            <button type="button" class="lang-btn h-lang-btn <%= lang === 'de' ? 'active' : '' %>" data-lang="de">DE</button>
+            <button type="button" class="lang-btn h-lang-btn <%= lang === 'en' ? 'active' : '' %>" data-lang="en">EN</button>
+            <button type="button" class="lang-btn h-lang-btn <%= lang === 'es' ? 'active' : '' %>" data-lang="es">ES</button>
+        </div>
+
         <div class="user-profile">
             <div class="user-avatar">
                 <%
-                   // Identidad y rol reales de la sesion firmada, en vez del
-                   // "Admin / Administrador" fijo que habia aqui.
-                   const sess = (typeof user !== 'undefined' && user) ? user : null;
-                   let fullName = sess
-                       ? ([sess.firstName, sess.lastName].filter(Boolean).join(' ') || sess.name || sess.email || 'Usuario')
-                       : 'Usuario';
-                   if (!sess && context === 'teacher' && typeof teacher !== 'undefined') {
-                       fullName = ((teacher.first_name || '') + ' ' + (teacher.last_name || '')).trim() || 'Docente';
+                   let initials = 'P';
+                   let fullName = 'Docente';
+                   if (typeof teacher !== 'undefined' && teacher) {
+                       initials = ((teacher.first_name || '').charAt(0) + (teacher.last_name || '').charAt(0)).toUpperCase() || 'P';
+                       fullName = (teacher.first_name || '') + ' ' + (teacher.last_name || '');
                    }
-                   // Mismo criterio que en la cabecera del estudiante.
-                   fullName = nombre(fullName);
-                   let initials = iniciales(fullName);
-                   const roleText = (typeof roleLabel === 'function')
-                       ? roleLabel(typeof lang !== 'undefined' ? lang : 'es')
-                       : (context === 'admin' ? 'Administrador' : 'Docente');
                 %>
                 <%= initials %>
             </div>
             <div class="user-info">
                 <span class="user-name"><%= fullName %></span>
-                <span class="user-role"><%= roleText %></span>
+                <span class="user-role"><span data-i18n="doc_nav_docente"><%= locals.t('doc_nav_docente') %></span></span>
             </div>
         </div>
-        <a href="<%= context === 'admin' ? '/admin/logout' : '/teacher/logout' %>" class="menu-link" style="margin: 0; padding: 10px 8px; border: none; border-radius: 6px; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <a href="/teacher/logout" class="menu-link" style="margin: 0; padding: 10px 8px; border: 1.5px solid #a92106; border-radius: 999px; background: #ffffff; color: #a92106; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700;">
             <i class="fas fa-sign-out-alt"></i>
-            <span class="link-text">Cerrar Sesión</span>
+            <span class="link-text"><span data-i18n="doc_nav_cerrar_sesion"><%= locals.t('doc_nav_cerrar_sesion') %></span></span>
         </a>
     </div>
 </aside>
@@ -301,34 +168,4 @@
             });
         }
     });
-
-    // Toggle Submenu Accordions
-    function toggleSubmenu(id) {
-        const submenu = document.getElementById(id);
-        const menuItem = submenu.parentElement;
-        
-        // Toggle open class
-        if (submenu.classList.contains('open')) {
-            submenu.classList.remove('open');
-            menuItem.classList.remove('open');
-        } else {
-            submenu.classList.add('open');
-            menuItem.classList.add('open');
-        }
-    }
-
-    // Helper for scrolling to card in large scrollable views
-    function scrollToCard(cardId) {
-        const card = document.getElementById(cardId);
-        if (card) {
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            // Highlight card briefly for emphasis
-            card.style.transition = 'outline 0.3s ease';
-            card.style.outline = '3px solid #818cf8';
-            setTimeout(() => {
-                card.style.outline = 'none';
-            }, 1500);
-        }
-    }
 </script>

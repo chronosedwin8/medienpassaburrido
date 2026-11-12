@@ -1752,40 +1752,63 @@ const tecnologiaActivities = [
 // Clone activities for all other subjects at levels 1-6
 const subjectsToClone = subjects.filter(s => !['aleman', 'espanol', 'ingles'].includes(s.id));
 
-for (const [retoLvl, activities] of Object.entries(allActivities)) {
+// Reto n de una materia, a partir del de Español (sin preguntas: se generan después)
+function cloneActivity(retoLvl, baseAct, sub) {
     const retoNum = parseInt(retoLvl, 10);
+    return {
+        id: `reto${retoNum}_${sub.id}`,
+        level: retoLvl,
+        subject: sub.id,
+        title: { de: `Reto ${retoNum} - ${sub.name.de}`, en: `Challenge ${retoNum} - ${sub.name.en}`, es: `Reto ${retoNum} - ${sub.name.es}` },
+        subtitle: { ...baseAct.subtitle },
+        icon: sub.icon,
+        color: sub.color,
+        competencies: []
+    };
+}
+
+for (const [retoLvl, activities] of Object.entries(allActivities)) {
     // Find the espanol activity at this level as base template
     const baseAct = activities.find(a => a.subject === 'espanol');
     if (baseAct) {
         subjectsToClone.forEach(sub => {
             // Check if activity already exists for this subject/level to avoid duplicate
-            if (!activities.some(a => a.subject === sub.id)) {
-                const titleDe = `Reto ${retoNum} - ${sub.name.de}`;
-                const titleEn = `Challenge ${retoNum} - ${sub.name.en}`;
-                const titleEs = `Reto ${retoNum} - ${sub.name.es}`;
-                
-                activities.push({
-                    id: `reto${retoNum}_${sub.id}`,
-                    level: retoLvl,
-                    subject: sub.id,
-                    title: { de: titleDe, en: titleEn, es: titleEs },
-                    subtitle: { ...baseAct.subtitle },
-                    icon: sub.icon,
-                    color: sub.color,
-                    competencies: []
-                });
-            }
+            if (!activities.some(a => a.subject === sub.id)) activities.push(cloneActivity(retoLvl, baseAct, sub));
         });
     }
 }
 
-const { generateEvidenceForReto } = require('./data_questions');
+const { generateEvidenceForReto, evidenceExampleFor } = require('./data_questions');
+// Temática de algunos retos (Tecnología 1-3: «Misión OASIS», Ready Player One); la página la muestra al comienzo
+const { TECH_RETO_THEMES } = require('./data_tecnologia_retos');
+const RETO_THEMES = { tecnologia: TECH_RETO_THEMES };
+
+// Materia creada con la app en marcha (Administración › Materias › Nueva materia): sus retos 1 a 6
+// con las preguntas de todos los grados. Devuelve cuántos retos agregó.
+function registerSubjectActivities(sub) {
+    let added = 0;
+    for (const [retoLvl, activities] of Object.entries(allActivities)) {
+        const baseAct = activities.find(a => a.subject === 'espanol');
+        if (!baseAct || activities.some(a => a.subject === sub.id)) continue;
+        const activity = cloneActivity(retoLvl, baseAct, sub);
+        for (let grade = 2; grade <= 12; grade++) {
+            activity[`evidence_k${grade}`] = generateEvidenceForReto(parseInt(retoLvl, 10), sub.id, grade);
+        }
+        activity.evidenceExample = evidenceExampleFor(sub.id);
+        activities.push(activity);
+        added++;
+    }
+    return added;
+}
 for (const [retoLvl, activities] of Object.entries(allActivities)) {
     const retoNum = parseInt(retoLvl, 10);
     activities.forEach(activity => {
         for (let grade = 2; grade <= 12; grade++) {
             activity[`evidence_k${grade}`] = generateEvidenceForReto(retoNum, activity.subject, grade);
         }
+        activity.evidenceExample = evidenceExampleFor(activity.subject);
+        const theme = RETO_THEMES[activity.subject] && RETO_THEMES[activity.subject][retoNum];
+        if (theme) activity.theme = theme;
     });
 }
 
@@ -1797,12 +1820,54 @@ const klassenConfig = {
 
 const schoolYears = ['2526', '2627', '2728'];
 
+const { reto0BySubject, getReto0ForSubject, baseProfileEvidence, subjectSpecificEvidence } = require('./data_reto0');
+
+// Completes a subject's Reto 0 with its own 10-question evaluation (Panel 5), the study
+// content for Panel 4 (data_reto0_quiz.js) and the teachers-by-subject list (Panel 3,
+// which the view iterates without a guard — without it /profile crashed).
+// The old 28-question evaluation stays in sharedProfile only to recognise students who
+// already passed it (legacyReto0Questions, used by services/reto_result.js).
+const { buildReto0Questions, getReto0Study } = require('./data_reto0_quiz');
+const legacyReto0Questions = sharedProfile.evidence.filter(item => item.id.startsWith('eval_q'));
+function completeReto0(reto0) {
+    reto0.evidence = [
+        ...reto0.evidence.filter(item => !item.id.startsWith('eval_') && !item.quiz),
+        ...buildReto0Questions(reto0.subject)
+    ];
+    reto0.study = getReto0Study(reto0.subject);
+    reto0.teachersBySubject = sharedProfile.teachersBySubject;
+    return reto0;
+}
+for (const subj in reto0BySubject) {
+    completeReto0(reto0BySubject[subj]);
+}
+
+// Reto 0 del Medienpass visual: las 6 competencias con imagen y voz, y 3 preguntas (data_visual.js)
+const { buildVisualReto0Questions, visualCompetences } = require('./data_visual');
+function getVisualReto0(subjectId) {
+    const { subject, level, title, subtitle, icon, color } = getReto0ForSubject(subjectId);
+    return {
+        id: 'profile', subject, level, title, subtitle, icon, color,
+        visual: true,
+        competences: visualCompetences(subject),
+        evidence: buildVisualReto0Questions(subject)
+    };
+}
+
 module.exports = {
     allActivities,
     tecnologiaActivities,
     sharedProfile,
+    reto0BySubject,
+    getReto0ForSubject: subjectId => completeReto0(getReto0ForSubject(subjectId)),
+    getVisualReto0,
+    registerSubjectActivities,
+    legacyReto0Questions,
+    baseProfileEvidence,
+    subjectSpecificEvidence,
     klassenConfig,
     schoolYears,
     subjects,
     levels
 };
+

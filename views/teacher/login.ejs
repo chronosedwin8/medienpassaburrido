@@ -1,54 +1,262 @@
-<%- include('../layout/head', { title: 'Acceso docente — MedienPass', lang: lang }) %>
+<%- include('../partials/header') %>
 
 <style>
-.mp-auth-wrap { flex:1; display:grid; place-items:center; padding: var(--mp-5) var(--mp-4); }
-.mp-auth-card { width:100%; max-width:400px; }
-.mp-auth-head { text-align:center; margin-bottom: var(--mp-6); }
-.mp-auth-mark {
-    width:44px; height:44px; margin:0 auto var(--mp-4);
-    border-radius: var(--mp-radius);
-    background: var(--mp-text); color: var(--mp-bg);
-    display:grid; place-items:center; font-weight:700; font-size: var(--mp-text-lg);
+.teacher-login-page{background:#f6f6f6;min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:16px}
+.teacher-login-card{position:relative;overflow:hidden;background:#fff;border-radius:20px;padding:40px 32px 32px;max-width:680px;width:100%;box-shadow:0 1px 2px rgba(0,0,0,.04),0 18px 40px rgba(0,0,0,.08)}.teacher-login-card::before{content:'';position:absolute;inset:0 0 auto 0;height:6px;background:linear-gradient(90deg,#111111 0 16.66%,#c03928 16.66% 33.33%,#f0ce2d 33.33% 75%,#21529b 75% 87.5%,#c03928 87.5% 100%)}.teacher-login-logo{display:block;width:170px;max-width:60%;height:auto;margin:0 auto 12px}
+.teacher-login-card h2{text-align:center;color:#111111;font-family:'Roboto Slab','Roboto',serif;font-size:1.6em;margin:0 0 4px;border:0;justify-content:center}
+.teacher-login-card .subtitle{text-align:center;color:#64748b;font-size:.9em;margin-bottom:24px}
+.teacher-login-icon{width:60px;height:60px;border-radius:16px;background:#21529b;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:1.5em;color:#fff}
+
+/* Search Section */
+.search-section{margin-bottom:20px}
+.search-section label{display:block;font-weight:600;color:#1e293b;font-size:.9em;margin-bottom:6px}
+.search-section label i{color:#21529b;margin-right:4px}
+.search-row{display:flex;gap:8px}
+.search-row input{flex:1;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:.95em;transition:border-color .2s}
+.search-row input:focus{outline:none;border-color:#21529b;box-shadow:0 0 0 3px rgba(33,82,155,.1)}
+.search-row button{padding:12px 20px;background:#21529b;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
+.search-row button:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(33,82,155,.3)}
+
+/* Results List */
+.results-area{margin-top:16px}
+.results-title{font-size:.85em;color:#64748b;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.teacher-list{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto}
+.teacher-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid #e2e8f0;border-radius:12px;cursor:pointer;transition:all .25s;background:#fff}
+.teacher-item:hover{border-color:#a5b4fc;background:#eef2ff;transform:translateY(-1px)}
+.teacher-item.selected{border-color:#21529b;background:#eef4fb;box-shadow:0 4px 16px rgba(33,82,155,.15)}
+.teacher-item .t-avatar{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3em;font-weight:700;color:#fff;flex-shrink:0}
+.teacher-item .t-info{flex:1;min-width:0}
+.teacher-item .t-name{font-weight:700;color:#1e293b;font-size:.95em}
+.teacher-item .t-detail{font-size:.8em;color:#64748b;margin-top:2px}
+.teacher-item .t-subject{padding:3px 10px;border-radius:20px;font-size:.75em;font-weight:600;flex-shrink:0}
+.teacher-item .t-check{width:24px;height:24px;border-radius:50%;border:2px solid #cbd5e1;display:flex;align-items:center;justify-content:center;font-size:.7em;color:#fff;transition:all .2s;flex-shrink:0}
+.teacher-item.selected .t-check{background:#21529b;border-color:#21529b}
+
+.no-results{text-align:center;padding:20px;color:#94a3b8;font-size:.9em}
+.no-results i{font-size:2em;display:block;margin-bottom:8px}
+
+/* Divider */
+.or-divider{display:flex;align-items:center;gap:12px;margin:24px 0;color:#94a3b8;font-size:.85em}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:#e2e8f0}
+
+/* Registration form */
+.reg-section{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:20px}
+.reg-section h3{font-size:1em;color:#1e293b;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+.reg-section h3 i{color:#21529b}
+
+/* Subject Grid */
+.subject-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.subject-card{position:relative;border:2px solid #e2e8f0;border-radius:12px;padding:10px 8px;text-align:center;cursor:pointer;transition:all .25s;background:#fff}
+.subject-card:hover{border-color:#a5b4fc;background:#eef2ff;transform:translateY(-1px)}
+.subject-card.selected{border-color:#21529b;background:#eef4fb}
+.subject-card.selected::after{content:'✓';position:absolute;top:4px;right:6px;background:#21529b;color:#fff;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65em;font-weight:700}
+.subject-card .s-emoji{font-size:1.4em;display:block;margin-bottom:3px}
+.subject-card .s-name{font-weight:600;color:#1e293b;font-size:.78em}
+.subject-card .s-sub{font-size:.65em;color:#64748b}
+.subject-card input[type=radio]{position:absolute;opacity:0;pointer-events:none}
+
+.tl-form-group{margin-bottom:14px}
+.tl-form-group label{display:block;font-weight:600;color:#1e293b;font-size:.85em;margin-bottom:5px}
+.tl-form-group label i{color:#21529b;margin-right:4px}
+.tl-form-group input,.tl-form-group select{width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:10px;font-size:.9em;transition:border-color .2s;box-sizing:border-box;background:#fff}
+.tl-form-group input:focus,.tl-form-group select:focus{outline:none;border-color:#21529b}
+
+.tl-submit{width:100%;padding:14px;background:#c03928;color:#fff;border:none;border-radius:999px;font-size:1.05em;font-weight:600;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:8px}
+.tl-submit:hover{background:#a92106;box-shadow:0 8px 20px rgba(192,57,40,.25)}
+.tl-submit:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+
+.tl-error{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:10px 14px;border-radius:10px;margin-bottom:16px;font-size:.88em;display:flex;align-items:center;gap:8px}
+
+.pw-wrapper{position:relative}
+.pw-wrapper input{padding-right:44px!important;width:100%;box-sizing:border-box}
+.pw-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;font-size:1em;padding:0;line-height:1;transition:color .2s}
+.pw-eye:hover{color:#21529b}
+
+.tl-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;max-width:680px;width:100%}
+.tl-footer a{font-size:.85em;text-decoration:none;padding:8px 14px;border-radius:8px;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:500}
+.tl-back{color:#111111;background:#fff;border:1.5px solid #111111;border-radius:999px!important;font-weight:700!important}
+.tl-back:hover{background:#111111;color:#fff}
+.tl-admin{color:#a92106;background:#fff;border:1.5px solid #a92106;border-radius:999px!important;font-weight:700!important}
+.tl-admin:hover{background:#a92106;color:#fff}
+
+@media(max-width:600px){
+    .subject-grid{grid-template-columns:repeat(2,1fr)}
+    .teacher-login-card{padding:24px 18px}
+    .search-row{flex-direction:column}
+    .tl-footer{flex-direction:column;align-items:stretch;text-align:center}
+    .tl-footer a{justify-content:center}
 }
-.mp-auth-foot { margin-top: var(--mp-5); text-align:center; font-size: var(--mp-text-sm); color: var(--mp-text-faint); }
 </style>
 
-<div class="mp-auth-wrap">
-    <div class="mp-auth-card">
-        <div class="mp-auth-head">
-            <div class="mp-auth-mark" aria-hidden="true">M</div>
-            <h1 style="font-size: var(--mp-text-2xl); margin-bottom: var(--mp-1);"><%= t('staffLoginTitle') %></h1>
-            <p class="mp-faint mp-sm">MedienPass — <%= t('schoolFooter') %></p>
-        </div>
+<div class="teacher-login-page">
+    <div class="teacher-login-card">
+        <img class="teacher-login-logo" src="/img/logo-colegio.png" width="511" height="360" alt="Colegio Alemán · Deutsche Schule Barranquilla">
+        <h2 data-i18n="teacherLoginTitle">Portal Docente</h2>
+        <p class="subtitle" data-i18n="teacherLoginSubtitle">Registro y Capacitación en Competencias Digitales KMK</p>
 
-        <div class="mp-card">
-            <% if (typeof error !== 'undefined' && error) { %>
-                <div class="mp-alert mp-alert--danger" role="alert" style="margin-bottom: var(--mp-4);"><%= error %></div>
-            <% } %>
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="tl-error"><i class="fas fa-exclamation-circle"></i> <%= error %></div>
+        <% } %>
 
-            <form method="POST" action="/teacher/login" class="mp-stack">
-                <div class="mp-field">
-                    <label class="mp-label" for="email"><%= t('staffEmail') %></label>
-                    <input class="mp-input" type="email" id="email" name="email"
-                           autocomplete="username" required autofocus placeholder="usuario@colegioaleman.edu.co">
+        <div class="reg-section" style="margin-top: 10px;">
+            <form action="/teacher/login" method="POST" id="loginForm" onsubmit="return validateForm()">
+                <div class="tl-form-group">
+                    <label><i class="fas fa-envelope"></i> <span data-i18n="teacherEmail">Correo Electrónico Institucional</span></label>
+                    <input type="text" id="emailInput" name="email" placeholder="nombre@colegioaleman.edu.co" autocomplete="username" required style="width:100%;box-sizing:border-box">
+                    <small id="emailHint" style="color:#94a3b8;font-size:.78em;margin-top:4px;display:none" data-i18n="teacherEmailHint">Por favor incluye el dominio completo (ej: @colegioaleman.edu.co)</small>
                 </div>
-
-                <div class="mp-field">
-                    <label class="mp-label" for="password"><%= t('staffPassword') %></label>
-                    <input class="mp-input" type="password" id="password" name="password"
-                           autocomplete="current-password" required>
+                <div class="tl-form-group">
+                    <label><i class="fas fa-id-card"></i> <span data-i18n="teacherPassword">Contraseña (Documento de Identidad)</span></label>
+                    <div class="pw-wrapper">
+                        <input type="password" id="passwordInput" name="password" data-i18n-placeholder="teacherPasswordPlaceholder" placeholder="Tu número de documento..." autocomplete="current-password" required>
+                        <button type="button" class="pw-eye" id="eyeBtn" onclick="togglePw()" title="<%= locals.t('doc_login_mostrar_ocultar_contrasena') %>" data-i18n-title="doc_login_mostrar_ocultar_contrasena">
+                            <i class="fas fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
                 </div>
-
-                <button type="submit" class="mp-btn mp-btn--primary mp-btn--block mp-btn--lg">
-                    <%= t('staffSubmit') %>
+                <button type="submit" class="tl-submit" style="margin-top: 20px;">
+                    <i class="fas fa-sign-in-alt"></i> <span data-i18n="teacherLoginBtn">Ingresar al Portal</span>
                 </button>
             </form>
+            <div style="text-align: center; margin-top: 15px;">
+                <button type="button" onclick="openRegisterModal()" style="background: none; border: none; color: #21529b; font-weight: 600; font-size: 0.9em; cursor: pointer; text-decoration: underline;">
+                    <span data-i18n="doc_login_registrate_aqui_solo_si_no_puedes"><%= locals.t('doc_login_registrate_aqui_solo_si_no_puedes') %></span>
+                </button>
+            </div>
         </div>
+    </div>
 
-        <p class="mp-auth-foot">
-            <a href="/login"><%= t('staffStudentLink') %></a>
-        </p>
+    <div class="tl-footer">
+        <a href="/login" class="tl-back"><i class="fas fa-arrow-left"></i> <span data-i18n="studentPortalBtn">Portal Estudiantes</span></a>
+        <a href="/admin/login" class="tl-admin"><i class="fas fa-cog"></i> <span data-i18n="adminPanelBtn"><%= locals.t('adminPanelBtn') %></span></a>
     </div>
 </div>
 
-<%- include('../layout/foot') %>
+<script>
+function togglePw() {
+    const input = document.getElementById('passwordInput');
+    const icon = document.getElementById('eyeIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+
+// Auto-append domain on blur
+document.getElementById('emailInput').addEventListener('blur', function() {
+    let val = this.value.trim();
+    if (val && !val.includes('@')) {
+        this.value = val + '@colegioaleman.edu.co';
+    }
+});
+
+function validateForm() {
+    const emailInput = document.getElementById('emailInput');
+    let email = emailInput.value.trim();
+    const hint = document.getElementById('emailHint');
+    // Auto-append domain if missing
+    if (email && !email.includes('@')) {
+        email = email + '@colegioaleman.edu.co';
+        emailInput.value = email;
+    }
+    if (!email.includes('@') || !email.includes('.')) {
+        hint.style.display = 'block';
+        emailInput.style.borderColor = '#f87171';
+        return false;
+    }
+    hint.style.display = 'none';
+    emailInput.style.borderColor = '';
+    return true;
+}
+
+document.getElementById('emailInput').addEventListener('input', function() {
+    const hint = document.getElementById('emailHint');
+    if (this.value.includes('@')) {
+        hint.style.display = 'none';
+        this.style.borderColor = '';
+    }
+});
+
+function openRegisterModal() {
+    document.getElementById('registerModalOverlay').style.display = 'flex';
+}
+
+function closeRegisterModal() {
+    document.getElementById('registerModalOverlay').style.display = 'none';
+}
+
+async function submitRegistration() {
+    const data = {
+        first_name: document.getElementById('regFirstName').value.trim(),
+        last_name: document.getElementById('regLastName').value.trim(),
+        doc_number: document.getElementById('regDoc').value.trim(),
+        email: document.getElementById('regEmail').value.trim(),
+        subject: document.getElementById('regSubject').value
+    };
+    
+    if (!data.first_name || !data.last_name || !data.doc_number || !data.email) {
+        return alert(window.t('doc_login_por_favor_llena_todos_los_campos'));
+    }
+    
+    try {
+        const res = await fetch('/api/teacher/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert("✅ " + result.message + "\n\nRecuerda: Esta acción está sujeta a aprobación por parte de la administración.");
+            closeRegisterModal();
+        } else {
+            alert(window.t('doc_login_error') + result.message);
+        }
+    } catch(e) {
+        alert(window.t('doc_login_error_de_red'));
+    }
+}
+</script>
+
+<!-- Register Modal -->
+<div id="registerModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.6); z-index:9999; justify-content:center; align-items:center; backdrop-filter: blur(4px);">
+    <div style="background:white; width:90%; max-width:400px; border-radius:16px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); padding: 25px;">
+        <h3 style="margin-top: 0; color: #111111; text-align: center;"><span data-i18n="doc_login_solicitud_de_registro"><%= locals.t('doc_login_solicitud_de_registro') %></span></h3>
+        <p style="font-size: 0.85em; color: #64748b; text-align: center; margin-bottom: 20px;">
+            ⚠️ <strong><span data-i18n="doc_login_esta_accion_esta_sujeta_a_aprobacion"><%= locals.t('doc_login_esta_accion_esta_sujeta_a_aprobacion') %></span></strong><br><span data-i18n="doc_login_llena_tus_datos_si_tu_usuario_no_fue"><%= locals.t('doc_login_llena_tus_datos_si_tu_usuario_no_fue') %></span>
+        </p>
+        <div class="tl-form-group">
+            <label><span data-i18n="doc_login_nombres"><%= locals.t('doc_login_nombres') %></span></label>
+            <input type="text" id="regFirstName" required>
+        </div>
+        <div class="tl-form-group">
+            <label><span data-i18n="doc_login_apellidos"><%= locals.t('doc_login_apellidos') %></span></label>
+            <input type="text" id="regLastName" required>
+        </div>
+        <div class="tl-form-group">
+            <label><span data-i18n="doc_login_documento_de_identidad"><%= locals.t('doc_login_documento_de_identidad') %></span></label>
+            <input type="text" id="regDoc" required>
+        </div>
+        <div class="tl-form-group">
+            <label><span data-i18n="doc_login_correo_electronico_institucional"><%= locals.t('doc_login_correo_electronico_institucional') %></span></label>
+            <input type="email" id="regEmail" placeholder="@colegioaleman.edu.co" required>
+        </div>
+        <div class="tl-form-group">
+            <label for="regSubject"><span data-i18n="doc_login_materia_opcional"><%= locals.t('doc_login_materia_opcional') %></span></label>
+            <select id="regSubject">
+                <option value="" data-i18n-option="doc_login_elige_materia"><%= locals.t('doc_login_elige_materia') %></option>
+                <% (typeof subjects !== 'undefined' ? subjects : []).filter(s => s.active !== false).forEach(s => { %>
+                    <option value="<%= s.id %>"><%= s.icon %> <%= s.name[lang] || s.name.es %></option>
+                <% }) %>
+            </select>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button type="button" onclick="closeRegisterModal()" class="btn" style="flex: 1; background: #e2e8f0; color: #475569; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;"><span data-i18n="doc_login_cancelar"><%= locals.t('doc_login_cancelar') %></span></button>
+            <button type="button" onclick="submitRegistration()" class="btn" style="flex: 1; background: #21529b; color: white; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;"><span data-i18n="doc_login_enviar_solicitud"><%= locals.t('doc_login_enviar_solicitud') %></span></button>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

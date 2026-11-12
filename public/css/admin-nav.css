@@ -1,0 +1,102 @@
+/* ══════════════════════════════════════════
+   Panel admin — menú lateral (views/partials/admin-sidebar.ejs)
+   Usa la base del portal docente (/css/sidebar.css): fondo blanco con el logo, texto negro,
+   sección activa en rojo y la franja Alemania · Colombia. Aquí van solo los ajustes del panel.
+   ══════════════════════════════════════════ */
+
+/* Los accesos son botones (navigate()): se ven como los enlaces del menú docente */
+.admin-sidebar .menu-link {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    text-align: left;
+    font-family: inherit;
+    color: var(--sidebar-text);
+}
+
+.admin-sidebar .menu-link.active {
+    background: var(--sidebar-active-bg);
+    border-left-color: var(--sidebar-active-border);
+    font-weight: 700;
+}
+
+/* style.css hace que todos los botones "salten" al pasar el mouse; en el menú no */
+.admin-sidebar .menu-link:hover,
+.admin-sidebar .menu-link:active,
+.admin-sidebar .sidebar-toggle-btn:hover,
+.mobile-nav-toggle:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+}
+
+.admin-sidebar .menu-label.admin-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #111111;
+    font-size: 0.68rem;
+}
+
+.admin-sidebar .menu-label.admin-group i { color: #c03928; }
+
+.admin-sidebar .sidebar-menu { padding-top: 10px; }
+
+/* Año escolar en curso */
+.admin-year-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #f0ce2d;
+    color: #111111;
+    font-size: 0.8em;
+    white-space: nowrap;
+}
+
+.admin-sidebar-lang { display: flex; justify-content: center; }
+
+.admin-sidebar .user-role.admin-role {
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #c03928;
+    font-size: 0.68rem;
+}
+
+.admin-sidebar .admin-logout {
+    margin: 0;
+    padding: 10px 8px;
+    border: 1.5px solid #a92106 !important;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #a92106;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 700;
+    min-height: 0;
+}
+
+.admin-sidebar .admin-logout:hover { background: #fbe6e3; color: #a92106; }
+
+/* Menú colapsado: solo íconos */
+.admin-sidebar.collapsed .admin-year-chip span.link-text,
+.admin-sidebar.collapsed .admin-sidebar-lang,
+.admin-sidebar.collapsed .menu-label.admin-group span { display: none; }
+.admin-sidebar.collapsed .admin-year-chip { padding: 6px; }
+.admin-sidebar.collapsed .admin-year-chip strong { display: none; }
+
+/* El contenido del panel deja espacio al botón del menú en pantallas angostas */
+@media (max-width: 1024px) {
+    .has-sidebar .admin-container { padding-top: 72px; }
+    .sidebar.mobile-open + .sidebar-overlay { display: block; }
+    /* Con el menú abierto, el botón queda a su derecha (✕) y no tapa el logo */
+    body.admin-menu-open .mobile-nav-toggle { left: auto; right: 12px; }
+}
+
+@media print {
+    .admin-sidebar, .mobile-nav-toggle { display: none !important; }
+}

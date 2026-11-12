@@ -1,0 +1,110 @@
+/* ══════════════════════════════════════════
+   Lector inmersivo del Medienpass (views/partials/reader.ejs, public/js/reader.js)
+   Colores del colegio: negro, rojo #c03928, dorado #f0ce2d y azul #21529b.
+   ══════════════════════════════════════════ */
+
+/* Botón flotante «Lector» (abajo a la izquierda; AYUDA está a la derecha) */
+.reader-fab {
+    position: fixed; left: 18px; bottom: 18px; z-index: 900;
+    display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px;
+    border: 2px solid #111111; border-radius: 999px; background: #ffffff; color: #111111;
+    font: 700 0.95rem 'Roboto', 'Segoe UI', Arial, sans-serif; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.reader-fab:hover { background: #fdf6d3; transform: none !important; }
+.reader-fab.is-reading { border-color: #c03928; box-shadow: 0 0 0 4px rgba(192, 57, 40, 0.25); }
+.reader-fab .reader-fab-icon { font-size: 1.15em; }
+
+/* Panel */
+.reader-panel {
+    position: fixed; left: 18px; bottom: 80px; z-index: 1001; width: min(360px, calc(100vw - 36px));
+    max-height: calc(100vh - 110px); overflow-y: auto; box-sizing: border-box; padding: 16px 18px 18px;
+    background: #ffffff; color: #111111; border-radius: 16px; border-top: 6px solid #f0ce2d;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25); font: 400 0.92rem/1.4 'Roboto', 'Segoe UI', Arial, sans-serif;
+    text-align: left; letter-spacing: normal; word-spacing: normal; zoom: 1;
+}
+.reader-panel[hidden] { display: none; }
+.reader-panel h2 { margin: 0; padding: 0; border: 0 !important; font-size: 1.1rem !important; display: flex; align-items: center; gap: 8px; color: #111111; }
+.reader-panel h2::after, .reader-panel h2::before { content: none !important; display: none !important; }
+.reader-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.reader-intro { margin: 0 0 12px; color: #54595f; font-size: 0.85rem; }
+.reader-close { border: 0; background: #f1f1f1; width: 32px; height: 32px; border-radius: 50%; font-size: 1rem; cursor: pointer; color: #111111; }
+.reader-row { margin: 12px 0 0; }
+.reader-label { display: block; margin-bottom: 6px; font-weight: 700; font-size: 0.82rem; color: #3a3a3a; }
+.reader-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.reader-btn, .reader-chip {
+    border: 1.5px solid #d6d6d6; background: #ffffff; color: #111111; border-radius: 10px; padding: 8px 10px;
+    font: 600 0.85rem 'Roboto', 'Segoe UI', Arial, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.reader-btn:hover, .reader-chip:hover { border-color: #111111; transform: none !important; box-shadow: none !important; }
+.reader-btn.primary { grid-column: 1 / -1; background: #111111; border-color: #111111; color: #ffffff; padding: 10px; }
+.reader-btn.primary:hover { background: #c03928; border-color: #c03928; }
+.reader-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.reader-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.reader-chip[aria-pressed="true"] { background: #21529b; border-color: #21529b; color: #ffffff; }
+.reader-chip[hidden] { display: none; }
+.reader-size { display: flex; align-items: center; gap: 8px; }
+.reader-size output { min-width: 56px; text-align: center; font-weight: 700; }
+.reader-check { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-weight: 600; cursor: pointer; }
+.reader-check input { width: 18px; height: 18px; accent-color: #21529b; }
+.reader-swatch { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(0, 0, 0, 0.2); display: inline-block; }
+.reader-note { margin: 12px 0 0; padding: 8px 10px; border-radius: 8px; background: #fdf6d3; color: #3a3a3a; font-size: 0.82rem; }
+.reader-reset { margin-top: 14px; width: 100%; }
+
+/* 🔊 de cada pregunta */
+.reader-group { position: relative; }
+.reader-say {
+    float: right; margin: 0 0 6px 10px; width: 38px; height: 38px; border-radius: 50%;
+    border: 1.5px solid #d6d6d6; background: #ffffff; cursor: pointer; font-size: 1.05rem; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center; box-shadow: none;
+}
+.reader-say:hover { border-color: #21529b; background: #eef3fb; transform: none !important; }
+.reader-say.is-reading { border-color: #c03928; background: #fbe6e3; }
+.reader-say-game { float: none; position: absolute; top: 12px; right: 12px; z-index: 2; }
+
+/* Lo que se está leyendo: el bloque y la palabra */
+.reader-reading { background: #fdf6d3 !important; border-radius: 6px; box-shadow: 0 0 0 3px #fdf6d3; }
+::highlight(reader-word) { background-color: #f0ce2d; color: #111111; }
+
+/* «Ver también en»: la traducción debajo del texto */
+.reader-trans { display: block; margin-top: 3px; font-style: italic; font-weight: 400; font-size: 0.92em; color: #21529b; }
+.reader-trans::before { content: attr(lang); display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px; background: #21529b; color: #ffffff; font-style: normal; font-size: 0.72em; font-weight: 700; text-transform: uppercase; vertical-align: 1px; }
+
+/* Tamaño de letra (solo el contenido de la página) */
+html[data-reader-size="1"] main.container { zoom: 1.1; }
+html[data-reader-size="2"] main.container { zoom: 1.2; }
+html[data-reader-size="3"] main.container { zoom: 1.35; }
+html[data-reader-size="4"] main.container { zoom: 1.5; }
+
+/* Espaciado amplio */
+html.reader-spacing main.container :is(p, label, li, h1, h2, h3, h4, span, div, td, th) {
+    letter-spacing: 0.05em; word-spacing: 0.16em; line-height: 1.85 !important;
+}
+
+/* Letra fácil de leer (Atkinson Hyperlegible; los íconos <i> conservan su letra) */
+html.reader-font main.container :is(p, label, li, h1, h2, h3, h4, span, div, td, th, button, a, input, textarea) {
+    font-family: 'Atkinson Hyperlegible', Verdana, Tahoma, sans-serif !important;
+}
+
+/* Color de fondo: un filtro suave sobre toda la página, que no cambia la presentación */
+.reader-tint { position: fixed; inset: 0; z-index: 998; pointer-events: none; mix-blend-mode: multiply; display: none; }
+html[data-reader-tint="crema"] .reader-tint { display: block; background: #fff1c7; }
+html[data-reader-tint="azul"] .reader-tint { display: block; background: #d9ebff; }
+html[data-reader-tint="verde"] .reader-tint { display: block; background: #e0f3d8; }
+
+/* Regla de lectura: una franja clara y el resto un poco oscuro */
+.reader-ruler {
+    position: fixed; left: 0; right: 0; top: 40%; height: 3.4em; z-index: 999; pointer-events: none;
+    box-shadow: 0 0 0 100vmax rgba(17, 17, 17, 0.38); border-top: 2px solid #f0ce2d; border-bottom: 2px solid #f0ce2d;
+}
+.reader-ruler[hidden] { display: none; }
+
+@media (max-width: 600px) {
+    .reader-fab { left: 12px; bottom: 12px; padding: 10px 14px; }
+    .reader-fab .reader-fab-text { display: none; }
+    .reader-panel { left: 12px; bottom: 68px; width: calc(100vw - 24px); }
+}
+
+@media print {
+    .reader-ui, .reader-say, .reader-trans, .reader-tint, .reader-ruler { display: none !important; }
+}

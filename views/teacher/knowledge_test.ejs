@@ -1,6 +1,6 @@
 <%- include('../partials/header') %>
 <%
-const t = {
+const kt = {
     de: {
         title: "Wissenstest: KMK-Kompetenzen",
         subtitle: "Testen Sie Ihr Wissen über das KMK-Kompetenzmodell.",
@@ -90,94 +90,94 @@ const t = {
     }
 };
 
-const subj = (teacher.subject || '').toLowerCase();
-const langCode = subj === 'aleman' ? 'de' : subj === 'ingles' ? 'en' : 'es';
-const l = t[langCode] || t['es'];
+// Idioma global elegido con los botones DE/EN/ES (res.locals.lang)
+const l = kt[lang] || kt.es;
+const ml = k => JSON.stringify({ de: kt.de[k], en: kt.en[k], es: kt.es[k] });
 %>
 
 <style>
 .kmk-test-container { max-width: 800px; margin: 40px auto; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 .kmk-test-container h1 { color: #1e1b4b; text-align: center; }
-.kmk-test-container p.subtitle { text-align: center; color: var(--mp-text-faint); margin-bottom: 30px; }
-.question-block { margin-bottom: 25px; padding: 20px; background: var(--mp-bg); border-left: 4px solid var(--mp-accent); border-radius: 8px; }
-.question-block h3 { margin-top: 0; font-size: 1.1em; color: var(--mp-text); }
-.options label { display: block; margin-bottom: 10px; cursor: pointer; color: var(--mp-text-soft); }
+.kmk-test-container p.subtitle { text-align: center; color: #64748b; margin-bottom: 30px; }
+.question-block { margin-bottom: 25px; padding: 20px; background: #f8fafc; border-left: 4px solid #4f46e5; border-radius: 8px; }
+.question-block h3 { margin-top: 0; font-size: 1.1em; color: #334155; }
+.options label { display: block; margin-bottom: 10px; cursor: pointer; color: #475569; }
 .options input { margin-right: 10px; }
 .submit-btn { display: block; width: 100%; padding: 15px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: background 0.3s; }
 .submit-btn:hover { background: #059669; }
 </style>
 
 <div class="kmk-test-container">
-    <h1>📝 <%= l.title %></h1>
-    <p class="subtitle"><%= l.subtitle %></p>
+    <h1>📝 <span data-lang-content="<%= ml('title') %>"><%= l.title %></span></h1>
+    <p class="subtitle"><span data-lang-content="<%= ml('subtitle') %>"><%= l.subtitle %></span></p>
 
     <% if (score === null) { %>
     <form action="/teacher/knowledge-test" method="POST">
         <div class="question-block">
-            <h3><%= l.q1 %></h3>
+            <h3><span data-lang-content="<%= ml('q1') %>"><%= l.q1 %></span></h3>
             <div class="options">
-                <label><input type="radio" name="q1" value="A"> <%= l.o1a %></label>
-                <label><input type="radio" name="q1" value="B"> <%= l.o1b %></label>
-                <label><input type="radio" name="q1" value="C" required> <%= l.o1c %></label>
+                <label><input type="radio" name="q1" value="A"> <span data-lang-content="<%= ml('o1a') %>"><%= l.o1a %></span></label>
+                <label><input type="radio" name="q1" value="B"> <span data-lang-content="<%= ml('o1b') %>"><%= l.o1b %></span></label>
+                <label><input type="radio" name="q1" value="C" required> <span data-lang-content="<%= ml('o1c') %>"><%= l.o1c %></span></label>
             </div>
         </div>
 
         <div class="question-block">
-            <h3><%= l.q2 %></h3>
+            <h3><span data-lang-content="<%= ml('q2') %>"><%= l.q2 %></span></h3>
             <div class="options">
-                <label><input type="radio" name="q2" value="A"> <%= l.o2a %></label>
-                <label><input type="radio" name="q2" value="B" required> <%= l.o2b %></label>
-                <label><input type="radio" name="q2" value="C"> <%= l.o2c %></label>
+                <label><input type="radio" name="q2" value="A"> <span data-lang-content="<%= ml('o2a') %>"><%= l.o2a %></span></label>
+                <label><input type="radio" name="q2" value="B" required> <span data-lang-content="<%= ml('o2b') %>"><%= l.o2b %></span></label>
+                <label><input type="radio" name="q2" value="C"> <span data-lang-content="<%= ml('o2c') %>"><%= l.o2c %></span></label>
             </div>
         </div>
 
         <div class="question-block">
-            <h3><%= l.q3 %></h3>
+            <h3><span data-lang-content="<%= ml('q3') %>"><%= l.q3 %></span></h3>
             <div class="options">
-                <label><input type="radio" name="q3" value="A"> <%= l.o3a %></label>
-                <label><input type="radio" name="q3" value="B" required> <%= l.o3b %></label>
-                <label><input type="radio" name="q3" value="C"> <%= l.o3c %></label>
+                <label><input type="radio" name="q3" value="A"> <span data-lang-content="<%= ml('o3a') %>"><%= l.o3a %></span></label>
+                <label><input type="radio" name="q3" value="B" required> <span data-lang-content="<%= ml('o3b') %>"><%= l.o3b %></span></label>
+                <label><input type="radio" name="q3" value="C"> <span data-lang-content="<%= ml('o3c') %>"><%= l.o3c %></span></label>
             </div>
         </div>
 
         <div class="question-block">
-            <h3><%= l.q4 %></h3>
+            <h3><span data-lang-content="<%= ml('q4') %>"><%= l.q4 %></span></h3>
             <div class="options">
-                <label><input type="radio" name="q4" value="A"> <%= l.o4a %></label>
-                <label><input type="radio" name="q4" value="B"> <%= l.o4b %></label>
-                <label><input type="radio" name="q4" value="C" required> <%= l.o4c %></label>
+                <label><input type="radio" name="q4" value="A"> <span data-lang-content="<%= ml('o4a') %>"><%= l.o4a %></span></label>
+                <label><input type="radio" name="q4" value="B"> <span data-lang-content="<%= ml('o4b') %>"><%= l.o4b %></span></label>
+                <label><input type="radio" name="q4" value="C" required> <span data-lang-content="<%= ml('o4c') %>"><%= l.o4c %></span></label>
             </div>
         </div>
 
         <div class="question-block">
-            <h3><%= l.q5 %></h3>
+            <h3><span data-lang-content="<%= ml('q5') %>"><%= l.q5 %></span></h3>
             <div class="options">
-                <label><input type="radio" name="q5" value="A"> <%= l.o5a %></label>
-                <label><input type="radio" name="q5" value="B" required> <%= l.o5b %></label>
-                <label><input type="radio" name="q5" value="C"> <%= l.o5c %></label>
+                <label><input type="radio" name="q5" value="A"> <span data-lang-content="<%= ml('o5a') %>"><%= l.o5a %></span></label>
+                <label><input type="radio" name="q5" value="B" required> <span data-lang-content="<%= ml('o5b') %>"><%= l.o5b %></span></label>
+                <label><input type="radio" name="q5" value="C"> <span data-lang-content="<%= ml('o5c') %>"><%= l.o5c %></span></label>
             </div>
         </div>
 
         <div class="question-block">
-            <h3><%= l.q6 %></h3>
+            <h3><span data-lang-content="<%= ml('q6') %>"><%= l.q6 %></span></h3>
             <div class="options">
-                <label><input type="radio" name="q6" value="A"> <%= l.o6a %></label>
-                <label><input type="radio" name="q6" value="B" required> <%= l.o6b %></label>
-                <label><input type="radio" name="q6" value="C"> <%= l.o6c %></label>
+                <label><input type="radio" name="q6" value="A"> <span data-lang-content="<%= ml('o6a') %>"><%= l.o6a %></span></label>
+                <label><input type="radio" name="q6" value="B" required> <span data-lang-content="<%= ml('o6b') %>"><%= l.o6b %></span></label>
+                <label><input type="radio" name="q6" value="C"> <span data-lang-content="<%= ml('o6c') %>"><%= l.o6c %></span></label>
             </div>
         </div>
 
-        <button type="submit" class="submit-btn"><i class="fas fa-paper-plane"></i> <%= l.submit %></button>
+        <button type="submit" class="submit-btn"><i class="fas fa-paper-plane"></i> <span data-lang-content="<%= ml('submit') %>"><%= l.submit %></span></button>
     </form>
     <% } else { %>
         <div class="result-block" style="text-align: center; margin-top: 20px;">
-            <h2>Puntaje / Score: <%= score %>%</h2>
+            <h2><span data-i18n="doc_kt_puntaje_score"><%= locals.t('doc_kt_puntaje_score') %></span> <%= score %>%</h2>
             <% if (passed) { %>
-                <p style="color: var(--mp-ok); font-weight: bold; font-size: 1.2em;">¡Felicitaciones! Has aprobado.</p>
+                <p style="color: #10b981; font-weight: bold; font-size: 1.2em;"><span data-i18n="doc_kt_felicitaciones_has_aprobado"><%= locals.t('doc_kt_felicitaciones_has_aprobado') %></span></p>
             <% } else { %>
-                <p style="color: var(--mp-danger); font-weight: bold; font-size: 1.2em;">No has alcanzado el 75%. Por favor, revisa los contenidos del taller KMK y vuelve a intentarlo.</p>
+                <p style="color: #ef4444; font-weight: bold; font-size: 1.2em;"><span data-i18n="doc_kt_no_has_alcanzado_el_75_por_favor"><%= locals.t('doc_kt_no_has_alcanzado_el_75_por_favor') %></span></p>
             <% } %>
-            <a href="/teacher/training" class="submit-btn" style="display: inline-block; text-decoration: none; margin-top: 15px; width: auto; padding: 10px 20px;">Volver a Capacitación / Back to Training</a>
+            <a href="/teacher/training" class="submit-btn" style="display: inline-block; text-decoration: none; margin-top: 15px; width: auto; padding: 10px 20px;"><span data-i18n="doc_kt_volver_a_capacitacion_back_to"><%= locals.t('doc_kt_volver_a_capacitacion_back_to') %></span></a>
         </div>
     <% } %>
 </div>

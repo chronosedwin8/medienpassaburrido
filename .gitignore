@@ -2,16 +2,19 @@ node_modules/
 .env
 *.log
 *.tmp
-despliegue/*.tar
-data/*.json.bak
-data/users.json
-config/i18n/*.tmp
+*.broken
+logs/
+.vscode/
 
 # Datos personales y estado de ejecución: nunca al repositorio
-data/local_activity_responses.json
-data/custom_instruments.json
-data/pending_teachers.json
-data/teacher_roles.json
+# (correos y nombres de docentes, roles, respuestas, PDFs subidos).
+# Solo se versiona la configuración que no identifica a nadie.
+data/*
+!data/challenge_tools_config.json
+!data/school_years.json
+
+# Pruebas de depuración sueltas (contienen volcados con nombres)
+scratch/
 
 # Artefactos de despliegue (se regeneran con crear-tar.ps1)
 despliegue/app/

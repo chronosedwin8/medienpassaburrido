@@ -1,22 +1,15 @@
-/* Sidebar styling for MedienPass Application */
+/* Sidebar styling for MedienPass Application
+   Estilo del Colegio Alemán: menú blanco con el logo, texto negro y la opción activa en rojo. */
 :root {
     --sidebar-width: 280px;
     --sidebar-collapsed-width: 70px;
-
-    /* El menú era un degradado morado fijo (#0f0c29 → #302b63 → #24243e) que
-       chocaba con el resto de la interfaz, ya neutra y minimalista, y obligaba
-       a mantener sus colores de texto a mano: al mapearlos por error a los
-       tokens de fondo claro quedó en 1,05:1 de contraste, ilegible.
-       Ahora es una superficie más del sistema: acompaña al tema y su contraste
-       está garantizado por los mismos tokens que todo lo demás. */
-    --sidebar-bg: var(--mp-surface);
-    --sidebar-border: var(--mp-border);
-    --sidebar-active-bg: var(--mp-accent-soft);
-    --sidebar-active-border: var(--mp-accent);
-    --sidebar-hover-bg: var(--mp-surface-alt);
-    --sidebar-text: var(--mp-text);
-    --sidebar-text-muted: var(--mp-text-faint);
-    --sidebar-icon-active: var(--mp-accent);
+    --sidebar-bg: #ffffff;
+    --sidebar-active-bg: #fbe6e3;
+    --sidebar-active-border: #c03928;
+    --sidebar-hover-bg: #f6f6f6;
+    --sidebar-text: #212121;
+    --sidebar-text-muted: #6b6f74;
+    --sidebar-icon-active: #c03928;
     --transition-speed: 0.3s;
 }
 
@@ -33,11 +26,11 @@ body {
     width: var(--sidebar-width);
     background: var(--sidebar-bg);
     color: var(--sidebar-text);
-    border-right: 1px solid var(--sidebar-border);
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.3);
+    border-right: 1px solid #e2e2e2;
+    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.05);
     transition: width var(--transition-speed) ease;
     overflow-x: hidden;
 }
@@ -61,22 +54,26 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 24px 20px;
-    border-bottom: 1px solid var(--mp-border);
+    padding: 18px 14px 18px 16px;
     height: 90px;
     box-sizing: border-box;
 }
+
+/* Franja Alemania · Colombia debajo del logo */
+.sidebar-flag { height: 4px; flex-shrink: 0; background: linear-gradient(90deg, #111111 0 16.66%, #c03928 16.66% 33.33%, #f0ce2d 33.33% 75%, #21529b 75% 87.5%, #c03928 87.5% 100%); }
 
 .sidebar-logo {
     display: flex;
     align-items: center;
     gap: 12px;
     text-decoration: none;
-    color: var(--mp-text);
+    color: #111111;
     white-space: nowrap;
     overflow: hidden;
     transition: opacity var(--transition-speed);
 }
+
+.sidebar-logo-img { height: 46px; width: auto; flex-shrink: 0; display: block; }
 
 .sidebar-logo i, .sidebar-logo span.logo-emoji {
     font-size: 1.8rem;
@@ -90,18 +87,16 @@ body {
 }
 
 .logo-title {
-    font-weight: 800;
-    font-size: 1.1rem;
-    letter-spacing: 0.05em;
-    /* Era un degradado de texto multicolor (amarillo-rosa-azul). Se sustituye
-       por el color del sistema: en una interfaz sobria distraía mas de lo que
-       aportaba, y el recorte de fondo sobre texto complicaba el contraste. */
-    color: var(--mp-text);
+    font-weight: 900;
+    font-size: 1rem;
+    letter-spacing: 0.14em;
+    color: #111111;
 }
 
 .logo-subtitle {
-    font-size: 0.65rem;
-    color: var(--sidebar-text-muted);
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #c03928;
     text-transform: uppercase;
     letter-spacing: 0.1em;
 }
@@ -121,7 +116,7 @@ body {
 }
 
 .sidebar-toggle-btn:hover {
-    color: var(--mp-text);
+    color: #111111;
     background: var(--sidebar-hover-bg);
 }
 
@@ -138,7 +133,7 @@ body {
     overflow-y: auto;
     padding: 20px 0;
     scrollbar-width: thin;
-    scrollbar-color: var(--mp-border-strong) transparent;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
 }
 
 .sidebar-menu::-webkit-scrollbar {
@@ -146,18 +141,18 @@ body {
 }
 
 .sidebar-menu::-webkit-scrollbar-thumb {
-    background: var(--mp-border-strong);
+    background: rgba(255,255,255,0.1);
     border-radius: 4px;
 }
 
 .menu-label {
-    padding: 0 24px;
-    font-size: 0.7rem;
+    padding: 0 18px;
+    font-size: 0.64rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.12em;
     color: var(--sidebar-text-muted);
-    margin: 15px 0 8px 0;
+    margin: 16px 0 7px 0;
     transition: opacity var(--transition-speed) ease;
     white-space: nowrap;
 }
@@ -168,8 +163,8 @@ body {
 
 .menu-item {
     display: block;
-    margin: 2px 8px;
-    border-radius: 8px;
+    margin: 3px 8px;
+    border-radius: 10px;
     overflow: hidden;
 }
 
@@ -177,42 +172,63 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
+    padding: 10px 12px;
     color: var(--sidebar-text);
     text-decoration: none;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 500;
     transition: all 0.2s ease;
     cursor: pointer;
     border-left: 3px solid transparent;
+    border-radius: 8px;
+    min-height: 42px;
+    box-sizing: border-box;
 }
 
 .menu-link:hover {
     background: var(--sidebar-hover-bg);
-    color: var(--mp-text);
+    color: #111111;
 }
 
 .menu-link.active {
     background: var(--sidebar-active-bg);
-    color: var(--mp-text);
+    color: #111111;
     border-left-color: var(--sidebar-active-border);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .menu-link.active i {
     color: var(--sidebar-icon-active);
 }
 
+.executive-link:not(.active) {
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.menu-hint {
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: rgba(129, 140, 248, 0.16);
+    color: #c7d2fe;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.sidebar.collapsed .menu-hint {
+    display: none;
+}
+
 .link-left {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     white-space: nowrap;
 }
 
 .link-left i {
-    font-size: 1.15rem;
-    width: 20px;
+    font-size: 1.05rem;
+    width: 18px;
     text-align: center;
     flex-shrink: 0;
     color: var(--sidebar-text-muted);
@@ -220,7 +236,7 @@ body {
 }
 
 .menu-link:hover .link-left i {
-    color: var(--mp-text);
+    color: #111111;
 }
 
 .link-text {
@@ -238,34 +254,60 @@ body {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s cubic-bezier(0, 1, 0, 1);
-    background: rgba(0, 0, 0, 0.15);
+    background: rgba(4, 8, 24, 0.2);
     border-radius: 0 0 8px 8px;
 }
 
 .submenu.open {
-    max-height: 1000px;
+    max-height: 720px;
     transition: max-height 0.3s cubic-bezier(1, 0, 1, 0);
+}
+
+.submenu-section-label {
+    padding: 11px 12px 4px 45px;
+    color: rgba(203, 213, 225, 0.58);
+    font-size: 0.61rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .submenu-link {
     display: flex;
     align-items: center;
-    padding: 10px 16px 10px 48px;
+    gap: 10px;
+    padding: 8px 12px 8px 45px;
     color: var(--sidebar-text-muted);
     text-decoration: none;
-    font-size: 0.88rem;
+    font-size: 0.83rem;
     transition: all 0.2s;
     white-space: nowrap;
     cursor: pointer;
+    min-height: 34px;
+    box-sizing: border-box;
+}
+
+.submenu-icon {
+    width: 15px;
+    flex-shrink: 0;
+    color: rgba(165, 180, 252, 0.72);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.submenu-link:hover .submenu-icon,
+.submenu-link.active .submenu-icon {
+    color: #c7d2fe;
 }
 
 .submenu-link:hover {
-    color: var(--mp-text);
-    background: var(--mp-surface-alt);
+    color: white;
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .submenu-link.active {
-    color: var(--mp-text);
+    color: white;
     font-weight: 600;
 }
 
@@ -286,12 +328,14 @@ body {
 /* Sidebar Footer / User Section */
 .sidebar-footer {
     padding: 16px;
-    border-top: 1px solid var(--mp-border);
+    border-top: 1px solid #e2e2e2;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background: rgba(0, 0, 0, 0.1);
+    background: #f6f6f6;
 }
+
+.sidebar-footer .dsb-lang { align-self: center; }
 
 .user-profile {
     display: flex;
@@ -304,15 +348,15 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: var(--mp-accent);
-    color: var(--mp-accent-text);
+    background: #111111;
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     font-size: 1.1rem;
     flex-shrink: 0;
-    border: 2px solid rgba(255, 255, 255, 0.1);
+    border: 2px solid #f0ce2d;
 }
 
 .user-info {
@@ -324,8 +368,8 @@ body {
 
 .user-name {
     font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--mp-text);
+    font-weight: 700;
+    color: #111111;
 }
 
 .user-role {
@@ -346,8 +390,8 @@ body {
     top: 15px;
     left: 15px;
     z-index: 1100;
-    background: #1e1b4b;
-    color: var(--mp-text);
+    background: #111111;
+    color: white;
     border: none;
     width: 45px;
     height: 45px;
@@ -361,7 +405,7 @@ body {
 }
 
 .mobile-nav-toggle:hover {
-    background: #312e81;
+    background: #c03928;
 }
 
 /* Mobile responsive overlay background */
@@ -412,34 +456,3 @@ body {
         padding-left: 0 !important;
     }
 }
-
-/* ── Selector de idioma del personal ──────────────────────────
-   Sobre el degradado oscuro del menu, asi que sus colores son fijos:
-   los tokens de texto estan pensados para fondo claro. */
-.sidebar-langs {
-    display: flex;
-    gap: 2px;
-    margin: 0 16px 10px;
-    padding: 2px;
-    background: var(--mp-surface-alt);
-    border: 1px solid var(--mp-border);
-    border-radius: 8px;
-}
-.sidebar-langs__item {
-    flex: 1;
-    text-align: center;
-    padding: 5px 0;
-    border-radius: 5px;
-    font-size: .72rem;
-    font-weight: 600;
-    letter-spacing: .04em;
-    color: var(--mp-text-faint);
-    text-decoration: none;
-    transition: background .15s ease, color .15s ease;
-}
-.sidebar-langs__item:hover { color: var(--mp-text); background: var(--mp-surface); }
-.sidebar-langs__item.is-active { background: var(--mp-accent); color: var(--mp-accent-text); }
-.sidebar-langs__item:focus-visible { outline: 2px solid var(--mp-accent); outline-offset: 2px; }
-
-/* Con el menu plegado no cabe: se oculta. */
-.sidebar.collapsed .sidebar-langs { display: none; }
