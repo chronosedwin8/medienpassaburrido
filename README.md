@@ -4,7 +4,9 @@ Aplicación web Node.js para gestionar el proyecto Medienpass del Colegio Alemá
 
 ## Características
 
-- **Portal Estudiantes**: Dashboard con Retos 1-6 para Klasse K3-K9
+- **Ingreso con Microsoft (SSO)** para estudiantes, docentes y panel; matrícula desde **Phidias**
+- **Portal Estudiantes**: Dashboard con Retos 0-6 siempre disponibles y actividades asignadas
+- **Actividades asignadas** por curso completo o por estudiante (docentes y panel)
 - **Portal Docentes**: Capacitación KMK, Test KMK, Configura tus Retos del 0 al 6, Consulta los
   avances, Troubleshooting (el banco de fichas se retiró; las hojas de trabajo de Klett siguen en la
   pestaña «Fichas» de cada competencia en Capacitación)
@@ -32,12 +34,72 @@ PORT=3000
 SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_ANON_KEY=tu-clave-anonima
 COOKIE_SECRET=cadena-larga-y-aleatoria
+
+# Matrícula (Phidias): estudiantes, nombres completos y cursos
+PHIDIAS_BASE_URL=https://ds-barranquilla.phidias.co/rest
+PHIDIAS_TOKEN=token-jwt-de-phidias
+
+# Ingreso con Microsoft (Entra ID, app «mediempassLucho»)
+AZURE_TENANT_ID=id-del-directorio
+AZURE_CLIENT_ID=id-de-la-aplicacion
+AZURE_CLIENT_SECRET=valor-del-secreto
+APP_BASE_URL=https://medienpass.panel.fundales.com   # opcional; en local http://localhost:3000
 ```
+
+Las claves de Phidias y de Microsoft van solo en `.env` y en las variables de entorno de CapRover;
+nunca en el código (el repositorio es público).
 
 `COOKIE_SECRET` firma las cookies de sesión para que nadie pueda falsificarlas. Genera uno con
 `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Si falta, el servidor
 usa uno temporal y todas las sesiones se cierran en cada reinicio. El `.env` no entra en la imagen
 Docker, así que en CapRover hay que definirlo también en las variables de entorno de la app.
+
+## Ingreso con Microsoft (SSO)
+
+Estudiantes, docentes y perfiles del panel entran con «Entrar con Microsoft»
+(`services/microsoft_sso.js`, OpenID Connect con código de autorización + PKCE, `state` y `nonce`
+en una cookie firmada de 10 minutos). El correo decide el perfil:
+
+- **Estudiante**: su correo institucional es `<código>@colegioaleman.edu.co`. Con ese código (o con
+  el correo registrado en Phidias) se busca en la matrícula de Phidias y se abre su sesión.
+- **Docente** registrado en la tabla `teachers`: portal docente. Si además tiene perfil en
+  `teacher_roles.json` (coordinador, directivo o desarrollador), también el panel. Desde
+  `/admin/login?perfil=…` se comprueba que el perfil coincida, como con la contraseña.
+- Cuenta sin perfil: vuelve al ingreso con un aviso.
+
+El ingreso con clase + código (estudiantes) y con correo + documento (docentes y panel) sigue
+funcionando como alternativa. **En Azure** (App registrations › mediempassLucho › Authentication) hay
+que registrar, como plataforma **Web**, las direcciones de retorno
+`https://medienpass.panel.fundales.com/auth/microsoft/callback` y, para desarrollo,
+`http://localhost:3000/auth/microsoft/callback`.
+
+## Matrícula desde Phidias
+
+`services/phidias.js` lee `GET /1/course/consolidate` (cursos KKP1 … K12C con sus estudiantes) y
+guarda solo código, nombres, correo, curso y estado (no direcciones ni teléfonos), 6 horas en memoria
+y una copia en `data/phidias_roster.json` por si Phidias no responde. Los retirados quedan fuera.
+
+- Al entrar (con Microsoft o con código), `services/student_directory.js` crea al estudiante en
+  Supabase si no existe o le pone el curso y el nombre completo de Phidias si cambiaron (año nuevo).
+  Cada cambio queda en `data/phidias_changes.json` con el estado anterior. **Ya no hay que cargar
+  estudiantes cada año.**
+- La lista de clases del ingreso sale de Phidias (sin «sinact» ni clases escritas sin K).
+- **Menú del panel › Matrícula › Phidias y estudiantes** (`/admin/phidias`): «Revisar cambios» muestra
+  nuevos, cambios de curso o nombre, y quienes ya no están en Phidias (pasan a «sinact», nunca se
+  borran); «Aplicar cambios» (solo desarrollador) los aplica y guarda antes
+  `data/phidias_sync_<fecha>.json`.
+
+## Actividades asignadas
+
+Docentes y panel asignan los retos (0 a 6) de una materia a **cursos completos o a estudiantes uno por
+uno** en **Asigna actividades** (`/teacher/assignments`, también en el menú del panel). Un curso
+asignado incluye a los estudiantes nuevos que Phidias agregue. El estudiante las ve arriba en su
+inicio («Actividades que te asignaron») con fecha límite y estado de cada reto; el docente ve el avance
+de cada destinatario. Solo quien la creó o un perfil del panel puede editarla o archivarla.
+
+Se guardan en la tabla `activity_assignments` de Supabase: **ejecute una vez
+`migrations/003_activity_assignments.sql`** en el SQL Editor. Mientras la tabla no exista, se usan
+`data/activity_assignments.json` (en CapRover se pierde al publicar) y la página lo avisa.
 
 ## Base de Datos
 
@@ -175,6 +237,29 @@ la página pasa `{ reader: true }`).
   (`data-lang-content`).
 - No usa servicios externos ni tiene costo. El Lector inmersivo de Microsoft (Azure) se puede conectar más
   adelante si el colegio crea el recurso.
+
+## Retos de Primaria, Reto 0 sencillo y retroalimentación (noviembre 2026)
+
+- **Retos 1 a 6 de K3 a K6** (`data_questions_primary.js`): temas sencillos por materia
+  (`PRIMARY_PACKS`) y dos niveles por pregunta (`PRIMARY_TEMPLATES`): `basic` para K3-K4 (situaciones
+  de todos los días) y `plus` para K5-K6 (nombra el concepto: fuente confiable, netiqueta, phishing,
+  huella digital, burbuja de filtro). Se conservan ids, subcompetencia KMK, la pregunta de IA y la
+  posición de la respuesta correcta, así que lo ya respondido se califica igual. De K7 a K12 no cambia;
+  la «Misión OASIS» de Tecnología solo se muestra desde K7.
+- **Reto 0 sencillo (K3-K5)**: `isSimpleGrade` y `buildSimpleReto0Questions` en `data_reto0_quiz.js`;
+  frases cortas, mismos ids y posiciones. En Tecnología: Word, PowerPoint, OneNote, Teams, OneDrive y
+  codeSpark.
+- **Avance del Reto 0** (`services/reto0_progress.js`): los botones 1 a 5, la barra y el botón del
+  inicio cuentan lo guardado (avatar, datos y 4 preguntas, profesores guardados, misión, evaluación
+  ganada). Las tarjetas de la misión se guardan en `r0m_<materia>` y vuelven al abrir la página.
+- **Retroalimentación en los retos 1 a 6** (`views/activity.ejs`): cada pregunta es una tarjeta con
+  número grande, color del reto y dibujos de fondo (`app.locals.quizDecor`). La primera respuesta
+  queda fija; se pinta la correcta en verde y la equivocada en rojo, y «¿Por qué?» muestra la
+  explicación. El «¿por qué?» se divide en dos: XP de la respuesta (😀 +3 / 😢 0) y estrellas de la
+  explicación. El puntaje no cambia (`services/reto_result.js`).
+- **Retos siempre disponibles**: al elegir la materia salen el Reto 0 y los retos 1 a 6 (sin segundo
+  combo); `level_config.json` ya no bloquea. El inicio envía solo `{ id, level, subject, fields }` de
+  cada reto (`slimActivity`) y va comprimido (`compression`).
 
 ## Contenido por materia
 
@@ -351,9 +436,11 @@ evita repetir correos.
 `test/training_help.test.js`, `test/access_roles.test.js` (permisos por perfil, ingreso, Docentes y
 cursos, y que la bitácora ya no existe), `test/user_guide.test.js` (guía de uso por perfil) y
 `test/school_years.test.js` (año escolar, barra con el nombre del estudiante y estilo del colegio en
-todos los portales). Para usar archivos de datos temporales hay variables de entorno:
+todos los portales) y `test/sso_phidias_assignments.test.js` (ingreso con Microsoft, matrícula de
+Phidias, asignaciones, avance del Reto 0, Reto 0 sencillo, retroalimentación de los retos y retos
+siempre disponibles; no usa la red). Los servidores de prueba corren sin Supabase ni Phidias. Para usar archivos de datos temporales hay variables de entorno:
 `LOCAL_ACTIVITY_CACHE_FILE`, `CUSTOM_INSTRUMENTS_PATH`, `SUBJECTS_CONFIG_FILE`,
-`CLASS_TEACHER_CONFIG_FILE`, `PENDING_TEACHERS_FILE`, `TEACHER_SEGMENTS_FILE`, `HELP_CAMPAIGN_FILE`,
+`CLASS_TEACHER_CONFIG_FILE`, `ASSIGNMENTS_FILE`, `PHIDIAS_ROSTER_FILE`, `STUDENT_DIRECTORY_DIR`, `PENDING_TEACHERS_FILE`, `TEACHER_SEGMENTS_FILE`, `HELP_CAMPAIGN_FILE`,
 `CAMPAIGN_LOG_FILE`, `TEACHER_ROLES_FILE`, `SCHOOL_YEARS_FILE`, `CLASS_SUBJECTS_FILE` (materias por
 clase), `TEACHER_EXEMPTIONS_FILE` y `TEACHER_SUBJECT_LOG_FILE`. `npm test` carga antes `test/isolate.js`,
 para que las materias nuevas creadas en la app real no cambien lo que esperan las pruebas.
@@ -377,10 +464,27 @@ para que las materias nuevas creadas en la app real no cambien lo que esperan la
 
 ## Endpoints API
 
+### Ingreso
+- `GET /auth/microsoft?as=student|teacher|admin[&perfil=…]` - Inicia el ingreso con Microsoft
+- `GET /auth/microsoft/callback` - Retorno de Microsoft: valida y abre la sesión según el correo
+- `GET /api/student/code/:className/:code`, `POST /login` - Ingreso con clase y código (Phidias primero)
+
 ### Estudiantes
-- `POST /api/save/:activityId` - Guardar progreso
-- `GET /api/load/:activityId` - Cargar progreso
+- `POST /api/save/:activityId` - Guardar progreso (en el Reto 0 devuelve `reto0Progress`)
+- `GET /api/load/:activityId` - Cargar progreso (en el Reto 0 devuelve `reto0Progress`)
 - `GET /api/progress` - Ver progreso general
+- `GET /api/student/assignments` - Actividades asignadas al estudiante, con el estado de cada reto
+
+### Matrícula y asignaciones (docentes y panel)
+- `GET /api/roster/classes` - Cursos con su número de estudiantes (Phidias; si no, Supabase)
+- `GET /api/roster/classes/:className/students` - Estudiantes de un curso (código y nombre completo)
+- `GET /api/assignments` (`?mine=1`, `?all=1`, `?class=K5A`, `?subject=`), `POST /api/assignments`
+  `{ title, subject, retos: [0..6], class_names: [], student_codes: [], due_date, note }`
+- `GET|PUT /api/assignments/:id`, `POST /api/assignments/:id/targets`
+  `{ add: { classes, students }, remove: { classes, students } }`, `POST /api/assignments/:id/archive`
+- `GET /api/assignments/:id/progress` - Estado de cada destinatario en cada reto
+- `GET /api/admin/phidias/status`, `GET /api/admin/phidias/sync-preview`, `POST /api/admin/phidias/sync`
+  (sincronizar: solo desarrollador)
 
 ### Admin
 - `GET /api/admin/certificates/students/:className/:subject` - Certificados de estudiantes (retos 0-6 ganados en una materia)
@@ -409,4 +513,4 @@ para que las materias nuevas creadas en la app real no cambien lo que esperan la
 
 ## Versión
 
-2627 - Abril 2026
+2627 - Noviembre 2026 (SSO con Microsoft, Phidias y actividades asignadas)

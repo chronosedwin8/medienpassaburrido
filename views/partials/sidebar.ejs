@@ -73,6 +73,15 @@
                 </a>
             </div>
 
+            <div class="menu-item">
+                <a href="/teacher/assignments" class="menu-link <%= activeItem === 'assignments' ? 'active' : '' %>">
+                    <div class="link-left">
+                        <i class="fas fa-list-check"></i>
+                        <span class="link-text"><span data-i18n="doc_nav_asignaciones"><%= locals.t('doc_nav_asignaciones') %></span></span>
+                    </div>
+                </a>
+            </div>
+
             <div class="menu-label"><span data-i18n="doc_nav_documentacion"><%= locals.t('doc_nav_documentacion') %></span></div>
             <div class="menu-item">
                 <a href="/docs" target="_blank" class="menu-link">

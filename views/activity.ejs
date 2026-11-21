@@ -438,7 +438,7 @@
                             <p style="margin-bottom: 15px;" data-lang-content='<%- langJson(slide.intro) %>'><%= langText(slide.intro) %></p>
                             <div class="concept-grid">
                                 <% slide.cards.forEach(card => { %>
-                                <div class="concept-item-card" onclick="exploreConcept(this, '<%= card.id %>', '<%= card.sound %>', event)">
+                                <div class="concept-item-card" data-concept="<%= card.id %>" onclick="exploreConcept(this, '<%= card.id %>', '<%= card.sound %>', event)">
                                     <div class="concept-header-row">
                                         <span class="concept-badge-icon"><%= card.icon %></span>
                                         <span class="concept-title-text" data-lang-content='<%- langJson(card.title) %>'><%= langText(card.title) %></span>
@@ -552,6 +552,11 @@
             
 <div style="display: none;">
     <input type="hidden" id="reto0_subject" value="<%= activity.subject %>">
+    <% if (activity.id === 'profile') { %>
+    <%# Avance del Reto 0 (services/reto0_progress.js): tarjetas de la misión exploradas y profesores guardados %>
+    <input type="hidden" id="r0m_<%= activity.subject %>" value="">
+    <input type="hidden" id="r0_teachers" value="">
+    <% } %>
     <% activity.evidence.forEach(item=> { %>
         <% if (item.quiz) { %>
             <div class="form-group">
@@ -715,8 +720,38 @@
                                                 <span data-lang-content="<%- JSON.stringify(kmkAreaOfReto.ai).replace(/"/g, '&quot;') %>"><%= kmkAreaOfReto.ai[lang] || kmkAreaOfReto.ai.es %></span></p>
                                             </div>
                                         <% } %>
-                                        <% activity.evidence.forEach(item=> { %>
-                                            <div class="form-group">
+                                        <%
+                                            // Retroalimentación (solicitudes 14 y 15): cada pregunta evaluativa (radio con opción
+                                            // correcta) es una tarjeta con número grande, color del reto y dibujos de fondo; su
+                                            // «¿por qué?» es una tarjeta dividida: XP de la respuesta | estrellas de la explicación.
+                                            const isQuizItem = it => it && it.type === 'radio_group' && Array.isArray(it.options) && it.options.some(o => o && o.correct);
+                                            const quizNumbers = {};
+                                            let quizCount = 0;
+                                            activity.evidence.forEach(it => { if (isQuizItem(it)) quizNumbers[it.id] = ++quizCount; });
+                                            const qt = key => { const v = locals.t(key); return v === key ? ({ est_quiz_tu_respuesta: 'Tu respuesta', est_quiz_explica_tip: '¡Una buena explicación te da más estrellas!', est_quiz_sin_responder: 'Elige una respuesta' })[key] || key : v; };
+                                        %>
+                                        <% activity.evidence.forEach(item=> {
+                                            const quizN = quizNumbers[item.id];
+                                            const explainOf = item.id.endsWith('_explain') ? item.id.slice(0, -8) : null;
+                                            const explainN = explainOf ? quizNumbers[explainOf] : null;
+                                            const cardClass = quizN ? ' quiz-card quiz-reto-' + activity.level : explainN ? ' quiz-explain-card quiz-reto-' + activity.level : '';
+                                        %>
+                                            <div class="form-group<%= cardClass %>"<% if (quizN) { %> data-quiz-id="<%= item.id %>"<% } %>>
+                                                <% if (quizN) { %>
+                                                    <div class="quiz-deco" aria-hidden="true"><% (locals.quizDecor ? locals.quizDecor(activity.level, activity.subject, quizN) : []).forEach((e, di) => { %><span class="quiz-deco-<%= di %>"><%= e %></span><% }) %></div>
+                                                    <div class="quiz-num" aria-hidden="true"><%= quizN %></div>
+                                                <% } %>
+                                                <% if (explainN) { %>
+                                                <div class="quiz-split">
+                                                    <div class="quiz-split-left" id="quizxp_<%= explainOf %>">
+                                                        <span class="quiz-xp-title"><span data-i18n="est_quiz_tu_respuesta"><%= qt('est_quiz_tu_respuesta') %></span> <%= explainN %></span>
+                                                        <span class="quiz-face" aria-hidden="true">🤔</span>
+                                                        <strong class="quiz-xp-value">—</strong>
+                                                        <small class="quiz-xp-note"><span data-i18n="est_quiz_sin_responder"><%= qt('est_quiz_sin_responder') %></span></small>
+                                                    </div>
+                                                    <div class="quiz-split-right">
+                                                        <p class="quiz-explain-tip">✨ <span data-i18n="est_quiz_explica_tip"><%= qt('est_quiz_explica_tip') %></span></p>
+                                                <% } %>
                                                 <%# Identificador de la competencia KMK que trabaja la pregunta (p. ej. «KMK 1.1 · Buscar y filtrar») %>
                                                 <% if (item.type === 'radio_group' && item.kmk) {
                                                     const kmkSub = locals.kmkSubcompetence ? locals.kmkSubcompetence(item.kmk) : null; %>
@@ -749,7 +784,7 @@
                                                             const safeId = item.id + '_' + optIdx;
                                                             const optLabel = (typeof opt === 'object') ? (opt.label || opt) : opt;
                                                             %>
-                                                            <div class="radio-item" style="margin-bottom:8px; display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="document.getElementById('<%= safeId %>').checked = true; if(typeof updateStarSummary === 'function') updateStarSummary();">
+                                                            <div class="radio-item" style="margin-bottom:8px; display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="pickRadioOption(event, '<%= safeId %>')">
                                                                 <input type="radio" id="<%= safeId %>" name="<%= item.id %>" value="<%= opt.val !== undefined ? opt.val : optIdx %>" data-correct="<%= opt.correct ? 'true' : 'false' %>" onchange="if(typeof updateStarSummary === 'function') updateStarSummary()" style="cursor:pointer; width:18px; height:18px;">
                                                                 <label for="<%= safeId %>" style="display:inline; font-weight:normal; cursor:pointer; margin:0;" <% if (typeof opt === 'object') { %> data-lang-content="<%- JSON.stringify(optLabel).replace(/"/g, '&quot;') %>" <% } %>>
                                                                     <% if (typeof opt === 'object') { %>
@@ -765,7 +800,11 @@
                                                     </div>
                                                 <% } %>
 
-                                                <% if (item.hint) { %>
+                                                <% if (quizN) { %>
+                                                    <%# La explicación (hint) solo aparece después de responder, en «¿Por qué?» %>
+                                                    <div class="quiz-feedback" id="quizfb_<%= item.id %>" role="status" aria-live="polite" hidden
+                                                         data-hint="<%- JSON.stringify(item.hint || null).replace(/"/g, '&quot;') %>"></div>
+                                                <% } else if (item.hint) { %>
                                                     <div class="question-hint-box" style="margin-top: 8px; font-size: 0.85em; color: #475569; display: flex; align-items: start; gap: 6px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #f59e0b;">
                                                         <span style="font-size: 1.15em; line-height: 1.2;">💡</span>
                                                         <span class="lang-line lang-primary" data-lang-content="<%- JSON.stringify(item.hint).replace(/"/g, '&quot;') %>"><%= item.hint.de || item.hint.es || '' %></span>
@@ -785,6 +824,11 @@
                                                             <input type="hidden" id="star_<%= item.id %>" name="star_<%= item.id %>" value="0">
                                                         </div>
                                                     <% } %>
+                                                <% } %>
+                                                <% if (explainN) { %>
+                                                        <div class="quiz-explain-status" id="quizex_<%= explainOf %>" role="status" aria-live="polite"></div>
+                                                    </div>
+                                                </div>
                                                 <% } %>
                                             </div>
                                         <% }) %>
@@ -1606,6 +1650,53 @@
             transition: max-height 0.4s ease-in;
         }
 
+        /* ── Retroalimentación de los retos 1-6 (quiz-card, quiz-explain-card) ── */
+        .quiz-card, .quiz-explain-card { --quiz: #6366f1; --quiz-soft: #eef2ff; position: relative; overflow: hidden; border-radius: 18px; border: 2px solid var(--quiz); background: #fff; padding: 22px 22px 18px 84px; }
+        .quiz-reto-1 { --quiz: #2563eb; --quiz-soft: #eff6ff; }
+        .quiz-reto-2 { --quiz: #db2777; --quiz-soft: #fdf2f8; }
+        .quiz-reto-3 { --quiz: #ea580c; --quiz-soft: #fff7ed; }
+        .quiz-reto-4 { --quiz: #059669; --quiz-soft: #ecfdf5; }
+        .quiz-reto-5 { --quiz: #7c3aed; --quiz-soft: #f5f3ff; }
+        .quiz-reto-6 { --quiz: #0891b2; --quiz-soft: #ecfeff; }
+        .quiz-card > *:not(.quiz-deco) { position: relative; z-index: 1; }
+        .quiz-num { position: absolute !important; left: 14px; top: 16px; width: 54px; height: 54px; border-radius: 16px; background: var(--quiz); color: #fff; font-size: 2em; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 14px rgba(0,0,0,.15); }
+        .quiz-deco { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+        .quiz-deco span { position: absolute; opacity: .12; font-size: 3.2em; transform: rotate(-12deg); }
+        .quiz-deco .quiz-deco-0 { right: 14px; top: 8px; font-size: 4em; }
+        .quiz-deco .quiz-deco-1 { right: 90px; bottom: 6px; }
+        .quiz-deco .quiz-deco-2 { left: 18px; bottom: 10px; font-size: 2.6em; }
+        .quiz-deco .quiz-deco-3 { right: 34%; top: 40%; font-size: 2.4em; }
+        .quiz-card .radio-item { border: 2px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; background: #fff; transition: border-color .2s, background-color .2s; }
+        .quiz-card .radio-item:hover { border-color: var(--quiz); }
+        .quiz-card .radio-item.is-correct { border-color: #16a34a; background: #f0fdf4; }
+        .quiz-card .radio-item.is-wrong { border-color: #dc2626; background: #fef2f2; }
+        .quiz-card .radio-item.is-locked { cursor: default !important; opacity: .7; }
+        .quiz-card .radio-item.is-correct, .quiz-card .radio-item.is-wrong { opacity: 1; }
+        .quiz-feedback { margin-top: 12px; border-radius: 12px; padding: 12px 14px; font-size: .95em; line-height: 1.45; }
+        .quiz-feedback.ok { background: #dcfce7; border: 1px solid #86efac; color: #14532d; }
+        .quiz-feedback.no { background: #fee2e2; border: 1px solid #fca5a5; color: #7f1d1d; }
+        .quiz-feedback strong { display: block; font-size: 1.08em; margin-bottom: 4px; }
+        .quiz-feedback .quiz-why { display: block; margin-top: 6px; color: #334155; }
+        .quiz-explain-card { padding: 0; border-style: dashed; background: var(--quiz-soft); }
+        .quiz-split { display: grid; grid-template-columns: minmax(150px, 0.8fr) 2fr; }
+        .quiz-split-left { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 16px 12px; border-right: 2px dashed var(--quiz); text-align: center; }
+        .quiz-xp-title { font-weight: 800; color: var(--quiz); font-size: .9em; text-transform: uppercase; letter-spacing: .03em; }
+        .quiz-face { font-size: 2.6em; line-height: 1.1; }
+        .quiz-xp-value { font-size: 1.5em; font-weight: 900; }
+        .quiz-xp-note { color: #475569; font-size: .8em; line-height: 1.3; }
+        .quiz-split-left.ok .quiz-xp-value { color: #15803d; }
+        .quiz-split-left.no .quiz-xp-value { color: #b91c1c; }
+        .quiz-split-right { padding: 14px 16px; }
+        .quiz-explain-tip { margin: 0 0 8px; font-weight: 700; color: var(--quiz); }
+        .quiz-explain-status { margin-top: 8px; font-size: .88em; font-weight: 600; color: #475569; }
+        .quiz-explain-status.ok { color: #15803d; }
+        @media (max-width: 640px) {
+            .quiz-card { padding: 78px 14px 14px; }
+            .quiz-num { left: 14px; top: 12px; }
+            .quiz-split { grid-template-columns: 1fr; }
+            .quiz-split-left { border-right: none; border-bottom: 2px dashed var(--quiz); flex-direction: row; flex-wrap: wrap; }
+        }
+
         /* Floating +10 XP text animation */
         .xp-float {
             position: absolute;
@@ -2039,6 +2130,7 @@
 
                 // Update progress bar
                 updateQuestTracker();
+                saveMissionState();
             } else {
                 // If already discovered, just play tick sound and toggle expansion visual (standard check)
                 playCustomSound('tick');
@@ -2046,7 +2138,40 @@
             }
         };
 
-        function updateQuestTracker() {
+        // La misión se guarda en r0m_<materia> ({ seen, total }) para que vuelva al abrir la página.
+        // Solo se envía esa clave: el servidor la combina con lo guardado (no guarda el resto del formulario).
+        function missionInput() {
+            const subjectInput = document.getElementById('reto0_subject');
+            return subjectInput ? document.getElementById('r0m_' + subjectInput.defaultValue) : null;
+        }
+        function saveMissionState() {
+            const input = missionInput();
+            if (!input) return;
+            const value = JSON.stringify({ seen: [...exploredConcepts], total: TOTAL_CONCEPTS });
+            input.value = value;
+            const subject = document.getElementById('reto0_subject').defaultValue;
+            const body = { reto0_subject: subject };
+            body['r0m_' + subject] = value;
+            fetch('/api/save/profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+                .then(r => r.json()).then(res => { if (res && res.reto0Progress && window.applyReto0Progress) window.applyReto0Progress(res.reto0Progress); })
+                .catch(() => { /* se vuelve a intentar con la siguiente tarjeta o al guardar un módulo */ });
+        }
+        // Al cargar: las tarjetas ya exploradas quedan abiertas y la barra con sus XP (sin fanfarria)
+        window.restoreMission = function () {
+            const input = missionInput();
+            if (!input || !input.value) return;
+            let seen = [];
+            try { const parsed = JSON.parse(input.value); seen = Array.isArray(parsed) ? parsed : (parsed.seen || []); } catch (e) { seen = []; }
+            seen.forEach(id => {
+                const card = document.querySelector('.concept-item-card[data-concept="' + CSS.escape(String(id)) + '"]');
+                if (!card) return;
+                exploredConcepts.add(String(id));
+                card.classList.add('discovered');
+            });
+            updateQuestTracker(true);
+        };
+
+        function updateQuestTracker(silent) {
             const countEl = document.getElementById('quest-tracker-count');
             const fillEl = document.getElementById('quest-tracker-fill');
             const trackerContainer = document.getElementById('questTracker');
@@ -2069,6 +2194,7 @@
 
             if (size === TOTAL_CONCEPTS) {
                 trackerContainer.classList.add('completed');
+                if (silent === true) return;
                 // Play final epic fanfare and confetti
                 setTimeout(() => {
                     playCustomSound('fanfare');
@@ -2197,6 +2323,114 @@
             return true;
         }
 
+        // Textos de la retroalimentación (claves est_quiz_* de i18n.js; respaldo en español)
+        const QUIZ_FALLBACK = {
+            est_quiz_correcto: '¡Correcto!',
+            est_quiz_incorrecto: 'Esta vez no. La respuesta correcta es la {letra}).',
+            est_quiz_por_que: '¿Por qué?',
+            est_quiz_xp_correcta: '+3 XP',
+            est_quiz_xp_incorrecta: '0 XP',
+            est_quiz_nota_correcta: '¡Bien hecho! Ganaste 3 estrellas.',
+            est_quiz_nota_incorrecta: 'Esta respuesta no suma, pero tu explicación sí puede darte estrellas.',
+            est_quiz_sin_responder: 'Elige una respuesta',
+            est_quiz_explica_ok_correcta: '¡Explicación clara! +2 ⭐',
+            est_quiz_explica_ok_incorrecta: '¡Explicación clara! +3 ⭐',
+            est_quiz_explica_corta: 'Escribe una explicación completa (mínimo 8 palabras y 40 letras). Llevas {n} palabras.',
+            est_quiz_explica_cero: 'Por ahora 0 ⭐: escribe por qué elegiste tu respuesta.'
+        };
+        function qtext(key) {
+            const v = window.t ? window.t(key) : key;
+            return v && v !== key ? v : (QUIZ_FALLBACK[key] || key);
+        }
+        function quizLang() { return window.langUtils ? window.langUtils.getLang() : 'es'; }
+
+        // Clic en el renglón de una opción: la primera respuesta queda fija (las demás se desactivan)
+        window.pickRadioOption = function (event, radioId) {
+            const radio = document.getElementById(radioId);
+            if (!radio || radio.disabled) return;
+            if (event && event.target === radio) return; // el propio radio ya dispara change
+            if (!radio.checked) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        };
+
+        function renderQuizFeedback() {
+            document.querySelectorAll('.quiz-card[data-quiz-id]').forEach(card => {
+                const id = card.getAttribute('data-quiz-id');
+                const radios = [...card.querySelectorAll('input[type="radio"][name="' + id + '"]')];
+                const chosen = radios.find(r => r.checked);
+                const box = document.getElementById('quizfb_' + id);
+                const xp = document.getElementById('quizxp_' + id);
+                const exStatus = document.getElementById('quizex_' + id);
+                const explain = document.getElementById(id + '_explain');
+                const explainText = explain ? explain.value : '';
+                const coherent = checkCoherence(explainText);
+                const words = explainText.trim() ? explainText.trim().split(/\s+/).length : 0;
+
+                radios.forEach(r => {
+                    const row = r.closest('.radio-item');
+                    if (!row) return;
+                    row.classList.remove('is-correct', 'is-wrong', 'is-locked');
+                    if (chosen) {
+                        // Primera respuesta fija: las otras opciones quedan desactivadas
+                        r.disabled = r !== chosen;
+                        row.classList.add('is-locked');
+                        if (r.getAttribute('data-correct') === 'true') row.classList.add('is-correct');
+                        else if (r === chosen) row.classList.add('is-wrong');
+                    }
+                });
+
+                if (!chosen) {
+                    if (box) { box.hidden = true; box.innerHTML = ''; }
+                    if (xp) {
+                        xp.className = 'quiz-split-left';
+                        xp.querySelector('.quiz-face').textContent = '🤔';
+                        xp.querySelector('.quiz-xp-value').textContent = '—';
+                        xp.querySelector('.quiz-xp-note').textContent = qtext('est_quiz_sin_responder');
+                    }
+                    if (exStatus) { exStatus.className = 'quiz-explain-status'; exStatus.textContent = coherent ? qtext('est_quiz_explica_ok_incorrecta').replace('+3', '+2') : ''; }
+                    return;
+                }
+
+                const correct = chosen.getAttribute('data-correct') === 'true';
+                const correctIdx = radios.findIndex(r => r.getAttribute('data-correct') === 'true');
+                const letter = ['a', 'b', 'c', 'd', 'e'][correctIdx] || '';
+                let hint = null;
+                try { hint = JSON.parse(box ? box.getAttribute('data-hint') : 'null'); } catch (e) { hint = null; }
+                const hintText = hint ? (hint[quizLang()] || hint.es || '') : '';
+                if (box) {
+                    box.hidden = false;
+                    box.className = 'quiz-feedback ' + (correct ? 'ok' : 'no');
+                    const title = document.createElement('strong');
+                    title.textContent = (correct ? '🎉 ' + qtext('est_quiz_correcto') : '💡 ' + qtext('est_quiz_incorrecto').replace('{letra}', letter));
+                    box.replaceChildren(title);
+                    if (hintText) {
+                        const why = document.createElement('span');
+                        why.className = 'quiz-why';
+                        const label = document.createElement('b');
+                        label.textContent = qtext('est_quiz_por_que') + ' ';
+                        why.append(label, document.createTextNode(hintText));
+                        box.append(why);
+                    }
+                }
+                if (xp) {
+                    xp.className = 'quiz-split-left ' + (correct ? 'ok' : 'no');
+                    xp.querySelector('.quiz-face').textContent = correct ? '😀' : '😢';
+                    xp.querySelector('.quiz-xp-value').textContent = qtext(correct ? 'est_quiz_xp_correcta' : 'est_quiz_xp_incorrecta');
+                    xp.querySelector('.quiz-xp-note').textContent = qtext(correct ? 'est_quiz_nota_correcta' : 'est_quiz_nota_incorrecta');
+                }
+                if (exStatus) {
+                    exStatus.className = 'quiz-explain-status' + (coherent ? ' ok' : '');
+                    if (coherent) exStatus.textContent = qtext(correct ? 'est_quiz_explica_ok_correcta' : 'est_quiz_explica_ok_incorrecta');
+                    else if (words > 0) exStatus.textContent = qtext('est_quiz_explica_corta').replace('{n}', words);
+                    else exStatus.textContent = qtext('est_quiz_explica_cero');
+                }
+            });
+        }
+        window.renderQuizFeedback = renderQuizFeedback;
+        document.addEventListener('langchange', () => { if (document.querySelector('.quiz-card')) renderQuizFeedback(); });
+
         function recalculateInteractiveStars() {
             // Find all radio group questions (like r1_aleman_k5_q1)
             document.querySelectorAll('.radio-group').forEach(group => {
@@ -2257,6 +2491,9 @@
                 }
             });
             
+            // Retroalimentación: correcta/incorrecta, «¿Por qué?» y las dos mitades del «¿por qué?»
+            renderQuizFeedback();
+
             // Trigger the general star summary calculation
             if (typeof updateStarSummary === 'function') {
                 updateStarSummary();
@@ -2582,6 +2819,7 @@
                 if (result.success && result.data) {
                     serverData = result.data;
                 }
+                if (result.reto0Progress && window.applyReto0Progress) window.applyReto0Progress(result.reto0Progress);
                 if (result.retoResult !== undefined) {
                     const mp = result.medienpass || null;
                     Object.assign(retoState, {
@@ -2622,6 +2860,9 @@
             if (mergedData.star_rating && typeof setStarRating === 'function') {
                 setStarRating(parseInt(mergedData.star_rating));
             }
+
+            // Reto 0: la misión vuelve con las tarjetas ya exploradas
+            if (typeof window.restoreMission === 'function') window.restoreMission();
 
             // Restore profile photo (avatar)
             if (mergedData.profile_photo && typeof selectAvatar === 'function') {
@@ -2964,29 +3205,39 @@
             
     
 
-            // Conjunto de paneles visitados (para la barra de progreso de Reto 0).
-            const _visitedPanels = new Set();
+            // Avance real del Reto 0 (services/reto0_progress.js): un panel cuenta cuando lo guardado lo
+            // completa, no por abrirlo. Llega al cargar y después de cada guardado.
+            const _donePanels = new Set();
+            let _activePanel = 1;
 
             function _updateReto0Progress(activeNum) {
-                if (activeNum) _visitedPanels.add(activeNum);
+                if (activeNum) _activePanel = activeNum;
                 const total = 5;
-                const done = _visitedPanels.size;
+                const done = _donePanels.size;
                 const fill = document.getElementById('reto0ProgressFill');
                 const lbl  = document.getElementById('reto0ProgressLabel');
                 if (fill) fill.style.width = Math.round((done / total) * 100) + '%';
                 if (lbl)  lbl.textContent = done + '/' + total;
-                // Actualizar indicadores de paso
                 document.querySelectorAll('.reto0-step').forEach(el => {
                     const s = parseInt(el.getAttribute('data-step'));
-                    const visited = _visitedPanels.has(s);
-                    const active  = s === activeNum;
-                    el.style.background  = active ? '#6366f1' : (visited ? '#a5b4fc' : '#e2e8f0');
-                    el.style.color       = (active || visited) ? '#fff' : '#94a3b8';
-                    el.style.borderColor = active ? '#4f46e5' : 'transparent';
+                    const isDone = _donePanels.has(s);
+                    const active = s === _activePanel;
+                    el.style.background  = isDone ? '#16a34a' : (active ? '#6366f1' : '#e2e8f0');
+                    el.style.color       = (active || isDone) ? '#fff' : '#94a3b8';
+                    el.style.borderColor = active ? (isDone ? '#14532d' : '#4f46e5') : 'transparent';
+                    el.textContent = isDone ? '✓' : String(s);
+                    if (isDone && window.t) el.title = window.t('est_r0_panel_listo');
                     if (active) el.setAttribute('aria-current', 'step');
                     else el.removeAttribute('aria-current');
                 });
             }
+
+            window.applyReto0Progress = function (progress) {
+                if (!progress || !Array.isArray(progress.panels)) return;
+                _donePanels.clear();
+                progress.panels.forEach((ok, i) => { if (ok) _donePanels.add(i + 1); });
+                _updateReto0Progress();
+            };
 
             window.toggleAccordionPanel = function(num) {
                 const panels = document.querySelectorAll('.accordion-panel');
@@ -3040,6 +3291,11 @@
                 btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + window.t('saving');
                 btnEl.disabled = true;
 
+                // Panel 3 cuenta como hecho cuando el estudiante guarda sus profesores con este botón
+                if (num === 3) {
+                    const teachersSaved = document.getElementById('r0_teachers');
+                    if (teachersSaved) teachersSaved.value = new Date().toISOString();
+                }
                 const data = collectData();
 
                 const controller = new AbortController();
@@ -3055,6 +3311,7 @@
                     const resData = await response.json();
                     if (resData.success) {
                         if (window.markActivitySaved) window.markActivitySaved(JSON.stringify(data));
+                        if (resData.reto0Progress) window.applyReto0Progress(resData.reto0Progress);
                         showToast(window.t('est_modulo_guardado').replace('{n}', num), 'success');
                         
                         if (num === 1) {

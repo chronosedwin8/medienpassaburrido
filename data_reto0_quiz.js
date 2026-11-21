@@ -527,4 +527,199 @@ function getReto0Study(subjectId) {
     };
 }
 
-module.exports = { KMK_COMPETENCES, reto0Packs, buildReto0Questions, getReto0Study };
+// ═══ Reto 0 sencillo (K3, K4 y K5) ═══
+// Pedido (13 nov 2026): Klasse 4 con terminología sencilla y, en Tecnología, herramientas como Word y
+// Microsoft 365. Se hizo para K3, K4 y K5. Mismas preguntas, mismos identificadores y la respuesta
+// correcta en el mismo lugar: solo cambian las palabras (frases cortas) y los ejemplos de cada materia.
+const isSimpleGrade = grade => { const g = parseInt(grade, 10); return g >= 3 && g <= 5; };
+
+const SIMPLE_COMPETENCES = [
+    { name: t('Buscar y guardar', 'Suchen und speichern', 'Find and save'),
+        ai: t('Si le preguntas algo a una inteligencia artificial, revisa su respuesta: a veces se equivoca.', 'Wenn du eine künstliche Intelligenz etwas fragst, prüfe die Antwort: Manchmal irrt sie sich.', 'If you ask an artificial intelligence something, check its answer: sometimes it is wrong.') },
+    { name: t('Hablar y trabajar con otros', 'Sprechen und mit anderen arbeiten', 'Talk and work with others'),
+        ai: t('Hay fotos y videos falsos hechos con IA. No los compartas y trata bien a todos.', 'Es gibt falsche Fotos und Videos, die mit KI gemacht sind. Teile sie nicht und sei zu allen freundlich.', 'There are fake photos and videos made with AI. Don’t share them and be kind to everyone.') },
+    { name: t('Crear y mostrar', 'Gestalten und zeigen', 'Create and show'),
+        ai: t('Si la IA te ayuda a crear algo, dilo y revisa lo que hizo.', 'Wenn dir eine KI beim Gestalten hilft, sag es und prüfe, was sie gemacht hat.', 'If AI helps you create something, say so and check what it made.') },
+    { name: t('Cuidarme en internet', 'Im Internet auf mich aufpassen', 'Stay safe online'),
+        ai: t('No le des a una IA tu nombre completo, tu dirección, tus fotos ni tus contraseñas.', 'Gib einer KI nicht deinen vollen Namen, deine Adresse, deine Fotos oder Passwörter.', 'Don’t give an AI your full name, address, photos or passwords.') },
+    { name: t('Resolver problemas', 'Probleme lösen', 'Solve problems'),
+        ai: t('Pídele a la IA que te explique paso a paso; no que haga la tarea por ti.', 'Bitte die KI, dir Schritt für Schritt zu erklären, nicht, deine Aufgabe zu machen.', 'Ask AI to explain step by step, not to do your homework for you.') },
+    { name: t('Pensar sobre lo que veo', 'Über das nachdenken, was ich sehe', 'Think about what I see'),
+        ai: t('Las apps y la IA eligen qué te muestran. Pregúntate por qué ves eso.', 'Apps und KI wählen aus, was sie dir zeigen. Frag dich, warum du das siehst.', 'Apps and AI choose what they show you. Ask yourself why you see it.') }
+];
+
+// examples[i]: actividad sencilla de la materia para la competencia i+1
+const SIMPLE_EXAMPLES = {
+    aleman: [
+        t('Buscar un cuento de hadas en la biblioteca digital y guardarlo en OneDrive', 'Ein Märchen in der digitalen Bibliothek suchen und in OneDrive speichern', 'Find a fairy tale in the digital library and save it in OneDrive'),
+        t('Escribir con mi grupo un cuento en el mismo Word', 'Mit meiner Gruppe eine Geschichte im selben Word schreiben', 'Write a story with my group in the same Word file'),
+        t('Grabar mi voz leyendo un poema en alemán', 'Meine Stimme aufnehmen, wenn ich ein deutsches Gedicht lese', 'Record my voice reading a German poem'),
+        t('Practicar en Anton con mi cuenta del colegio', 'Mit meinem Schulkonto in Anton üben', 'Practise in Anton with my school account'),
+        t('Usar un diccionario en línea cuando no sé una palabra', 'Ein Online-Wörterbuch nutzen, wenn ich ein Wort nicht kenne', 'Use an online dictionary when I don’t know a word'),
+        t('Comparar un cuento del libro con su película', 'Ein Märchen aus dem Buch mit seinem Film vergleichen', 'Compare a fairy tale in the book with its film')
+    ],
+    espanol: [
+        t('Buscar una fábula en la biblioteca digital del colegio', 'Eine Fabel in der digitalen Schulbibliothek suchen', 'Find a fable in the school’s digital library'),
+        t('Escribir con mi grupo una fábula en el mismo Word', 'Mit meiner Gruppe eine Fabel im selben Word schreiben', 'Write a fable with my group in the same Word file'),
+        t('Hacer un libro con dibujos en Book Creator', 'In Book Creator ein Buch mit Bildern machen', 'Make a book with drawings in Book Creator'),
+        t('Entrar a mi cuenta sin decirle a nadie mi contraseña', 'In mein Konto gehen, ohne jemandem mein Passwort zu sagen', 'Sign in without telling anyone my password'),
+        t('Usar el corrector de Word para revisar mi ortografía', 'Mit der Rechtschreibprüfung von Word meine Schreibweise prüfen', 'Use the Word spell checker to check my spelling'),
+        t('Pensar si un video de cuentos dice la verdad', 'Überlegen, ob ein Geschichtenvideo die Wahrheit sagt', 'Think about whether a story video tells the truth')
+    ],
+    ingles: [
+        t('Buscar fotos de animales de la granja y guardarlas en mi carpeta', 'Fotos von Bauernhoftieren suchen und in meinem Ordner speichern', 'Find photos of farm animals and save them in my folder'),
+        t('Hacer con mi grupo una presentación en PowerPoint', 'Mit meiner Gruppe eine PowerPoint-Präsentation machen', 'Make a PowerPoint presentation with my group'),
+        t('Grabar un video corto presentándome en inglés', 'Ein kurzes Video aufnehmen, in dem ich mich auf Englisch vorstelle', 'Record a short video introducing myself in English'),
+        t('Practicar palabras en Quizlet sin poner mi nombre completo', 'In Quizlet Wörter üben, ohne meinen vollen Namen anzugeben', 'Practise words in Quizlet without giving my full name'),
+        t('Escuchar cómo se dice una palabra en un diccionario en línea', 'In einem Online-Wörterbuch hören, wie man ein Wort ausspricht', 'Listen to how a word is said in an online dictionary'),
+        t('Pensar por qué una canción en inglés se volvió famosa', 'Überlegen, warum ein englisches Lied berühmt wurde', 'Think about why an English song became famous')
+    ],
+    tecnologia: [
+        t('Guardar mi trabajo en OneDrive con un nombre claro', 'Meine Arbeit mit einem klaren Namen in OneDrive speichern', 'Save my work in OneDrive with a clear name'),
+        t('Escribirle a mi profesor en Teams con respeto', 'Meiner Lehrkraft in Teams respektvoll schreiben', 'Write to my teacher respectfully in Teams'),
+        t('Hacer una presentación en PowerPoint o un texto en Word', 'Eine Präsentation in PowerPoint oder einen Text in Word machen', 'Make a PowerPoint presentation or a Word text'),
+        t('Cerrar sesión en Microsoft 365 al terminar', 'Mich nach der Arbeit bei Microsoft 365 abmelden', 'Sign out of Microsoft 365 when I finish'),
+        t('Ordenar los bloques en codeSpark hasta que el juego funcione', 'Die Blöcke in codeSpark ordnen, bis das Spiel funktioniert', 'Put the blocks in order in codeSpark until the game works'),
+        t('Anotar en OneNote qué aprendí y qué me costó', 'In OneNote notieren, was ich gelernt habe und was schwer war', 'Write in OneNote what I learned and what was hard')
+    ],
+    ciencias: [
+        t('Buscar cómo llueve en una página para niños y guardarlo', 'Auf einer Kinderseite suchen, wie Regen entsteht, und es speichern', 'Look up how rain forms on a kids’ page and save it'),
+        t('Anotar con mi grupo en OneNote lo que vimos en el experimento', 'Mit meiner Gruppe in OneNote notieren, was wir beim Experiment gesehen haben', 'Write down with my group in OneNote what we saw in the experiment'),
+        t('Hacer un cartel del ciclo del agua en PowerPoint', 'Ein Plakat zum Wasserkreislauf in PowerPoint machen', 'Make a water cycle poster in PowerPoint'),
+        t('Pedir permiso antes de tomar fotos en el laboratorio', 'Vor dem Fotografieren im Labor um Erlaubnis fragen', 'Ask before taking photos in the lab'),
+        t('Usar una tabla para anotar la temperatura cada día', 'Mit einer Tabelle jeden Tag die Temperatur notieren', 'Use a table to write down the temperature every day'),
+        t('Pensar si un video de ciencia dice la verdad', 'Überlegen, ob ein Wissenschaftsvideo die Wahrheit sagt', 'Think about whether a science video tells the truth')
+    ],
+    individuos: [
+        t('Buscar mi barrio en un mapa en línea', 'Mein Viertel auf einer Online-Karte suchen', 'Find my neighbourhood on an online map'),
+        t('Hacer con mi grupo una entrevista a un familiar', 'Mit meiner Gruppe ein Familienmitglied interviewen', 'Interview a family member with my group'),
+        t('Hacer un mapa de mi barrio en PowerPoint', 'Eine Karte meines Viertels in PowerPoint machen', 'Make a map of my neighbourhood in PowerPoint'),
+        t('No publicar la dirección de mi casa', 'Meine Adresse nicht veröffentlichen', 'Not posting my home address'),
+        t('Ordenar fotos viejas de Barranquilla en una línea de tiempo', 'Alte Fotos von Barranquilla auf einem Zeitstrahl ordnen', 'Put old photos of Barranquilla on a timeline'),
+        t('Pensar qué cuentan las noticias de mi ciudad', 'Überlegen, was die Nachrichten über meine Stadt erzählen', 'Think about what the news says about my city')
+    ],
+    matematicas: [
+        t('Buscar un video que explique las fracciones y guardar el enlace', 'Ein Video suchen, das Brüche erklärt, und den Link speichern', 'Find a video that explains fractions and save the link'),
+        t('Resolver un problema con mi grupo en Teams', 'Mit meiner Gruppe in Teams eine Aufgabe lösen', 'Solve a problem with my group in Teams'),
+        t('Hacer una gráfica de barras en Excel', 'In Excel ein Balkendiagramm machen', 'Make a bar chart in Excel'),
+        t('Practicar en una app de matemáticas con la cuenta del colegio', 'Mit dem Schulkonto in einer Mathe-App üben', 'Practise in a maths app with my school account'),
+        t('Revisar mis cuentas con la calculadora', 'Meine Rechnungen mit dem Taschenrechner prüfen', 'Check my sums with the calculator'),
+        t('Pensar si un anuncio de «50 % de descuento» es verdad', 'Überlegen, ob eine Werbung mit „50 % Rabatt“ stimmt', 'Think about whether a “50 % off” ad is true')
+    ],
+    musica: [
+        t('Buscar el sonido de los instrumentos en una página del colegio', 'Den Klang der Instrumente auf einer Schulseite suchen', 'Find what the instruments sound like on a school page'),
+        t('Ensayar una canción con mi grupo y compartirla en Teams', 'Mit meiner Gruppe ein Lied üben und in Teams teilen', 'Rehearse a song with my group and share it in Teams'),
+        t('Crear un ritmo en Chrome Music Lab', 'In Chrome Music Lab einen Rhythmus erstellen', 'Create a rhythm in Chrome Music Lab'),
+        t('Usar audífonos sin subir mucho el volumen', 'Kopfhörer benutzen, ohne die Lautstärke zu hoch zu stellen', 'Use headphones without turning the volume up too high'),
+        t('Grabar mi canción otra vez si algo salió mal', 'Mein Lied noch einmal aufnehmen, wenn etwas schiefging', 'Record my song again if something went wrong'),
+        t('Pensar cómo la música de un anuncio nos hace sentir', 'Überlegen, wie die Musik einer Werbung auf uns wirkt', 'Think about how the music in an ad makes us feel')
+    ],
+    arte: [
+        t('Buscar pinturas famosas en la página de un museo', 'Berühmte Gemälde auf der Seite eines Museums suchen', 'Find famous paintings on a museum website'),
+        t('Hacer un mural digital con mi grupo', 'Mit meiner Gruppe ein digitales Wandbild machen', 'Make a digital mural with my group'),
+        t('Hacer un collage con colores primarios en Paint', 'In Paint eine Collage mit Grundfarben machen', 'Make a collage with primary colours in Paint'),
+        t('Pedir permiso antes de usar la foto de un compañero', 'Fragen, bevor ich das Foto eines Mitschülers benutze', 'Ask before using a classmate’s photo'),
+        t('Deshacer un paso cuando el dibujo no me gusta', 'Einen Schritt rückgängig machen, wenn mir das Bild nicht gefällt', 'Undo a step when I don’t like my drawing'),
+        t('Pensar si una imagen fue cambiada con un programa', 'Überlegen, ob ein Bild mit einem Programm verändert wurde', 'Think about whether a picture was changed with a program')
+    ],
+    mint_sach: [
+        t('Buscar qué comen los insectos en una página para niños', 'Auf einer Kinderseite suchen, was Insekten fressen', 'Find out what insects eat on a kids’ page'),
+        t('Anotar con mi grupo cómo crecen nuestras semillas', 'Mit meiner Gruppe notieren, wie unsere Samen wachsen', 'Write down with my group how our seeds grow'),
+        t('Tomar fotos de mi planta cada semana', 'Jede Woche Fotos von meiner Pflanze machen', 'Take photos of my plant every week'),
+        t('Cuidar la tableta del salón y cerrar sesión', 'Auf das Klassen-Tablet aufpassen und mich abmelden', 'Look after the class tablet and sign out'),
+        t('Medir y anotar cuánto creció la planta', 'Messen und notieren, wie viel die Pflanze gewachsen ist', 'Measure and write down how much the plant grew'),
+        t('Pensar qué pasaría si no hubiera abejas', 'Überlegen, was passieren würde, wenn es keine Bienen gäbe', 'Think about what would happen if there were no bees')
+    ],
+    deportes: [
+        t('Buscar ejercicios de calentamiento en una página confiable', 'Aufwärmübungen auf einer verlässlichen Seite suchen', 'Find warm-up exercises on a reliable website'),
+        t('Organizar con mi equipo los turnos del juego', 'Mit meinem Team die Spielreihenfolge planen', 'Plan the game turns with my team'),
+        t('Grabar un video corto de mi salto, con permiso', 'Mit Erlaubnis ein kurzes Video von meinem Sprung aufnehmen', 'Record a short video of my jump, with permission'),
+        t('Usar la tableta poco tiempo y moverme más', 'Das Tablet nur kurz benutzen und mich mehr bewegen', 'Use the tablet for a short time and move more'),
+        t('Usar el cronómetro para medir mi carrera', 'Mit der Stoppuhr meinen Lauf messen', 'Use the stopwatch to time my run'),
+        t('Pensar si lo que hacen los deportistas en los videos es seguro para mí', 'Überlegen, ob das, was Sportler in Videos machen, für mich sicher ist', 'Think about whether what athletes do in videos is safe for me')
+    ]
+};
+
+const SIMPLE_MEDIENPASS_ABOUT = t(
+    'El Medienpass es un cuaderno de retos. Te ayuda a usar bien el computador y la tableta en todas las materias.',
+    'Der Medienpass ist ein Heft mit Challenges. Er hilft dir, Computer und Tablet in allen Fächern gut zu nutzen.',
+    'The Medienpass is a challenge workbook. It helps you use the computer and tablet well in every subject.');
+const SIMPLE_VALIDATION_ABOUT = t(
+    'Haces el reto, ganas estrellas y tu profesor revisa tu trabajo.',
+    'Du machst die Challenge, bekommst Sterne und deine Lehrkraft prüft deine Arbeit.',
+    'You do the challenge, earn stars and your teacher checks your work.');
+
+// Ejemplos sencillos de una materia (una materia nueva usa los generales)
+function simpleExamplesOf(subjectId) {
+    return SIMPLE_EXAMPLES[subjectId] || reto0PackOf(subjectId).examples;
+}
+
+function simpleAiSafety(subjectId) {
+    const n = subjectNames(subjectId);
+    const base = aiSafety(subjectId);
+    return {
+        ...base,
+        text: t(`Un chat de inteligencia artificial puede ayudarte en ${n.es}, pero a veces se equivoca. Revisa lo que dice, no le des tus datos y cuenta que lo usaste.`,
+            `Ein KI-Chat kann dir in ${n.de} helfen, aber manchmal irrt er sich. Prüfe, was er sagt, gib ihm keine Daten und sag, dass du ihn benutzt hast.`,
+            `An artificial intelligence chat can help you in ${n.en}, but sometimes it is wrong. Check what it says, don’t give it your details and say that you used it.`),
+        question: t(`En ${n.es} quieres usar un chat de inteligencia artificial. ¿Qué es lo correcto?`,
+            `In ${n.de} willst du einen Chat mit künstlicher Intelligenz benutzen. Was ist richtig?`,
+            `In ${n.en} you want to use an artificial intelligence chat. What is right?`),
+        right: t('Usarlo como ayuda, revisar lo que dice y contarle a mi profesor', 'Ihn als Hilfe nutzen, prüfen, was er sagt, und es meiner Lehrkraft sagen', 'Use it as help, check what it says and tell my teacher'),
+        wrong: [
+            t('Copiar lo que dice y entregarlo como mío', 'Abschreiben, was er sagt, und es als meins abgeben', 'Copy what it says and hand it in as mine'),
+            t('Escribirle mi nombre completo y mi dirección', 'Ihm meinen vollen Namen und meine Adresse schreiben', 'Type in my full name and address')
+        ]
+    };
+}
+
+// Las 10 preguntas del Reto 0 con frases cortas (mismos ids y posiciones que buildReto0Questions)
+function buildSimpleReto0Questions(subjectId) {
+    const base = buildReto0Questions(subjectId);
+    const n = subjectNames(subjectId);
+    const examples = simpleExamplesOf(subjectId);
+    const pack = reto0PackOf(subjectId);
+    const keep = (q, changes) => ({ ...q, ...changes, options: placeOptions(changes.right, changes.wrong, q.options.findIndex(o => o.correct)) });
+    return base.map((q, i) => {
+        if (i === 0) return keep(q, {
+            label: t(`¿Qué es el Medienpass en ${n.es}?`, `Was ist der Medienpass in ${n.de}?`, `What is the Medienpass in ${n.en}?`),
+            right: t(`Un cuaderno de retos para usar bien el computador, también en ${n.es}`, `Ein Heft mit Challenges, um den Computer gut zu nutzen, auch in ${n.de}`, `A challenge workbook for using the computer well, in ${n.en} too`),
+            wrong: [t(`Un examen de ${n.es}`, `Eine Prüfung in ${n.de}`, `A ${n.en} test`), t('Un juego para el recreo', 'Ein Spiel für die Pause', 'A game for break time')],
+            practice_explanation: SIMPLE_MEDIENPASS_ABOUT
+        });
+        if (i === 1) return keep(q, {
+            label: t(`Terminaste un reto de ${n.es}. ¿Qué pasa después?`, `Du hast eine Challenge in ${n.de} geschafft. Was passiert dann?`, `You finished a ${n.en} challenge. What happens next?`),
+            right: t('Mi profesor revisa mi trabajo y gano estrellas', 'Meine Lehrkraft prüft meine Arbeit und ich bekomme Sterne', 'My teacher checks my work and I earn stars'),
+            wrong: [t('El reto se borra solo', 'Die Challenge löscht sich von selbst', 'The challenge deletes itself'), t('Nadie lo mira', 'Niemand schaut es an', 'Nobody looks at it')],
+            practice_explanation: SIMPLE_VALIDATION_ABOUT
+        });
+        if (i >= 2 && i <= 7) {
+            const c = i - 2;
+            const comp = SIMPLE_COMPETENCES[c];
+            return keep(q, {
+                label: t(`En ${n.es}, ¿qué actividad es de «${comp.name.es}»?`, `Welche Aktivität in ${n.de} gehört zu „${comp.name.de}“?`, `In ${n.en}, which activity is about “${comp.name.en}”?`),
+                right: examples[c],
+                wrong: [examples[(c + 2) % 6], examples[(c + 4) % 6]],
+                practice_explanation: t(`${KMK_COMPETENCES[c].icon} ${comp.name.es}: ${examples[c].es}.`, `${KMK_COMPETENCES[c].icon} ${comp.name.de}: ${examples[c].de}.`, `${KMK_COMPETENCES[c].icon} ${comp.name.en}: ${examples[c].en}.`)
+            });
+        }
+        if (i === 8) return q; // caso de seguridad de la materia: ya es una situación concreta
+        const ai = simpleAiSafety(subjectId);
+        return keep(q, { label: ai.question, right: ai.right, wrong: ai.wrong, practice_explanation: ai.text });
+    }).map(q => { delete q.right; delete q.wrong; return q; });
+}
+
+// Diapositivas 4 y 5 con nombres cortos de las competencias y los ejemplos sencillos
+function getSimpleReto0Study(subjectId) {
+    const pack = reto0PackOf(subjectId);
+    const examples = simpleExamplesOf(subjectId);
+    return {
+        subjectName: subjectNames(subjectId),
+        simple: true,
+        examples: KMK_COMPETENCES.map((comp, i) => ({ icon: comp.icon, competence: SIMPLE_COMPETENCES[i].name, text: examples[i], ai: SIMPLE_COMPETENCES[i].ai })),
+        safety: [...pack.safety, simpleAiSafety(subjectId)].map(s => ({ title: s.title, text: s.text }))
+    };
+}
+
+module.exports = { KMK_COMPETENCES, reto0Packs, buildReto0Questions, getReto0Study, isSimpleGrade, buildSimpleReto0Questions, getSimpleReto0Study, SIMPLE_EXAMPLES };
+

@@ -59,6 +59,7 @@ async function startTestServer(cachePath, rolesFile) {
             PORT: String(port),
             SUPABASE_URL: '',
             SUPABASE_ANON_KEY: '',
+            PHIDIAS_BASE_URL: '', PHIDIAS_TOKEN: '', // sin red: Phidias no se consulta en las pruebas
             COOKIE_SECRET,
             LOCAL_ACTIVITY_CACHE_FILE: cachePath,
             TEACHER_ROLES_FILE: rolesFile

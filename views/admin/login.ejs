@@ -155,6 +155,7 @@ const profileInfo = {
                 <span><i class="fas <%= info.icon %>"></i> <span data-i18n="adm_role_<%= profile %>"><%= locals.t('adm_role_' + profile) %></span></span>
                 <a href="/admin/login"><span data-i18n="adm_login_cambiar_perfil"><%= locals.t('adm_login_cambiar_perfil') %></span></a>
             </div>
+            <%- include('../partials/ms-signin', { href: '/auth/microsoft?as=admin&perfil=' + profile, note: 'sso_nota_panel', orKey: 'sso_o_con_documento' }) %>
             <form method="POST" action="/admin/login">
                 <input type="hidden" name="profile" value="<%= profile %>">
                 <div class="field">

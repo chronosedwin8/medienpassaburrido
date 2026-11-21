@@ -44,4 +44,17 @@ function segmentOfMappingKey(key) {
     return info ? info.segment : null;
 }
 
-module.exports = { SEGMENTS, classInfo, isVisualClass, questionGrade, segmentOfMappingKey };
+// Nombre con el que una clase aparece en la lista de ingreso: "5C" -> "K5C"; sin nivel, igual
+function loginClassName(className) {
+    const info = classInfo(className);
+    return info ? info.key : String(className || '').trim();
+}
+
+// Formas en que la clase puede estar guardada en Supabase: "K5C" -> ["K5C", "5C"]
+function classNameVariants(className) {
+    const info = classInfo(className);
+    if (!info) return [String(className || '').trim()];
+    return info.letter ? [info.key, `${info.grade}${info.letter}`] : [info.key];
+}
+
+module.exports = { SEGMENTS, classInfo, isVisualClass, questionGrade, segmentOfMappingKey, loginClassName, classNameVariants };

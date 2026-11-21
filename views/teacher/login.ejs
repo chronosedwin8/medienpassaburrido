@@ -99,6 +99,7 @@
         <% } %>
 
         <div class="reg-section" style="margin-top: 10px;">
+            <%- include('../partials/ms-signin', { href: '/auth/microsoft?as=teacher', note: 'sso_nota_docente', orKey: 'sso_o_con_documento' }) %>
             <form action="/teacher/login" method="POST" id="loginForm" onsubmit="return validateForm()">
                 <div class="tl-form-group">
                     <label><i class="fas fa-envelope"></i> <span data-i18n="teacherEmail">Correo Electrónico Institucional</span></label>

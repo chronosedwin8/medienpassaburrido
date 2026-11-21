@@ -10,6 +10,9 @@ const { normalizeCustomQuestions } = require('../services/instrument_store');
 const LANGS = ['es', 'de', 'en'];
 const RETOS = [1, 2, 3, 4, 5, 6];
 const K3_GRADES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+// Tecnología y Deportes tienen preguntas propias desde K7; de K3 a K6 todas las materias usan las de
+// Primaria (data_questions_primary.js)
+const K7_GRADES = [7, 8, 9, 10, 11, 12];
 const activity = (n, subject) => allActivities[String(n)].find(a => a.id === `reto${n}_${subject}`);
 const radios = list => list.filter(item => item.type === 'radio_group');
 const optionText = (option, lang) => option[lang] || (option.label && option.label[lang]);
@@ -142,7 +145,7 @@ function testTechnologyPlatforms() {
     RETOS.forEach(n => {
         const tech = activity(n, 'tecnologia');
         const reference = radios(activity(n, 'aleman').evidence_k5);
-        K3_GRADES.forEach(g => {
+        K7_GRADES.forEach(g => {
             const questions = radios(tech[`evidence_k${g}`]);
             questions.forEach((q, i) => {
                 assert.strictEqual(q.kmk, reference[i].kmk, `tecnologia reto ${n} q${i + 1}: same KMK sub-competence`);
@@ -152,10 +155,10 @@ function testTechnologyPlatforms() {
                 assert.ok(TECHNOLOGY_PLATFORMS.some(p => textOf(q).includes(p)), `tecnologia reto ${n} q${i + 1} is set in a platform`);
             });
         });
-        const inReto = TECHNOLOGY_PLATFORMS.filter(p => radios(tech.evidence_k5).some(q => textOf(q).includes(p)));
+        const inReto = TECHNOLOGY_PLATFORMS.filter(p => radios(tech.evidence_k7).some(q => textOf(q).includes(p)));
         assert.ok(inReto.length >= 4, `tecnologia reto ${n} mixes platforms (${inReto.join(', ')})`);
         inReto.forEach(p => seen.add(p));
-        const all = JSON.stringify([tech.evidence_k5, tech.evidence_k2, tech.evidenceExample]);
+        const all = JSON.stringify([tech.evidence_k5, tech.evidence_k7, tech.evidence_k2, tech.evidenceExample]);
         assert.ok(!/MakeCode|micro:bit|Tinkercad|seguidor de línea/.test(all), `tecnologia reto ${n}: the old robot content is gone`);
         if (JSON.stringify(tech.evidence_k2).includes('codeSpark')) visualWithCodeSpark++;
     });
@@ -168,7 +171,7 @@ function testTechnologyPlatforms() {
     const rpo = /Ready Player One|OASIS|Halliday|Parzival|Art3mis|Aech|IOI|gunters|easter egg/;
     [1, 2, 3].forEach(n => {
         const tech = activity(n, 'tecnologia');
-        radios(tech.evidence_k5).forEach((q, i) => assert.ok(rpo.test(textOf(q)), `tecnologia reto ${n} q${i + 1} uses the Ready Player One theme`));
+        radios(tech.evidence_k7).forEach((q, i) => assert.ok(rpo.test(textOf(q)), `tecnologia reto ${n} q${i + 1} uses the Ready Player One theme`));
         LANGS.forEach(lang => assert.ok(tech.theme && /OASIS/.test(tech.theme[lang]), `tecnologia reto ${n}: OASIS mission intro (${lang})`));
     });
     assert.ok([4, 5, 6].every(n => !activity(n, 'tecnologia').theme) && !activity(1, 'matematicas').theme, 'Only Technology retos 1-3 have the theme');
@@ -184,7 +187,7 @@ function testSportsAreas() {
     RETOS.forEach(n => {
         const sport = activity(n, 'deportes');
         const reference = radios(activity(n, 'aleman').evidence_k5);
-        K3_GRADES.forEach(g => {
+        K7_GRADES.forEach(g => {
             radios(sport[`evidence_k${g}`]).forEach((q, i) => {
                 const own = SPORTS_QUESTIONS[n][i + 1];
                 assert.strictEqual(q.label.es, own.label.es, `deportes reto ${n} q${i + 1}: its own question`);
@@ -273,7 +276,55 @@ function testArtificialIntelligence() {
     console.log('✅ Artificial intelligence: each KMK competence has its AI dimension and every challenge 0-6 has an AI question in every subject');
 }
 
+// Retos 1-6 de Primaria (K3 a K6): más sencillos, con la dificultad que sube poco a poco.
+// Mismos identificadores, subcompetencia KMK, pregunta de IA y posición de la respuesta correcta que
+// la versión anterior; K3 = K4 y K5 = K6; K3 distinto de K5 y K5 distinto de K7; K7 = K12.
+function testPrimaryRetos() {
+    const legacy = require('./fixtures/legacy_correct_positions.json');
+    const { isPrimaryGrade } = require('../data_questions_primary');
+    assert.ok([3, 4, 5, 6].every(isPrimaryGrade) && !isPrimaryGrade(2) && !isPrimaryGrade(7));
+    const textOf = q => JSON.stringify([q.label, q.options.map(o => [o.es, o.de, o.en])]);
+    subjects.forEach(({ id }) => {
+        RETOS.forEach(n => {
+            const act = activity(n, id);
+            const reference = radios(act.evidence_k7);
+            const byGrade = {};
+            K3_GRADES.forEach(g => {
+                const items = act[`evidence_k${g}`];
+                const qs = radios(items);
+                byGrade[g] = qs.map(textOf).join('|');
+                qs.forEach((q, i) => {
+                    assert.strictEqual(q.id, `r${n}_${id}_k${g}_q${i + 1}`, `${id} reto ${n} K${g} q${i + 1}: id`);
+                    assert.strictEqual(q.kmk, reference[i].kmk, `${id} reto ${n} K${g} q${i + 1}: KMK`);
+                    assert.strictEqual(!!q.ai, !!reference[i].ai, `${id} reto ${n} K${g} q${i + 1}: AI question`);
+                    assert.strictEqual(q.options.findIndex(o => o.correct), legacy[`r${n}q${i + 1}`],
+                        `${id} reto ${n} K${g} q${i + 1}: the right answer keeps its position`);
+                    assert.ok(q.hint && LANGS.every(l => q.hint[l] && q.label[l] && q.options.every(o => o[l])), `${id} reto ${n} K${g} q${i + 1}: 3 languages`);
+                    assert.ok(items.some(it => it.id === `${q.id}_explain`), `${id} reto ${n} K${g} q${i + 1}: explanation field`);
+                });
+            });
+            assert.strictEqual(byGrade[3], byGrade[4], `${id} reto ${n}: K3 = K4`);
+            assert.strictEqual(byGrade[5], byGrade[6], `${id} reto ${n}: K5 = K6`);
+            assert.notStrictEqual(byGrade[3], byGrade[5], `${id} reto ${n}: K3 differs from K5`);
+            assert.notStrictEqual(byGrade[5], byGrade[7], `${id} reto ${n}: K5 differs from K7`);
+            assert.strictEqual(byGrade[7], byGrade[12], `${id} reto ${n}: K7 = K12 (secondary unchanged)`);
+        });
+    });
+    // Ninguna materia repite enunciado ni grupo de opciones en K3 (en K5 lo revisa testNoRepetitionBetweenSubjects)
+    RETOS.forEach(n => {
+        for (let q = 0; q < 6; q++) {
+            LANGS.forEach(lang => {
+                const questions = subjects.map(({ id }) => radios(activity(n, id).evidence_k3)[q]);
+                assertAllDifferent(questions.map(item => item.label[lang]), `reto ${n} K3 q${q + 1} (${lang}) text`);
+                assertAllDifferent(questions.map(item => item.options.map(o => optionText(o, lang)).join(' | ')), `reto ${n} K3 q${q + 1} (${lang}) options`);
+            });
+        }
+    });
+    console.log('✅ Primary retos 1-6 (K3-K6): simpler, same ids, KMK, AI question and answer positions; K3=K4, K5=K6, K7-K12 unchanged');
+}
+
 testEverySubjectHasItsRetos();
+testPrimaryRetos();
 testNoRepetitionBetweenSubjects();
 testTemplatesAreComplete();
 testAgentToolsPerSubject();

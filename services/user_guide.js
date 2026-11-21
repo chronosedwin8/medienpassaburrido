@@ -13,6 +13,7 @@ const TABS = [
         sections: [
             { id: 'dev_perfiles', icon: 'fa-user-shield', steps: 3, link: '/admin#administracion/docentes' },
             { id: 'dev_estudiantes', icon: 'fa-user-graduate', steps: 2, link: '/admin#administracion/estudiantes' },
+            { id: 'dev_phidias', icon: 'fa-arrows-rotate', steps: 3, link: '/admin/phidias' },
             { id: 'dev_docentes', icon: 'fa-user-tie', steps: 3, link: '/admin#administracion/docentes' },
             { id: 'dev_materias', icon: 'fa-book-open', steps: 2, link: '/admin#administracion/materias' },
             { id: 'dev_anio', icon: 'fa-calendar-days', steps: 3, link: '/admin#administracion/anio' },
@@ -44,6 +45,7 @@ const TABS = [
             { id: 'doc_test', icon: 'fa-clipboard-check', steps: 2, link: '/teacher/evaluation' },
             { id: 'doc_modo_estudiante', icon: 'fa-pen-to-square', steps: 6, link: '/teacher/student-preview' },
             { id: 'doc_seguimiento', icon: 'fa-chart-line', steps: 4, link: '/teacher/progress' },
+            { id: 'doc_asignaciones', icon: 'fa-list-check', steps: 3, link: '/teacher/assignments' },
             { id: 'doc_ayuda', icon: 'fa-circle-question', steps: 2, link: '/teacher/troubleshooting' }
         ]
     },

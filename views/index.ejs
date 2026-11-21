@@ -81,58 +81,69 @@
         </dl>
     </section>
 
+    <!-- ═══ Actividades asignadas por los docentes (GET /api/student/assignments) ═══ -->
+    <% const myAssignments = typeof assignedActivities !== 'undefined' ? assignedActivities : []; %>
+    <% if (myAssignments.length) { %>
+    <section class="assigned-box" aria-labelledby="assignedTitle">
+        <h2 id="assignedTitle"><i class="fas fa-list-check" aria-hidden="true"></i> <span data-i18n="est_asig_titulo"><%= locals.t('est_asig_titulo') %></span></h2>
+        <div class="assigned-list">
+            <% myAssignments.forEach(a => { const done = a.retos.every(r => r.status === 'won'); %>
+            <article class="assigned-card <%= done ? 'is-done' : '' %>">
+                <header>
+                    <strong><%= a.title %></strong>
+                    <% if (a.due_date) { %><span class="assigned-due"><i class="fas fa-calendar" aria-hidden="true"></i> <span data-i18n="est_asig_hasta"><%= locals.t('est_asig_hasta') %></span> <%= a.due_date %></span><% } %>
+                </header>
+                <% if (a.note) { %><p class="assigned-note"><%= a.note %></p><% } %>
+                <div class="assigned-retos">
+                    <% a.retos.forEach(r => { %>
+                    <a class="assigned-reto st-<%= r.status %>" href="<%= r.href %>" data-assign-subject="<%= a.subject %>">
+                        <span><%= r.status === 'won' ? '✅' : r.status === 'started' ? '🟡' : '⏳' %></span>
+                        <span><%= r.reto === 0 ? locals.t('est_idx_reto_0_este_soy_yo') : locals.t('est_idx_reto_' + r.reto) %></span>
+                    </a>
+                    <% }) %>
+                </div>
+                <% if (a.by) { %><small class="assigned-by"><span data-i18n="est_asig_por"><%= locals.t('est_asig_por') %></span> <%= a.by %></small><% } %>
+            </article>
+            <% }) %>
+        </div>
+    </section>
+    <% } %>
+
     <!-- ═══ Subject Dropdown Selector ═══ -->
     <div class="large-subject-select-container">
         <label for="subjectCombo" class="subject-combo-label">
             <i class="fas fa-graduation-cap"></i> <span data-i18n="selectSubjectLabel">SELECCIONA LA ASIGNATURA A TRABAJAR</span>
         </label>
         <select id="subjectCombo" class="large-subject-combo">
-            <option value="" disabled selected data-i18n-option="selectSubjectPlaceholder" data-i18n-option="est_idx_selecciona_la_asignatura_a_trabajar"><%= locals.t('est_idx_selecciona_la_asignatura_a_trabajar') %></option>
-            <% if (typeof subjects !== 'undefined' && subjects) { %>
-                <% subjects.filter(sub => sub.active !== false).forEach(sub => { %>
-                    <% const isEnabled = (typeof enabledSubjects !== 'undefined' && enabledSubjects[sub.id] === false) ? false : true; %>
-                    <option value="<%= sub.id %>" <%= !isEnabled ? 'disabled' : '' %> data-names='<%- JSON.stringify(sub.name).replace(/'/g, "&#39;") %>' data-icon="<%= sub.icon %>">
-                        <%= sub.icon %> <%= sub.name.es %> <%= !isEnabled ? '(No habilitada)' : '' %>
-                    </option>
-                <% }); %>
-            <% } %>
+            <option value="" disabled selected data-i18n-option="est_idx_selecciona_la_asignatura_a_trabajar"><%= locals.t('est_idx_selecciona_la_asignatura_a_trabajar') %></option>
+            <% (subjects || []).filter(sub => sub.active !== false).forEach(sub => { %>
+                <% const isEnabled = !(enabledSubjects && enabledSubjects[sub.id] === false); %>
+                <option value="<%= sub.id %>" <%= !isEnabled ? 'disabled' : '' %> data-names='<%- JSON.stringify(sub.name).replace(/'/g, "&#39;") %>' data-icon="<%= sub.icon %>">
+                    <%= sub.icon %> <%= sub.name.es %> <%= !isEnabled ? '(No habilitada)' : '' %>
+                </option>
+            <% }); %>
         </select>
     </div>
 
     <!-- Placeholder when no subject is selected -->
-        <div id="noSubjectSelectedPlaceholder" class="no-subject-placeholder">
-            <div class="placeholder-icon">📚</div>
-            <p class="placeholder-main" data-i18n="noSubjectSelectedMain">Por favor selecciona la asignatura en la que vas a trabajar.</p>
-            <p class="placeholder-sub" data-i18n="noSubjectSelectedSub">Bitte wähle das Fach aus, an dem du arbeiten möchtest.</p>
-        </div>
-        <!-- Combo de retos -->
-        <div class="challenge-combo-container" id="retoComboContainer" style="display: none; margin-top: 30px;">
-            <label for="retoCombo" class="subject-combo-label">
-                <i class="fas fa-bullseye"></i> <span data-i18n="selectChallengeLabel">SELECCIONA EL RETO A TRABAJAR</span>
-            </label>
-            <select id="retoCombo" class="large-subject-combo">
-                <option value="" disabled selected data-i18n-option="selectChallengePlaceholder" data-i18n-option="est_idx_selecciona_el_reto_a_trabajar"><%= locals.t('est_idx_selecciona_el_reto_a_trabajar') %></option>
-                <option value="0" data-i18n-option="reto0ComboTitle" data-i18n-option="est_idx_reto_0_este_soy_yo"><%= locals.t('est_idx_reto_0_este_soy_yo') %></option>
-                <option value="1" data-i18n-option="est_idx_reto_1"><%= locals.t('est_idx_reto_1') %></option>
-                <option value="2" data-i18n-option="est_idx_reto_2"><%= locals.t('est_idx_reto_2') %></option>
-                <option value="3" data-i18n-option="est_idx_reto_3"><%= locals.t('est_idx_reto_3') %></option>
-                <option value="4" data-i18n-option="est_idx_reto_4"><%= locals.t('est_idx_reto_4') %></option>
-                <option value="5" data-i18n-option="est_idx_reto_5"><%= locals.t('est_idx_reto_5') %></option>
-                <option value="6" data-i18n-option="est_idx_reto_6"><%= locals.t('est_idx_reto_6') %></option>
-            </select>
-        </div>
+    <div id="noSubjectSelectedPlaceholder" class="no-subject-placeholder">
+        <div class="placeholder-icon">📚</div>
+        <p class="placeholder-main" data-i18n="noSubjectSelectedMain">Por favor selecciona la asignatura en la que vas a trabajar.</p>
+        <p class="placeholder-sub" data-i18n="noSubjectSelectedSub">Bitte wähle das Fach aus, an dem du arbeiten möchtest.</p>
+    </div>
 
-    <!-- ═══ Challenges Container ═══ -->
-    <div class="challenges-grid" id="challengesContainer" style="display: none;">
-        <!-- Reto 0: Este soy yo -->
-        <div class="challenge-card-wrapper" id="wrapper-reto-0" style="display: none; width: 100%;">
-            <div class="challenge-subpanel" id="subpanel-reto-0" style="display: block; width: 100%;">
-                <div class="subpanel-content" style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+    <!-- ═══ Retos 0 a 6 de la materia elegida: siempre visibles, sin segundo combo ═══ -->
+    <%# Cada reto de cada materia ya está en el HTML (enlace directo): mostrarlos solo depende de
+        elegir la materia. El servidor envía de cada reto solo { id, level, subject, fields } (slimActivity). %>
+    <div class="challenges-grid all-retos" id="challengesContainer" style="display: none;">
+        <div class="challenge-card-wrapper" id="wrapper-reto-0">
+            <div class="challenge-subpanel" id="subpanel-reto-0">
+                <div class="subpanel-content">
                     <a href="/profile" class="pastel-sub-activity-btn" id="card-profile">
                         <div class="sub-btn-content">
                             <span class="sub-btn-icon">👤</span>
                             <div class="sub-btn-info">
-                                <span class="sub-btn-title" data-i18n="reto0Title">Este soy yo / Das bin ich</span>
+                                <span class="sub-btn-title"><span data-i18n="est_idx_reto_0_este_soy_yo"><%= locals.t('est_idx_reto_0_este_soy_yo') %></span></span>
                                 <span class="sub-btn-progress-text" id="status-reto-0"><span data-i18n="est_idx_pendiente"><%= locals.t('est_idx_pendiente') %></span></span>
                             </div>
                         </div>
@@ -144,25 +155,19 @@
             </div>
         </div>
 
-        <!-- Retos 1-6 -->
         <% for (let lvl = 1; lvl <= 6; lvl++) { %>
-            <% 
-               let allActsAtLvl = allResolvedActivities[lvl] || [];
-               const techActsAtLvl = (typeof tecnologiaActivities !== 'undefined' ? tecnologiaActivities : []).filter(a => String(a.level) === String(lvl));
-               allActsAtLvl = [...allActsAtLvl, ...techActsAtLvl];
-            %>
-            <div class="challenge-card-wrapper" id="wrapper-reto-<%= lvl %>" style="display: none; width: 100%;">
-                <div class="challenge-subpanel" id="subpanel-reto-<%= lvl %>" style="display: block; width: 100%;">
-                    <div class="subpanel-content" style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
-                        <% allActsAtLvl.forEach(activity => { %>
-                            <a href="<%= activity.subject === 'tecnologia' ? '/tecnologia/' + activity.id : '/activity/' + currentYear + '/' + activity.id %>" 
-                               class="pastel-sub-activity-btn" 
+            <div class="challenge-card-wrapper" id="wrapper-reto-<%= lvl %>">
+                <div class="challenge-subpanel" id="subpanel-reto-<%= lvl %>">
+                    <div class="subpanel-content">
+                        <% (retoCards[lvl] || []).forEach(activity => { %>
+                            <a href="/activity/<%= currentYear %>/<%= activity.id %>"
+                               class="pastel-sub-activity-btn"
                                id="card-<%= activity.id %>"
-                               data-subject="<%= activity.subject %>">
+                               data-subject="<%= activity.subject %>" style="display: none;">
                                 <div class="sub-btn-content">
                                     <span class="sub-btn-icon"><%= activity.icon || '📝' %></span>
                                     <div class="sub-btn-info">
-                                        <span class="sub-btn-title" data-lang-content='<%- JSON.stringify(typeof activity.title === "object" ? activity.title : { es: activity.title, de: activity.title, en: activity.title }).replace(/'/g, "&#39;") %>'><%= (typeof activity.title === "object" ? (activity.title.es || activity.title.de || activity.title.en) : activity.title) %></span>
+                                        <span class="sub-btn-title"><span data-lang-content='<%- JSON.stringify(activity.title).replace(/'/g, "&#39;") %>'><%= activity.title[locals.lang] || activity.title.es %></span></span>
                                         <span class="sub-btn-progress-text" id="text-<%= activity.id %>"><span data-i18n="est_idx_sin_iniciar"><%= locals.t('est_idx_sin_iniciar') %></span></span>
                                     </div>
                                 </div>
@@ -177,311 +182,151 @@
         <% } %>
     </div>
 
+    <style>
+        .all-retos { display: none; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 24px; }
+        .all-retos.is-open { display: grid !important; }
+        .all-retos .challenge-card-wrapper, .all-retos .challenge-subpanel, .all-retos .subpanel-content { display: contents; }
+        .all-retos .pastel-sub-activity-btn { width: auto; max-width: none; margin: 0; }
+        .all-retos .reto-num { font-weight: 800; }
+        .assigned-box { margin: 18px 0 8px; padding: 18px; border-radius: 16px; background: #fff8e6; border: 1px solid #f5d27a; }
+        .assigned-box h2 { margin: 0 0 12px; font-size: 1.15em; display: flex; gap: 8px; align-items: center; }
+        .assigned-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+        .assigned-card { background: #fff; border: 1px solid #f0e2b6; border-radius: 12px; padding: 12px 14px; }
+        .assigned-card.is-done { border-color: #86efac; background: #f0fdf4; }
+        .assigned-card header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; }
+        .assigned-due { font-size: .85em; color: #92400e; font-weight: 600; }
+        .assigned-note { margin: 6px 0 0; font-size: .9em; color: #475569; }
+        .assigned-retos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .assigned-reto { display: inline-flex; gap: 6px; align-items: center; padding: 6px 10px; border-radius: 999px; border: 1px solid #e2e8f0; text-decoration: none; color: #111; font-size: .86em; font-weight: 600; background: #fff; }
+        .assigned-reto.st-won { border-color: #86efac; }
+        .assigned-reto.st-started { border-color: #fcd34d; }
+        .assigned-by { display: block; margin-top: 8px; color: #64748b; }
+        @media (max-width: 480px) { .all-retos { grid-template-columns: 1fr; } }
+    </style>
+
     <!-- ═══ Dashboard Script ═══ -->
     <script>
+        // localStorage / sessionStorage pueden estar bloqueados (modo privado, políticas del colegio):
+        // antes eso detenía el script y elegir la materia no hacía nada.
+        const safeStorage = {
+            get(store, key) { try { return window[store].getItem(key); } catch (e) { return null; } },
+            set(store, key, value) { try { window[store].setItem(key, value); } catch (e) { /* sin almacenamiento */ } }
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
             const subjectCombo = document.getElementById('subjectCombo');
-            const retoCombo = document.getElementById('retoCombo');
-            const retoComboContainer = document.getElementById('retoComboContainer');
             const placeholder = document.getElementById('noSubjectSelectedPlaceholder');
-            const activitiesData = <%- JSON.stringify(allActivities) %>;
-            const techActivitiesData = <%- JSON.stringify(tecnologiaActivities) %>;
-            const levelConfig = <%- JSON.stringify(levelConfig) %>;
-            const currentYear = '<%= currentYear %>';
-
-            // Store progress result globally
+            const container = document.getElementById('challengesContainer');
+            // Retos 1-6 de cada nivel, livianos: { id, level, subject, fields }
+            const retoIndex = <%- JSON.stringify(slimRetos) %>;
             window.latestProgressResult = <%- JSON.stringify(progress) %>;
-            // Reto 0 ganado por materia (lo calcula el servidor con la evaluación de cada materia)
             const reto0Status = <%- JSON.stringify(typeof reto0Status !== 'undefined' ? reto0Status : {}) %>;
+            // Avance del Reto 0 por materia (services/reto0_progress.js): { materia: { done, pct } }
+            const reto0Progress = <%- JSON.stringify(typeof reto0Progress !== 'undefined' ? reto0Progress : {}) %>;
+            const T = (key, fallback) => (window.t && window.t(key) !== key ? window.t(key) : fallback);
 
-            function getLevelActivities(lvl, selectedSubject) {
-                let lvlActs = activitiesData[lvl] || [];
-                if (selectedSubject === 'tecnologia') {
-                    const clonedActs = lvlActs.filter(a => a.subject === 'tecnologia');
-                    const techActs = techActivitiesData.filter(a => a.level === String(lvl));
-                    return [...clonedActs, ...techActs];
-                } else {
-                    return lvlActs.filter(a => a.subject === selectedSubject);
-                }
-            }
-
-            function isLevelCompleted(lvl, progress, selectedSubject) {
-                return getLevelCompletionPct(lvl, progress, selectedSubject) >= 100;
-            }
-
-            function getLevelCompletionPct(lvl, progress, selectedSubject) {
-                if (lvl === 0) {
-                    const prog = progress['profile'];
-                    if (!prog) return 0;
-                    let completed = 0;
-                    if (prog.fieldsCompleted > 0) completed = prog.fieldsCompleted;
-                    return Math.min(Math.round((completed / 4) * 100), 100);
-                }
-
-                let lvlActs = getLevelActivities(lvl, selectedSubject);
-
-                let totalCompleted = 0;
-                let totalFields = 0;
-
-                lvlActs.forEach(act => {
-                    const prog = progress[act.id];
-                    const fields = (act.evidence ? act.evidence.length : 0) + (act.competencies ? act.competencies.length : 0);
-                    totalFields += fields;
-                    if (prog) {
-                        totalCompleted += prog.fieldsCompleted;
-                    }
-                });
-
-                if (totalFields === 0) return 0;
-                return Math.min(Math.round((totalCompleted / totalFields) * 100), 100);
+            function retosOf(subject) {
+                const out = [];
+                for (let lvl = 1; lvl <= 6; lvl++) (retoIndex[lvl] || []).forEach(a => { if (a.subject === subject) out.push(a); });
+                return out;
             }
 
             function updateProgressLabels(progress) {
-                const selectedSubject = subjectCombo.value;
-                if (!selectedSubject) return;
+                const subject = subjectCombo.value;
+                if (!subject) return;
 
-                const lang = window.langUtils ? window.langUtils.getLang() : 'es';
-
-                // Reto 0: uno por materia (enlace y estado de la materia elegida)
+                // Reto 0: uno por materia, con el avance real de sus 5 paneles
                 const profileCard = document.getElementById('card-profile');
                 const status0 = document.getElementById('status-reto-0');
                 const fill0 = document.getElementById('btn-progress-fill-0');
-                const reto0Won = !!reto0Status[selectedSubject];
-                const pct0 = reto0Won ? 100 : getLevelCompletionPct(0, progress, selectedSubject);
+                const won0 = !!reto0Status[subject];
+                const r0 = reto0Progress[subject] || { done: 0, pct: 0 };
+                const pct0 = won0 ? 100 : r0.pct;
                 if (fill0) fill0.style.width = pct0 + '%';
-
                 if (profileCard) {
-                    profileCard.href = '/profile?subject=' + encodeURIComponent(selectedSubject);
+                    profileCard.href = '/profile?subject=' + encodeURIComponent(subject);
                     profileCard.classList.remove('sub-btn-completed', 'sub-btn-not-started');
                 }
-
                 if (status0) {
-                    if (reto0Won) {
-                        status0.textContent = window.t('est_idx_reto0_ganado');
+                    if (won0) {
+                        status0.textContent = T('est_idx_reto0_ganado', '¡Ganado!');
                         if (profileCard) profileCard.classList.add('sub-btn-completed');
-                    } else if (pct0 > 0) {
-                        status0.textContent = window.t('est_idx_reto0_en_curso');
+                    } else if (r0.done > 0) {
+                        status0.textContent = T('est_idx_reto0_en_curso', 'En curso') + ' · ' + r0.done + '/5';
                     } else {
-                        status0.textContent = lang === 'es' ? 'Pendiente' : lang === 'de' ? 'Ausstehend' : 'Pending';
+                        status0.textContent = T('est_idx_pendiente', 'Pendiente');
                         if (profileCard) profileCard.classList.add('sub-btn-not-started');
                     }
                 }
 
-                // Update Retos 1-6 Progress (no locking)
-                for (let lvl = 1; lvl <= 6; lvl++) {
-                    let lvlActs = getLevelActivities(lvl, selectedSubject);
-
-                    // Update each sub-button directly
-                    lvlActs.forEach(act => {
-                        const subBtn = document.getElementById('card-' + act.id);
-                        const subText = document.getElementById('text-' + act.id);
-                        const subFill = document.getElementById('bar-' + act.id);
-                        const prog = progress[act.id];
-
-                        if (subBtn) {
-                            subBtn.style.pointerEvents = 'auto';
-                            subBtn.style.opacity = '1';
-                            subBtn.classList.remove('sub-btn-completed', 'sub-btn-not-started');
-                        }
-
-                        if (prog && prog.fieldsCompleted > 0) {
-                            const total = (act.evidence ? act.evidence.length : 0) + (act.competencies ? act.competencies.length : 0);
-                            const actPct = Math.min(Math.round((prog.fieldsCompleted / total) * 100), 100);
-                            if (subFill) subFill.style.width = actPct + '%';
-                            if (subText) {
-                                if (actPct >= 100) {
-                                    subText.textContent = lang === 'es' ? 'Completado' : lang === 'de' ? 'Fertig' : 'Completed';
-                                    if (subBtn) subBtn.classList.add('sub-btn-completed');
-                                } else {
-                                    subText.textContent = actPct + '%';
-                                }
-                            }
-                        } else {
-                            if (subFill) subFill.style.width = '0%';
-                            if (subText) subText.textContent = lang === 'es' ? 'Sin iniciar' : lang === 'de' ? 'Nicht gestartet' : 'Not started';
-                            if (subBtn) subBtn.classList.add('sub-btn-not-started');
-                        }
-                    });
-                }
-            }
-
-            function applyRetoFilter(selectedReto) {
-                if (selectedReto === null || selectedReto === undefined || selectedReto === '') {
-                    document.getElementById('challengesContainer').style.display = 'none';
-                    return;
-                }
-
-                document.getElementById('challengesContainer').style.display = 'flex';
-
-                const selectedSubject = subjectCombo.value;
-
-                // Hide all reto wrappers
-                for (let lvl = 0; lvl <= 6; lvl++) {
-                    const wrapper = document.getElementById('wrapper-reto-' + lvl);
-                    if (wrapper) wrapper.style.display = 'none';
-                }
-
-                // Show only the selected reto wrapper if it's valid
-                const activeWrapper = document.getElementById('wrapper-reto-' + selectedReto);
-                if (activeWrapper) {
-                    if (selectedReto === '0') {
-                        activeWrapper.style.display = 'block';
+                retosOf(subject).forEach(act => {
+                    const btn = document.getElementById('card-' + act.id);
+                    const text = document.getElementById('text-' + act.id);
+                    const fill = document.getElementById('bar-' + act.id);
+                    const prog = progress[act.id];
+                    if (btn) btn.classList.remove('sub-btn-completed', 'sub-btn-not-started');
+                    if (prog && prog.fieldsCompleted > 0 && act.fields > 0) {
+                        const pct = Math.min(Math.round((prog.fieldsCompleted / act.fields) * 100), 100);
+                        if (fill) fill.style.width = pct + '%';
+                        if (text) text.textContent = pct >= 100 ? T('est_idx_completado', 'Completado') : pct + '%';
+                        if (btn && pct >= 100) btn.classList.add('sub-btn-completed');
                     } else {
-                        let lvlActs = getLevelActivities(selectedReto, selectedSubject);
-
-                        if (lvlActs.length > 0) {
-                            activeWrapper.style.display = 'block';
-                        }
+                        if (fill) fill.style.width = '0%';
+                        if (text) text.textContent = T('est_idx_sin_iniciar', 'Sin iniciar');
+                        if (btn) btn.classList.add('sub-btn-not-started');
                     }
-                }
+                });
             }
 
-            function updateRetoComboTexts() {
-                if (!retoCombo) return;
-                const lang = window.langUtils ? window.langUtils.getLang() : 'es';
-                const selectedSubject = subjectCombo ? subjectCombo.value : '';
-                const challengeWord = lang === 'de' ? 'Herausforderung' : lang === 'en' ? 'Challenge' : 'Reto';
-                const notAvailableWord = lang === 'de' ? '(Nicht verfügbar)' : lang === 'en' ? '(Not available)' : '(No disponible)';
-
-                const opt0 = retoCombo.querySelector('option[value="0"]');
-                if (opt0) {
-                    opt0.text = lang === 'de' ? 'Herausforderung 0: Das bin ich' : lang === 'en' ? 'Challenge 0: This is me' : 'Reto 0: Este soy yo';
-                }
-
-                for (let lvl = 1; lvl <= 6; lvl++) {
-                    const opt = retoCombo.querySelector(`option[value="${lvl}"]`);
-                    if (opt) {
-                        let lvlActs = selectedSubject ? getLevelActivities(lvl, selectedSubject) : [];
-                        opt.disabled = lvlActs.length === 0;
-                        if (lvlActs.length === 0) {
-                            opt.text = `${challengeWord} ${lvl} ${notAvailableWord}`;
-                        } else {
-                            opt.text = `${challengeWord} ${lvl}`;
-                        }
-                    }
-                }
-            }
-
-            function applySubjectFilter(selectedSubject) {
-                if (!selectedSubject) {
-                    if (retoComboContainer) retoComboContainer.style.display = 'none';
-                    document.getElementById('challengesContainer').style.display = 'none';
+            // Muestra el Reto 0 y los retos 1 a 6 de la materia en una cuadrícula
+            window.showAllRetos = function (subject) {
+                if (!subject) {
+                    container.classList.remove('is-open');
+                    container.style.display = 'none';
                     if (placeholder) placeholder.style.display = 'block';
                     return;
                 }
-
-                if (retoComboContainer) retoComboContainer.style.display = 'block';
                 if (placeholder) placeholder.style.display = 'none';
-
-                // Configure retos 1-6 according to selection
-                for (let lvl = 1; lvl <= 6; lvl++) {
-                    const wrapper = document.getElementById('wrapper-reto-' + lvl);
-                    if (!wrapper) continue;
-
-                    const subpanel = document.getElementById('subpanel-reto-' + lvl);
-                    if (subpanel) {
-                        subpanel.querySelectorAll('.pastel-sub-activity-btn').forEach(subBtn => {
-                            const subSubj = subBtn.getAttribute('data-subject');
-                            if (subSubj === selectedSubject) {
-                                subBtn.style.display = 'flex';
-                            } else {
-                                subBtn.style.display = 'none';
-                            }
-                        });
-                    }
-                }
-
-                // Update retoCombo options availability and text
-                updateRetoComboTexts();
-
-                if (retoCombo) {
-                    // Reset reto selection if it's no longer valid for this subject
-                    const currentRetoVal = retoCombo.value;
-                    if (currentRetoVal && currentRetoVal !== '0') {
-                        let lvlActs = getLevelActivities(currentRetoVal, selectedSubject);
-                        if (lvlActs.length === 0) {
-                            retoCombo.value = '';
-                        }
-                    }
-                }
-
-                // Alemán e Inglés se muestran en su idioma (de / en) sin cambiar la preferencia del
-                // estudiante; con otra materia vuelve a su idioma. Los botones DE | EN | ES lo cambian.
-                if (window.langUtils && window.langUtils.showSubjectLang) {
-                    window.langUtils.showSubjectLang(selectedSubject);
-                }
-
-                // Render progress based on loaded values
-                if (window.latestProgressResult) {
-                    updateProgressLabels(window.latestProgressResult);
-                }
-
-                // Apply the reto filter
-                applyRetoFilter(retoCombo.value);
-            }
-
-            if (subjectCombo) {
-                subjectCombo.addEventListener('change', (e) => {
-                    const val = e.target.value;
-                    localStorage.setItem('selectedSubject', val);
-                    applySubjectFilter(val);
+                container.style.display = '';
+                container.classList.add('is-open');
+                container.querySelectorAll('.pastel-sub-activity-btn[data-subject]').forEach(btn => {
+                    btn.style.display = btn.getAttribute('data-subject') === subject ? 'flex' : 'none';
                 });
+                // Alemán e Inglés se muestran en su idioma sin cambiar la preferencia del estudiante
+                if (window.langUtils && window.langUtils.showSubjectLang) window.langUtils.showSubjectLang(subject);
+                updateProgressLabels(window.latestProgressResult || {});
+            };
 
-                const savedSubject = localStorage.getItem('selectedSubject');
-                if (savedSubject) {
-                    const opt = subjectCombo.querySelector(`option[value="${savedSubject}"]`);
-                    if (opt && !opt.disabled) {
-                        subjectCombo.value = savedSubject;
-                        applySubjectFilter(savedSubject);
-                    } else {
-                        applySubjectFilter('');
-                    }
-                } else {
-                    applySubjectFilter('');
-                }
-            } else {
-                applySubjectFilter('');
-            }
-
-            if (retoCombo) {
-                retoCombo.addEventListener('change', (e) => {
-                    const val = e.target.value;
-                    localStorage.setItem('selectedReto', val);
-                    applyRetoFilter(val);
-                });
-
-                const savedReto = localStorage.getItem('selectedReto');
-                if (savedReto) {
-                    const opt = retoCombo.querySelector(`option[value="${savedReto}"]`);
-                    if (opt && !opt.disabled) {
-                        retoCombo.value = savedReto;
-                        applyRetoFilter(savedReto);
-                    }
-                }
-            }
-
-            document.addEventListener('langchange', () => {
-                if (window.latestProgressResult) {
-                    updateProgressLabels(window.latestProgressResult);
-                }
-                if (typeof updateRetoComboTexts === 'function') {
-                    updateRetoComboTexts();
-                }
+            subjectCombo.addEventListener('change', e => {
+                safeStorage.set('localStorage', 'selectedSubject', e.target.value);
+                showAllRetos(e.target.value);
             });
+            const saved = safeStorage.get('localStorage', 'selectedSubject');
+            const savedOpt = saved ? subjectCombo.querySelector('option[value="' + CSS.escape(saved) + '"]') : null;
+            if (savedOpt && !savedOpt.disabled) {
+                subjectCombo.value = saved;
+                showAllRetos(saved);
+            } else {
+                showAllRetos('');
+            }
 
-            // Welcome Modal Logic
+            // Un reto asignado abre su materia aquí también
+            document.querySelectorAll('[data-assign-subject]').forEach(link => link.addEventListener('click', () => {
+                safeStorage.set('localStorage', 'selectedSubject', link.getAttribute('data-assign-subject'));
+            }));
+
+            document.addEventListener('langchange', () => updateProgressLabels(window.latestProgressResult || {}));
+
             const welcomeModal = document.getElementById('welcomeModal');
             const closeWelcomeModal = document.getElementById('closeWelcomeModal');
-            if (welcomeModal && !sessionStorage.getItem('welcomeModalShown')) {
-                welcomeModal.style.display = 'flex';
-            }
+            if (welcomeModal && !safeStorage.get('sessionStorage', 'welcomeModalShown')) welcomeModal.style.display = 'flex';
             if (closeWelcomeModal) {
                 closeWelcomeModal.addEventListener('click', () => {
                     welcomeModal.style.display = 'none';
-                    sessionStorage.setItem('welcomeModalShown', 'true');
+                    safeStorage.set('sessionStorage', 'welcomeModalShown', 'true');
                 });
             }
         });
     </script>
 
-                <%- include('partials/footer') %>
+<%- include('partials/footer') %>

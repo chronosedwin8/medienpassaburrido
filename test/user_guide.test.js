@@ -27,7 +27,8 @@ async function startTestServer(env) {
     const port = await getAvailablePort();
     const child = spawn(process.execPath, ['server.js'], {
         cwd: ROOT,
-        env: { ...process.env, PORT: String(port), SUPABASE_URL: '', SUPABASE_ANON_KEY: '', COOKIE_SECRET, ...env },
+        env: { ...process.env, PORT: String(port), SUPABASE_URL: '', SUPABASE_ANON_KEY: '',
+            PHIDIAS_BASE_URL: '', PHIDIAS_TOKEN: '', COOKIE_SECRET, ...env },
         stdio: ['ignore', 'pipe', 'pipe']
     });
     let output = '';

@@ -1,0 +1,22 @@
+<%# Botón «Entrar con Microsoft» (SSO). Parámetros: href (con ?as=...), note (opcional, clave i18n) %>
+<% if (typeof ssoEnabled === 'undefined' || ssoEnabled) { %>
+<div class="ms-signin">
+    <a class="ms-signin-btn" href="<%= href %>">
+        <svg width="20" height="20" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        <span data-i18n="sso_entrar_microsoft"><%= locals.t('sso_entrar_microsoft') %></span>
+    </a>
+    <small class="ms-signin-note" data-i18n="<%= typeof note !== 'undefined' && note ? note : 'sso_nota_cuenta' %>"><%= locals.t(typeof note !== 'undefined' && note ? note : 'sso_nota_cuenta') %></small>
+    <% const orText = typeof orKey !== 'undefined' && orKey ? orKey : 'sso_o_con_codigo'; %>
+    <div class="ms-signin-or"><span data-i18n="<%= orText %>"><%= locals.t(orText) %></span></div>
+</div>
+<style>
+    .ms-signin { margin: 6px 0 18px; text-align: center; }
+    .ms-signin-btn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; box-sizing: border-box;
+        padding: 13px 16px; border: 1px solid #8c8c8c; border-radius: 10px; background: #fff; color: #5e5e5e;
+        font-weight: 600; font-size: 1.02em; text-decoration: none; transition: background-color .2s ease, box-shadow .2s ease; }
+    .ms-signin-btn:hover, .ms-signin-btn:focus-visible { background: #f3f3f3; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .ms-signin-note { display: block; margin-top: 8px; color: var(--dsb-muted, #54595f); font-size: .8em; line-height: 1.35; }
+    .ms-signin-or { display: flex; align-items: center; gap: 10px; margin: 16px 0 0; color: var(--dsb-muted, #54595f); font-size: .8em; }
+    .ms-signin-or::before, .ms-signin-or::after { content: ''; flex: 1; border-top: 1px solid var(--dsb-border, #e2e2e2); }
+</style>
+<% } %>

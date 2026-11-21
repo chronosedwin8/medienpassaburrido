@@ -35,6 +35,7 @@ async function startTestServer(files) {
             PORT: String(port),
             SUPABASE_URL: '',
             SUPABASE_ANON_KEY: '',
+            PHIDIAS_BASE_URL: '', PHIDIAS_TOKEN: '', // sin red: Phidias no se consulta en las pruebas
             COOKIE_SECRET,
             LOCAL_ACTIVITY_CACHE_FILE: files.cache,
             SUBJECTS_CONFIG_FILE: files.subjects,

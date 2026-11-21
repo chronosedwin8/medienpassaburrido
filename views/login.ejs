@@ -26,6 +26,8 @@
                 </div>
                 <% } %>
 
+                    <%- include('partials/ms-signin', { href: '/auth/microsoft?as=student', note: 'sso_nota_estudiante', orKey: 'sso_o_con_codigo' }) %>
+
                     <form action="/login" method="POST" class="login-form">
                         <div class="form-group">
                             <label for="class_name_select">

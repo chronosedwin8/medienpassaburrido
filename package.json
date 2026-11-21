@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "node -r ./test/isolate.js test/verify_features.test.js && node -r ./test/isolate.js test/admin_features.test.js && node -r ./test/isolate.js test/teacher_editor.test.js && node -r ./test/isolate.js test/indicators.test.js && node -r ./test/isolate.js test/content_subjects.test.js && node -r ./test/isolate.js test/training_help.test.js && node -r ./test/isolate.js test/access_roles.test.js && node -r ./test/isolate.js test/user_guide.test.js && node -r ./test/isolate.js test/school_years.test.js"
+    "test": "node -r ./test/isolate.js test/verify_features.test.js && node -r ./test/isolate.js test/admin_features.test.js && node -r ./test/isolate.js test/teacher_editor.test.js && node -r ./test/isolate.js test/indicators.test.js && node -r ./test/isolate.js test/content_subjects.test.js && node -r ./test/isolate.js test/training_help.test.js && node -r ./test/isolate.js test/access_roles.test.js && node -r ./test/isolate.js test/user_guide.test.js && node -r ./test/isolate.js test/school_years.test.js && node -r ./test/isolate.js test/sso_phidias_assignments.test.js"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +14,7 @@
   "type": "commonjs",
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
+    "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.4",
     "ejs": "^4.0.1",

@@ -12,6 +12,8 @@ const { getSubjectPack } = require('./data_subject_packs');
 const { buildVisualQuestions } = require('./data_visual');
 const { TECHNOLOGY_QUESTIONS } = require('./data_tecnologia_retos');
 const { SPORTS_QUESTIONS } = require('./data_deportes_retos');
+// K3 a K6: preguntas más sencillas, de todas las materias (data_questions_primary.js)
+const { primaryQuestion } = require('./data_questions_primary');
 
 // Materias con preguntas propias en los retos 1-6 (K3-K12); las demás usan la plantilla común
 // con su paquete temático. Cada pregunta propia conserva la subcompetencia KMK y la posición de
@@ -699,8 +701,11 @@ function generateEvidenceForReto(retoNum, subject, grade) {
         if (!template) continue;
         // Tecnología (data_tecnologia_retos.js) y Deportes (data_deportes_retos.js) tienen sus
         // propias preguntas; las demás materias usan la plantilla con su paquete temático.
-        const own = subjectQuestion(subject, retoNum, q);
-        const qData = own || template.k3(pack.es, pack.de, pack.en);
+        // K3-K6 (Primaria): primaryQuestion para todas las materias, también Tecnología y Deportes.
+        // Conserva id, subcompetencia KMK, la pregunta de IA y la posición de la respuesta correcta.
+        const primary = primaryQuestion(retoNum, q, subject, grade);
+        const own = primary ? null : subjectQuestion(subject, retoNum, q);
+        const qData = primary || own || template.k3(pack.es, pack.de, pack.en);
 
         // Construct unique ID containing reto, subject, grade, question number
         const mainId = `r${retoNum}_${subject}_k${grade}_q${q}`;

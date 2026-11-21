@@ -1217,71 +1217,10 @@
                     </div>
                 </div>
 
-                <!-- KMK Levels / Retos Config -->
+                <!-- Retos siempre disponibles (antes: «Configuración de retos (niveles KMK)») -->
                 <div class="admin-card">
-                    <h2><i class="fas fa-layer-group"></i> <span data-i18n="adm_configuracion_de_retos_niveles_kmk"><%= locals.t('adm_configuracion_de_retos_niveles_kmk') %></span></h2>
-                    <p style="color: #6b7280; font-size: 0.9em;"><span data-i18n="adm_selecciona_los_retos_niveles_kmk"><%= locals.t('adm_selecciona_los_retos_niveles_kmk') %></span></p>
-
-                    <div style="overflow-x: auto;">
-                        <table class="admin-table" id="levelConfigTable">
-                            <thead>
-                                <tr>
-                                    <th style="min-width:90px; position:sticky; left:0; background:#f8fafc; z-index:1">
-                                        Klasse</th>
-                                    <% levels.forEach(lvl=> { %>
-                                        <th style="text-align:center; min-width:80px;">
-                                            <span style="font-size:1.3em">
-                                                <%= lvl.icon %>
-                                            </span><br>
-                                            <span style="font-size:0.7em; color:#475569"><span data-i18n="adm_reto"><%= locals.t('adm_reto') %></span> <%= lvl.id %></span><br>
-                                            <button class="btn btn-sm" onclick="toggleAllForLevel('<%= lvl.id %>')"
-                                                style="margin-top:4px; font-size:0.6em; padding:2px 5px; background:<%= lvl.color %>; color:white; border:none; border-radius:5px; cursor:pointer; opacity:0.85;"
-                                                title="Activar/desactivar Reto <%= lvl.id %> en todas las Klassen">
-                                                ✓ K1-K6
-                                            </button>
-                                        </th>
-                                        <% }) %>
-                                            <th style="text-align:center">Klasse</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% uniqueClasses.forEach(cls => { %>
-                                        <tr>
-                                            <td style="position:sticky; left:0; background:#fff; z-index:1;">
-                                                <strong style="color:#4338ca" translate="no" class="notranslate">Klasse <%= cls %></strong>
-                                            </td>
-                                            <% levels.forEach(lvl=> { %>
-                                                <td style="text-align:center">
-                                                    <label class="sc-toggle">
-                                                        <input type="checkbox" class="lc-cb" data-klasse="<%= cls %>"
-                                                            data-level="<%= lvl.id %>">
-                                                        <span class="sc-slider" style="--sc-color: <%= lvl.color %>"></span>
-                                                    </label>
-                                                </td>
-                                                <% }) %>
-                                                    <td style="text-align:center">
-                                                        <button class="btn btn-sm btn-primary"
-                                                            onclick="toggleAllLevelsForKlasse('<%= cls %>')">
-                                                            <span data-i18n="adm_all"><%= locals.t('adm_all') %></span>
-                                                        </button>
-                                                    </td>
-                                        </tr>
-                                <% }) %>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
-                        <button class="btn btn-success" onclick="saveLevelConfig()">
-                            <i class="fas fa-save"></i> <span data-i18n="adm_guardar_configuracion_de_niveles"><%= locals.t('adm_guardar_configuracion_de_niveles') %></span>
-                        </button>
-                        <button class="btn btn-primary" onclick="selectAllLevels()">
-                            <i class="fas fa-check-double"></i> <span data-i18n="adm_seleccionar_todo"><%= locals.t('adm_seleccionar_todo') %></span>
-                        </button>
-                        <button class="btn btn-danger" onclick="deselectAllLevels()">
-                            <i class="fas fa-times"></i> <span data-i18n="adm_deseleccionar_todo"><%= locals.t('adm_deseleccionar_todo') %></span>
-                        </button>
-                    </div>
+                    <h2><i class="fas fa-unlock"></i> <span data-i18n="adm_retos_siempre_disponibles"><%= locals.t('adm_retos_siempre_disponibles') %></span></h2>
+                    <p style="color: #54595f; font-size: 0.92em; line-height: 1.5;"><span data-i18n="adm_retos_siempre_disponibles_desc"><%= locals.t('adm_retos_siempre_disponibles_desc') %></span></p>
                 </div>
             </div>
 
@@ -4049,70 +3988,7 @@
         // Load saved subject config on page load (la tabla de Configuración es del desarrollador)
         if (IS_DEV) loadSubjectConfig();
 
-        // ── Level / Retos Configuration ──
-        function toggleAllLevelsForKlasse(klasse) {
-            const cbs = document.querySelectorAll(`.lc-cb[data-klasse="${klasse}"]`);
-            const allChecked = [...cbs].every(cb => cb.checked);
-            cbs.forEach(cb => cb.checked = !allChecked);
-        }
-
-        function toggleAllForLevel(levelId) {
-            const cbs = document.querySelectorAll(`.lc-cb[data-level="${levelId}"]`);
-            const allChecked = [...cbs].every(cb => cb.checked);
-            cbs.forEach(cb => cb.checked = !allChecked);
-        }
-
-        function selectAllLevels() {
-            document.querySelectorAll('.lc-cb').forEach(cb => cb.checked = true);
-        }
-
-        function deselectAllLevels() {
-            document.querySelectorAll('.lc-cb').forEach(cb => cb.checked = false);
-        }
-
-        async function saveLevelConfig() {
-            const config = {};
-            document.querySelectorAll('.lc-cb').forEach(cb => {
-                const klasse = cb.getAttribute('data-klasse');
-                const levelId = cb.getAttribute('data-level');
-                if (!config[klasse]) config[klasse] = {};
-                config[klasse][levelId] = cb.checked;
-            });
-
-            try {
-                const res = await fetch('/api/admin/level-config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(config)
-                });
-                const result = await res.json();
-                if (result.success) {
-                    showToast(window.t('adm_configuracion_de_niveles_retos'));
-                } else {
-                    showToast(window.t('adm_error') + (result.message || 'Error desconocido'), true);
-                }
-            } catch (e) {
-                showToast(window.t('adm_error_de_conexion'), true);
-            }
-        }
-
-        async function loadLevelConfig() {
-            try {
-                const res = await fetch('/api/admin/level-config');
-                const result = await res.json();
-                if (result.success && result.config) {
-                    Object.entries(result.config).forEach(([klasse, levels]) => {
-                        Object.entries(levels).forEach(([levelId, enabled]) => {
-                            const cb = document.querySelector(`.lc-cb[data-klasse="${klasse}"][data-level="${levelId}"]`);
-                            if (cb) cb.checked = enabled;
-                        });
-                    });
-                }
-            } catch (e) { /* config not saved yet */ }
-        }
-
-        // Load saved level config on page load
-        if (IS_DEV) loadLevelConfig();
+        // Retos siempre disponibles: ya no hay tabla de niveles (la ruta /api/admin/level-config se conserva)
 
         // ── Teacher Reports & Pagination ──
         let teacherData = [];

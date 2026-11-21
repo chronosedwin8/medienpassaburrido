@@ -81,6 +81,18 @@ const roleKey = ['desarrollador', 'coordinador', 'directivo'].includes(user.role
             <% } %>
         <% }) %>
 
+        <div class="menu-label"><i class="fas fa-users-rectangle" aria-hidden="true"></i> <span data-i18n="adm_nav_matricula"><%= locals.t('adm_nav_matricula') %></span></div>
+        <div class="menu-item">
+            <a class="menu-link" href="/teacher/assignments">
+                <span class="link-left"><i class="fas fa-list-check"></i><span class="link-text"><span data-i18n="adm_nav_asignaciones"><%= locals.t('adm_nav_asignaciones') %></span></span></span>
+            </a>
+        </div>
+        <div class="menu-item">
+            <a class="menu-link" href="/admin/phidias">
+                <span class="link-left"><i class="fas fa-arrows-rotate"></i><span class="link-text"><span data-i18n="adm_nav_phidias"><%= locals.t('adm_nav_phidias') %></span></span></span>
+            </a>
+        </div>
+
         <div class="menu-label"><span data-i18n="doc_nav_documentacion"><%= locals.t('doc_nav_documentacion') %></span></div>
         <div class="menu-item">
             <a class="menu-link" href="/docs" target="_blank" rel="noopener">

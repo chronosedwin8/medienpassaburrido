@@ -5,10 +5,11 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 const supabase = require('./supabaseClient');
 const { allActivities, tecnologiaActivities, sharedProfile, reto0BySubject, getReto0ForSubject, getVisualReto0, registerSubjectActivities, legacyReto0Questions, klassenConfig, subjects, levels } = require('./data');
 const { picturesOf, visualCompetences } = require('./data_visual');
-const { getReto0Study } = require('./data_reto0_quiz');
+const { getReto0Study, isSimpleGrade, buildSimpleReto0Questions, getSimpleReto0Study } = require('./data_reto0_quiz');
 const teacherTest = require('./data_teacher_test');
 const { getKmkQuestions } = require('./kmk_training_questions_i18n');
 const { part2Competencies } = require('./training_competencies');
@@ -32,6 +33,12 @@ const userGuide = require('./services/user_guide');
 const techManual = require('./services/tech_manual');
 const yearStore = require('./services/school_years'); // año escolar en curso y lista de años (data/school_years.json)
 const displayName = require('./services/display_name');
+const phidias = require('./services/phidias');               // matrícula: nombres completos y cursos
+const studentDirectory = require('./services/student_directory'); // Supabase al día con Phidias
+const microsoftSso = require('./services/microsoft_sso');     // ingreso con la cuenta de Microsoft
+const assignments = require('./services/assignments');
+const { reto0ProgressBySubject } = require('./services/reto0_progress'); // botones 1-5 del Reto 0       // actividades asignadas a estudiantes o cursos
+assignments.init(supabase);
 const fsp = fs.promises;
 
 // ─── Helper: timeout guard for async ops (evita que Supabase cuelgue la petición) ───
@@ -252,6 +259,8 @@ function getActivitiesForClass(activities, className) {
         const cloned = { ...act };
         const evidence = retoEvidenceFor(cloned, grade);
         if (evidence) cloned.evidence = evidence;
+        // «Misión OASIS» (Ready Player One) es para K7-K12: en Primaria (K3-K6) no se muestra
+        if (grade >= 3 && grade <= 6) delete cloned.theme;
         return cloned;
     });
 }
@@ -296,8 +305,16 @@ function findRetoActivity(activityId, className, subject) {
 // son las del sistema; la evaluación (desde la pregunta 10) es la que editaron los docentes en
 // "Configura tus Retos del 0 al 6" para ese grado y materia, o la del sistema si no hay.
 function reto0ForGrade(subject, grade) {
-    const base = getReto0ForSubject(validSubject(subject));
+    let base = getReto0ForSubject(validSubject(subject));
     const g = parseInt(grade, 10);
+    // K3, K4 y K5: Reto 0 con frases cortas y ejemplos sencillos (mismos ids y posiciones)
+    if (isSimpleGrade(g)) {
+        base = {
+            ...base,
+            evidence: [...base.evidence.filter(item => !item.quiz), ...buildSimpleReto0Questions(base.subject)],
+            study: getSimpleReto0Study(base.subject)
+        };
+    }
     const custom = g >= 3 && g <= 12 ? instrumentStore.getCustomQuestions(g, base.subject, 0) : null;
     if (!custom) return base;
     return { ...base, evidence: [...base.evidence.filter(item => !item.quiz), ...custom] };
@@ -324,8 +341,12 @@ function reto0StatusBySubject(profileData, className) {
     return status;
 }
 
+// Detrás del nginx de CapRover: req.protocol y req.secure salen de X-Forwarded-Proto (dirección de retorno del SSO)
+app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+// Páginas y archivos comprimidos (gzip): el inicio pasa de cientos de KB a unos pocos
+app.use(compression());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(express.json({ limit: '5mb' }));
@@ -380,6 +401,22 @@ function useSubjectLang(req, res, subject) {
 app.locals.kmkArea = level => {
     const n = parseInt(level, 10);
     return n >= 1 && n <= 6 ? KMK_AREAS[n - 1] : null;
+};
+// Dibujos de fondo de cada pregunta de los retos 1-6 (views/activity.ejs, .quiz-deco): el de la materia
+// y 3 de la competencia del reto, que van rotando de una pregunta a otra
+const QUIZ_DECOR = {
+    1: ['🔍', '📁', '🗂️', '🌐', '📚', '🔖'],
+    2: ['💬', '🤝', '📨', '👥', '🛡️', '📣'],
+    3: ['🎨', '🎬', '✏️', '🧩', '📸', '🎵'],
+    4: ['🔒', '🛡️', '🔑', '🧘', '🌿', '⏰'],
+    5: ['🛠️', '💡', '⚙️', '🧠', '🤖', '🔧'],
+    6: ['📊', '🧭', '🔎', '📰', '🤖', '⚖️']
+};
+app.locals.quizDecor = (level, subject, n) => {
+    const set = QUIZ_DECOR[parseInt(level, 10)] || QUIZ_DECOR[1];
+    const start = (Number(n) - 1) % set.length;
+    const pics = picturesOf(subject) || {};
+    return [pics.topic || '⭐', set[start], set[(start + 1) % set.length], set[(start + 2) % set.length]];
 };
 app.locals.kmkSubcompetence = id => {
     const area = KMK_AREAS.find(a => a.subs.some(sub => sub.id === id));
@@ -521,13 +558,60 @@ app.get('/teacher/menu', requireAnyLogin, (req, res) => {
 });
 
 
-// Helper: get unique class names from DB
-async function getUniqueClasses() {
+// Clases de una lista de nombres: una opción por clase con nivel (K5C y "5C" son la misma;
+// «sinact» y otras sin nivel no salen), en orden natural (KKP, PK, KIN, K1A … K12C)
+function loginClassList(names) {
+    const keys = new Set();
+    (names || []).forEach(name => {
+        if (classLevels.classInfo(name)) keys.add(classLevels.loginClassName(name));
+    });
+    return [...keys].sort(phidias.classOrder);
+}
+
+// Clases de la lista de ingreso y de los informes: las de Phidias; si Phidias no responde, las de Supabase
+async function getLoginClasses() {
+    if (phidias.configured()) {
+        try {
+            const list = await phidias.classes();
+            if (list.length) return list.map(c => c.class_name);
+        } catch (e) { /* se usa Supabase */ }
+    }
     if (!supabase) return [];
     try {
         const { data } = await selectAll(() => supabase.from('students').select('class_name'));
-        return [...new Set((data || []).map(s => s.class_name))].filter(Boolean).sort();
+        return loginClassList((data || []).map(s => s.class_name));
     } catch (e) { return []; }
+}
+const getUniqueClasses = getLoginClasses;
+
+// Estudiante que entra con clase + código.
+// 1. Phidias (si está configurado): el código debe ser de esa clase; el registro de Supabase se
+//    crea o se pone al día (services/student_directory.js).
+// 2. Sin Phidias: Supabase, con la clase escrita con y sin K ("K5C" y "5C"). Si hay dos registros,
+//    gana el de la clase con K.
+async function findStudentForLogin(className, code) {
+    const cleanCode = String(code || '').trim();
+    if (!/^\d{1,8}$/.test(cleanCode) || !supabase) return null;
+    const wanted = classLevels.loginClassName(className);
+    if (phidias.configured()) {
+        try {
+            const ph = await phidias.findByCode(cleanCode);
+            if (ph) return ph.class_name === wanted ? await studentDirectory.ensureStudent(supabase, ph, { reason: 'ingreso con código' }) : null;
+        } catch (e) {
+            console.error('Ingreso con Phidias falló, se usa Supabase:', e.message);
+        }
+    }
+    const variants = classLevels.classNameVariants(className);
+    const { data } = await supabase.from('students').select('*')
+        .in('class_name', variants).eq('student_code', cleanCode);
+    const rows = data || [];
+    return rows.find(r => r.class_name === wanted) || rows[0] || null;
+}
+
+function setStudentSession(res, student) {
+    res.cookie('student_id', student.id, {
+        maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true
+    });
 }
 
 // ════════════════════════════════════════
@@ -535,69 +619,40 @@ async function getUniqueClasses() {
 // ════════════════════════════════════════
 app.get('/login', async (req, res) => {
     if (res.locals.student) return res.redirect('/');
-    const uniqueClasses = await getUniqueClasses();
-    return res.render('login', { error: req.query.error || null, klassenConfig, uniqueClasses });
+    const uniqueClasses = await getLoginClasses();
+    return res.render('login', { error: req.query.error ? String(req.query.error).slice(0, 300) : null, klassenConfig, uniqueClasses, ssoEnabled: microsoftSso.configured() });
 });
 
 app.get('/api/student/code/:className/:code', async (req, res) => {
     if (!supabase) return res.json({ success: false });
     try {
-        const { data, error } = await supabase
-            .from('students')
-            .select('*')
-            .eq('class_name', req.params.className)
-            .eq('student_code', req.params.code)
-            .single();
-        if (error || !data) return res.json({ success: false });
-        return res.json({ success: true, student: data });
+        const student = await findStudentForLogin(req.params.className, req.params.code);
+        if (!student) return res.json({ success: false });
+        // Solo lo que muestra la página de ingreso
+        return res.json({ success: true, student: {
+            username: student.username, class_name: student.class_name, full_name: student.full_name
+        } });
     } catch (e) {
         return res.json({ success: false });
     }
 });
 
 app.post('/login', async (req, res) => {
-    const { username, class_name, student_code } = req.body;
-    const uniqueClasses = await getUniqueClasses();
-    if (!username || !username.trim()) {
-        return res.render('login', { error: res.locals.t('srv_ingresa_nombre'), klassenConfig, uniqueClasses });
-    }
-    
-    if (!student_code || !student_code.trim()) {
-        return res.render('login', { error: res.locals.t('srv_ingresa_codigo'), klassenConfig, uniqueClasses });
-    }
+    const { class_name, student_code } = req.body;
+    const uniqueClasses = await getLoginClasses();
+    const fail = key => res.render('login', { error: res.locals.t(key), klassenConfig, uniqueClasses, ssoEnabled: microsoftSso.configured() });
+    if (!student_code || !String(student_code).trim()) return fail('srv_ingresa_codigo');
+    if (!class_name || !String(class_name).trim()) return fail('srv_ingresa_nombre');
 
-    const cleanUsername = username.trim().toLowerCase();
-    const cleanClass = (class_name || '4D').trim();
-    const cleanCode = student_code.trim();
-
-    if (supabase) {
-        try {
-            let { data: student } = await supabase
-                .from('students')
-                .select('*')
-                .eq('username', cleanUsername)
-                .eq('class_name', cleanClass)
-                .eq('student_code', cleanCode)
-                .single();
-
-            if (!student) {
-                return res.render('login', { error: res.locals.t('srv_datos_incorrectos'), klassenConfig, uniqueClasses });
-            }
-
-            res.cookie('student_id', student.id, {
-                maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true
-            });
-            return res.redirect('/');
-        } catch (e) {
-            console.error('Login error:', e);
-            return res.render('login', { error: res.locals.t('srv_error_conexion'), klassenConfig, uniqueClasses });
-        }
-    } else {
-        const localId = 'local_' + Date.now();
-        const student = { id: localId, username: cleanUsername, class_name: cleanClass, student_code: cleanCode };
-        res.cookie('student_id', localId, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true });
-        res.cookie('student_data', JSON.stringify(student), { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true });
+    if (!supabase) return fail('srv_sin_base_datos');
+    try {
+        const student = await findStudentForLogin(class_name, student_code);
+        if (!student) return fail('srv_datos_incorrectos');
+        setStudentSession(res, student);
         return res.redirect('/');
+    } catch (e) {
+        console.error('Login error:', e);
+        return fail('srv_error_conexion');
     }
 });
 
@@ -605,6 +660,127 @@ app.get('/logout', (req, res) => {
     res.clearCookie('student_id');
     res.clearCookie('student_data');
     res.redirect('/login');
+});
+
+// ════════════════════════════════════════
+// INGRESO CON MICROSOFT (SSO, services/microsoft_sso.js)
+// Un solo botón para todos: el correo decide el perfil.
+//   - Docente registrado (tabla teachers) o con perfil del panel (teacher_roles.json): portal
+//     docente y, si tiene perfil, también el panel. Desde /admin/login?perfil=... va al panel.
+//   - Estudiante: su código es el correo (3255@colegioaleman.edu.co) y Phidias dice su curso.
+// ════════════════════════════════════════
+const SSO_COOKIE = 'ms_login';
+const SSO_TARGETS = ['student', 'teacher', 'admin'];
+
+app.get('/auth/microsoft', (req, res) => {
+    if (!microsoftSso.configured()) return res.redirect('/login?error=' + encodeURIComponent(res.locals.t('srv_sso_no_configurado')));
+    const as = SSO_TARGETS.includes(req.query.as) ? req.query.as : 'student';
+    const perfil = access.PROFILES.includes(req.query.perfil) ? req.query.perfil : null;
+    const login = microsoftSso.newLoginState({ as, perfil });
+    res.cookie(SSO_COOKIE, JSON.stringify(login), { maxAge: 10 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true, secure: req.secure });
+    return res.redirect(microsoftSso.authorizeUrl(login, microsoftSso.redirectUri(req)));
+});
+
+function ssoFailPage(as, perfil) {
+    if (as === 'admin') return '/admin/login' + (perfil ? `?perfil=${perfil}&` : '?') + 'error=';
+    if (as === 'teacher') return '/teacher/login?error=';
+    return '/login?error=';
+}
+
+function setTeacherSession(req, res, teacher, role) {
+    const cookie = { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true };
+    res.cookie('teacher_auth', 'true', cookie);
+    res.cookie('teacher_data', JSON.stringify({
+        first_name: teacher.first_name, last_name: teacher.last_name, subject: teacher.subject,
+        email: teacher.email, id: teacher.id, role
+    }), cookie);
+    if (!req.cookies.lang) {
+        const subj = (teacher.subject || '').toLowerCase();
+        res.cookie('lang', subj === 'aleman' ? 'de' : subj === 'ingles' ? 'en' : 'es', { maxAge: 365 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
+    }
+}
+
+function setAdminSession(res, teacher, role) {
+    const cookie = { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax', signed: true };
+    res.cookie('admin_auth', 'true', cookie);
+    res.cookie('admin_user', JSON.stringify({
+        email: teacher.email, role, first_name: teacher.first_name, last_name: teacher.last_name, id: teacher.id
+    }), cookie);
+}
+
+app.get('/auth/microsoft/callback', async (req, res) => {
+    let login = null;
+    try { login = JSON.parse(req.signedCookies[SSO_COOKIE] || 'null'); } catch (e) { login = null; }
+    res.clearCookie(SSO_COOKIE);
+    const as = (login && login.as) || 'student';
+    const perfil = login && login.perfil;
+    const failWith = message => res.redirect(ssoFailPage(as, perfil) + encodeURIComponent(message));
+    const failTo = key => failWith(res.locals.t(key));
+
+    if (req.query.error) {
+        console.warn('SSO Microsoft:', req.query.error, req.query.error_description || '');
+        return failTo('srv_sso_cancelado');
+    }
+    if (!login || !req.query.code || req.query.state !== login.state) return failTo('srv_sso_sesion_vencida');
+
+    let identity;
+    try {
+        const tokens = await microsoftSso.exchangeCode(String(req.query.code), login.verifier, microsoftSso.redirectUri(req));
+        identity = microsoftSso.identityFromIdToken(tokens.id_token, { nonce: login.nonce });
+    } catch (e) {
+        console.error('SSO Microsoft: no se pudo validar el ingreso:', e.message);
+        return failTo('srv_sso_error');
+    }
+    if (!supabase) return failTo('srv_sin_base_datos');
+
+    try {
+        const email = identity.email;
+        const role = roleOfEmail(email);
+        const isStudentEmail = !!phidias.codeFromEmail(email);
+        let teacher = null;
+        if (!isStudentEmail) {
+            const { data } = await supabase.from('teachers').select('*').ilike('email', email).limit(1);
+            teacher = (data && data[0]) || null;
+        }
+
+        // Docentes y perfiles del panel
+        if (teacher || access.isPanelRole(role)) {
+            const [first, ...rest] = (identity.name || email.split('@')[0]).split(' ');
+            const person = teacher || { email, first_name: first, last_name: rest.join(' '), subject: '', id: null };
+            if (as === 'admin') {
+                const decision = access.checkProfile(role, perfil || role);
+                if (decision === 'not_panel') return failWith(res.locals.t('srv_acceso_denegado').replace('{rol}', String(role || 'profesor').toUpperCase()));
+                if (decision === 'mismatch') return failWith(res.locals.t('srv_perfil_distinto').replace('{perfil}', res.locals.t('adm_role_' + role)));
+            }
+            setTeacherSession(req, res, person, role);
+            if (access.isPanelRole(role)) setAdminSession(res, person, role);
+            if (as === 'admin' || !teacher) return res.redirect('/admin');
+            return res.redirect('/teacher/training');
+        }
+
+        // Estudiantes: Phidias por correo (código institucional o correo registrado)
+        const ph = await phidias.findByEmail(email).catch(() => null);
+        if (ph) {
+            const student = await studentDirectory.ensureStudent(supabase, ph, { reason: 'ingreso con Microsoft' });
+            setStudentSession(res, student);
+            return res.redirect('/');
+        }
+        // Sin Phidias: un estudiante ya registrado con ese código
+        const code = phidias.codeFromEmail(email);
+        if (code) {
+            const { data: rows } = await supabase.from('students').select('*').eq('student_code', code);
+            const student = studentDirectory.pickRow(rows || [], null);
+            if (student && student.class_name !== studentDirectory.INACTIVE) {
+                setStudentSession(res, student);
+                return res.redirect('/');
+            }
+        }
+        console.warn('SSO Microsoft: cuenta sin perfil en la app:', email);
+        return failWith(res.locals.t('srv_sso_sin_perfil').replace('{correo}', email));
+    } catch (e) {
+        console.error('SSO Microsoft: error al abrir la sesión:', e);
+        return failTo('srv_sso_error');
+    }
 });
 
 // Las 7 paradas del Medienpass visual en una materia: Reto 0 y retos 1 a 6
@@ -620,7 +796,7 @@ function visualStops(subject, className, storedData, levelConfig) {
             href: n === 0 ? `/profile?subject=${encodeURIComponent(subject)}` : `/activity/${yearStore.activeYear()}/${id}`,
             won: !!(result && result.won),
             started: hasRetoAnswers(id, data, subject),
-            locked: n > 0 && levelConfig[String(n)] !== true
+            locked: false // retos siempre disponibles (level_config.json ya no bloquea)
         };
     });
 }
@@ -637,6 +813,340 @@ function visualRetoLocals(activity, { preview = false } = {}) {
         competence: n > 0 ? visualCompetences(activity.subject)[n - 1] : null,
         subjectName: (subjects.find(s => s.id === activity.subject) || {}).name || { es: '', de: '', en: '' }
     };
+}
+
+// ════════════════════════════════════════
+// MATRÍCULA (Phidias) Y ACTIVIDADES ASIGNADAS
+// API para docentes y panel (cookies de sesión). Respuestas JSON { success, ... }.
+//   GET    /api/roster/classes                       cursos con su número de estudiantes
+//   GET    /api/roster/classes/:className/students   estudiantes de un curso (código y nombre)
+//   GET    /api/assignments                          asignaciones (?mine=1, ?class=K5A, ?subject=)
+//   POST   /api/assignments                          crea { title, subject, retos:[0..6], class_names:[], student_codes:[], due_date, note }
+//   GET    /api/assignments/:id                      una asignación con sus destinatarios
+//   PUT    /api/assignments/:id                      cambia sus datos (quien la creó o el panel)
+//   POST   /api/assignments/:id/targets              { add:{classes,students}, remove:{classes,students} }
+//   POST   /api/assignments/:id/archive              la archiva (no se borra)
+//   GET    /api/assignments/:id/progress             avance de cada destinatario en cada reto
+//   GET    /api/student/assignments                  las del estudiante que entró, con su avance
+//   GET    /api/admin/phidias/status · /sync-preview · POST /api/admin/phidias/sync (desarrollador)
+// ════════════════════════════════════════
+
+// Docente o perfil del panel que hace la petición
+function staffUser(req) {
+    const admin = adminSession(req);
+    let teacher = null;
+    if (req.signedCookies.teacher_auth === 'true') {
+        try { teacher = JSON.parse(req.signedCookies.teacher_data || 'null'); } catch (e) { teacher = null; }
+    }
+    if (!admin && !teacher) return null;
+    const who = admin || teacher;
+    return {
+        email: String(who.email || '').toLowerCase(),
+        name: [who.first_name, who.last_name].filter(Boolean).join(' ').trim(),
+        panel: !!admin,
+        role: admin ? admin.role : roleOfEmail(who.email)
+    };
+}
+
+function requireStaff(req, res, next) {
+    const user = staffUser(req);
+    if (!user) {
+        if (req.originalUrl.startsWith('/api/')) return res.status(401).json({ success: false, code: 'login', message: res.locals.t('srv_sesion_requerida') });
+        return res.redirect('/teacher/login');
+    }
+    res.locals.staff = user;
+    next();
+}
+
+const subjectIds = () => subjects.map(s => s.id);
+
+async function rosterStudents() {
+    if (phidias.configured()) {
+        try { return (await phidias.roster()).students.map(phidias.publicView); } catch (e) { /* Supabase */ }
+    }
+    if (!supabase) return [];
+    const { data } = await selectAll(() => supabase.from('students').select('student_code, username, full_name, class_name'));
+    return (data || []).filter(s => classLevels.classInfo(s.class_name)).map(s => ({
+        code: String(s.student_code || s.username || '').trim(),
+        full_name: s.full_name || s.username,
+        class_name: classLevels.loginClassName(s.class_name)
+    }));
+}
+
+app.get('/api/roster/classes', requireStaff, async (req, res) => {
+    try {
+        let list = [];
+        if (phidias.configured()) {
+            try { list = await phidias.classes(); } catch (e) { list = []; }
+        }
+        if (!list.length) {
+            const counts = {};
+            (await rosterStudents()).forEach(s => { counts[s.class_name] = (counts[s.class_name] || 0) + 1; });
+            list = Object.keys(counts).sort(phidias.classOrder).map(c => ({ class_name: c, count: counts[c] }));
+        }
+        res.json({ success: true, source: phidias.configured() ? 'phidias' : 'supabase', classes: list });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+app.get('/api/roster/classes/:className/students', requireStaff, async (req, res) => {
+    try {
+        const key = classLevels.loginClassName(req.params.className);
+        const students = (await rosterStudents()).filter(s => s.class_name === key)
+            .sort((a, b) => String(a.full_name).localeCompare(String(b.full_name), 'es', { sensitivity: 'base' }));
+        res.json({ success: true, class_name: key, students });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Asignación con nombres legibles para la vista
+function describeAssignment(a, roster) {
+    const recipients = roster ? assignments.recipients(a, roster) : null;
+    return {
+        ...a,
+        retos: (a.activity_ids || []).map(assignments.retoNumberOf).filter(n => n !== null),
+        subject_name: (subjects.find(s => s.id === a.subject) || {}).name || null,
+        recipients_count: recipients ? recipients.length : undefined
+    };
+}
+
+app.get('/api/assignments', requireStaff, async (req, res) => {
+    try {
+        const user = res.locals.staff;
+        let list = await assignments.list({ includeArchived: req.query.archived === '1' });
+        if (req.query.mine === '1' || (!user.panel && req.query.all !== '1')) list = list.filter(a => assignments.canEdit(a, user));
+        if (req.query.class) {
+            const key = classLevels.loginClassName(req.query.class);
+            list = list.filter(a => (a.class_names || []).includes(key));
+        }
+        if (req.query.subject) list = list.filter(a => a.subject === req.query.subject);
+        const roster = await rosterStudents();
+        res.json({ success: true, storage: (await assignments.status()).backend, assignments: list.map(a => describeAssignment(a, roster)) });
+    } catch (e) {
+        console.error('Asignaciones:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+app.post('/api/assignments', requireStaff, async (req, res) => {
+    const { errors, value } = assignments.normalize(req.body || {}, { subjectIds: subjectIds() });
+    if (errors.length) return res.status(400).json({ success: false, code: 'invalid', fields: errors, message: res.locals.t('srv_asignacion_incompleta') });
+    try {
+        if (!value.title) {
+            const subj = (subjects.find(s => s.id === value.subject) || {}).name || {};
+            value.title = `${subj[res.locals.lang] || subj.es || value.subject} · Reto ${value.activity_ids.map(assignments.retoNumberOf).join(', ')}`;
+        }
+        const saved = await assignments.create(value, { by: res.locals.staff, schoolYear: yearStore.activeYear() });
+        res.json({ success: true, assignment: describeAssignment(saved, await rosterStudents()) });
+    } catch (e) {
+        console.error('Crear asignación:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+async function loadEditable(req, res) {
+    const a = await assignments.get(req.params.id);
+    if (!a) { res.status(404).json({ success: false, code: 'not_found' }); return null; }
+    if (!assignments.canEdit(a, res.locals.staff)) { res.status(403).json({ success: false, code: 'forbidden', message: res.locals.t('srv_sin_permiso') }); return null; }
+    return a;
+}
+
+app.get('/api/assignments/:id', requireStaff, async (req, res) => {
+    try {
+        const a = await assignments.get(req.params.id);
+        if (!a) return res.status(404).json({ success: false, code: 'not_found' });
+        const roster = await rosterStudents();
+        res.json({ success: true, assignment: describeAssignment(a, roster), recipients: assignments.recipients(a, roster), editable: assignments.canEdit(a, res.locals.staff) });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+app.put('/api/assignments/:id', requireStaff, async (req, res) => {
+    try {
+        const a = await loadEditable(req, res);
+        if (!a) return;
+        const merged = { ...a, ...req.body, retos: req.body.retos || a.activity_ids };
+        const { errors, value } = assignments.normalize(merged, { subjectIds: subjectIds() });
+        if (errors.length) return res.status(400).json({ success: false, code: 'invalid', fields: errors, message: res.locals.t('srv_asignacion_incompleta') });
+        const saved = await assignments.update(a.id, { ...value, title: value.title || a.title });
+        res.json({ success: true, assignment: describeAssignment(saved, await rosterStudents()) });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+app.post('/api/assignments/:id/targets', requireStaff, async (req, res) => {
+    try {
+        const a = await loadEditable(req, res);
+        if (!a) return;
+        const targets = assignments.changeTargets(a, req.body || {});
+        if (!targets.class_names.length && !targets.student_codes.length) {
+            return res.status(400).json({ success: false, code: 'invalid', fields: ['targets'], message: res.locals.t('srv_asignacion_incompleta') });
+        }
+        const saved = await assignments.update(a.id, targets);
+        res.json({ success: true, assignment: describeAssignment(saved, await rosterStudents()) });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+app.post('/api/assignments/:id/archive', requireStaff, async (req, res) => {
+    try {
+        const a = await loadEditable(req, res);
+        if (!a) return;
+        const saved = await assignments.update(a.id, { active: req.body && req.body.active === true });
+        res.json({ success: true, assignment: saved });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Estado de cada reto de la asignación para unas respuestas guardadas: 'won' | 'started' | 'pending'
+function assignmentStatus(a, className, responsesByActivity) {
+    return (a.activity_ids || []).map(activityId => {
+        const data = (responsesByActivity[activityId] && responsesByActivity[activityId].data) || {};
+        const result = computeRetoResult(activityId, className, data, a.subject);
+        const status = result && result.won ? 'won' : hasRetoAnswers(activityId, data, a.subject) ? 'started' : 'pending';
+        return { activity_id: activityId, reto: assignments.retoNumberOf(activityId), status, percent: result && typeof result.pct === 'number' ? Math.round(result.pct) : null };
+    });
+}
+
+function retoHref(activityId, subject) {
+    return activityId === 'profile' ? `/profile?subject=${encodeURIComponent(subject)}` : `/activity/${yearStore.activeYear()}/${activityId}`;
+}
+
+app.get('/api/assignments/:id/progress', requireStaff, async (req, res) => {
+    try {
+        const a = await assignments.get(req.params.id);
+        if (!a) return res.status(404).json({ success: false, code: 'not_found' });
+        const recipients = assignments.recipients(a, await rosterStudents());
+        const codes = recipients.map(r => r.code).filter(Boolean);
+        let rows = [];
+        let responses = [];
+        if (supabase && codes.length) {
+            for (let i = 0; i < codes.length; i += 300) {
+                const { data } = await supabase.from('students').select('id, student_code, class_name').in('student_code', codes.slice(i, i + 300));
+                rows.push(...(data || []));
+            }
+            const ids = rows.map(r => r.id);
+            for (let i = 0; i < ids.length; i += 200) {
+                const { data } = await supabase.from('activity_responses').select('student_id, activity_id, data')
+                    .in('student_id', ids.slice(i, i + 200)).in('activity_id', a.activity_ids);
+                responses.push(...(data || []));
+            }
+        }
+        const byStudent = new Map();
+        responses.forEach(r => {
+            if (!byStudent.has(r.student_id)) byStudent.set(r.student_id, {});
+            byStudent.get(r.student_id)[r.activity_id] = r;
+        });
+        const result = recipients.map(rec => {
+            const row = studentDirectory.pickRow(rows.filter(r => String(r.student_code).trim() === rec.code), rec.class_name);
+            const statuses = assignmentStatus(a, rec.class_name || (row && row.class_name), row ? byStudent.get(row.id) || {} : {});
+            return { ...rec, registered: !!row, retos: statuses, done: statuses.every(s => s.status === 'won') };
+        });
+        res.json({ success: true, assignment: describeAssignment(a), students: result,
+            summary: { total: result.length, done: result.filter(r => r.done).length, started: result.filter(r => !r.done && r.retos.some(s => s.status !== 'pending')).length } });
+    } catch (e) {
+        console.error('Avance de la asignación:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Asignaciones del estudiante con su avance (inicio del estudiante)
+async function studentAssignments(student) {
+    const list = await assignments.forStudent(student);
+    if (!list.length) return [];
+    const ids = [...new Set(list.flatMap(a => a.activity_ids || []))];
+    let responses = [];
+    if (supabase && student.id && !String(student.id).startsWith('local_')) {
+        const { data } = await supabase.from('activity_responses').select('activity_id, data').eq('student_id', student.id).in('activity_id', ids);
+        responses = data || [];
+    }
+    const byActivity = {};
+    responses.forEach(r => { byActivity[r.activity_id] = r; });
+    return list.map(a => ({
+        id: a.id, title: a.title, subject: a.subject, due_date: a.due_date, note: a.note,
+        subject_name: (subjects.find(s => s.id === a.subject) || {}).name || null,
+        by: a.created_by_name || '',
+        retos: assignmentStatus(a, student.class_name, byActivity).map(s => ({ ...s, href: retoHref(s.activity_id, a.subject) }))
+    }));
+}
+
+app.get('/api/student/assignments', requireLogin, async (req, res) => {
+    try {
+        res.json({ success: true, assignments: await studentAssignments(res.locals.student) });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Página de asignaciones (docentes y panel)
+app.get('/teacher/assignments', requireStaff, (req, res) => {
+    res.render('teacher/assignments', {
+        teacher: res.locals.staff.panel ? { ...(adminSession(req) || {}) } : JSON.parse(req.signedCookies.teacher_data || '{}'),
+        staff: res.locals.staff,
+        subjectList: subjects.filter(s => subjectStore.isActive(s.id)).map(s => ({ id: s.id, name: s.name }))
+    });
+});
+
+// ── Matrícula de Phidias en el panel ──
+app.get('/admin/phidias', allow('lists'), (req, res) => {
+    res.render('admin/phidias', { isDeveloper: !!res.locals.admin.perms.configure });
+});
+
+app.get('/api/admin/phidias/status', allow('lists'), async (req, res) => {
+    res.json({ success: true, phidias: await phidias.status(), assignments: await assignments.status(), sso: { configured: microsoftSso.configured() } });
+});
+
+async function phidiasSyncPlan(force) {
+    const { students } = await phidias.roster({ force });
+    const { data, error } = await selectAll(() => supabase.from('students').select('id, username, class_name, student_code, full_name'));
+    if (error) throw error;
+    return { plan: studentDirectory.buildPlan(data || [], students), students };
+}
+
+app.get('/api/admin/phidias/sync-preview', devOnly, async (req, res) => {
+    if (!supabase || !phidias.configured()) return res.status(400).json({ success: false, message: res.locals.t('srv_phidias_no_configurado') });
+    try {
+        const { plan } = await phidiasSyncPlan(req.query.refresh === '1');
+        res.json({ success: true, plan, phidias: await phidias.status() });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+app.post('/api/admin/phidias/sync', devOnly, async (req, res) => {
+    if (!supabase || !phidias.configured()) return res.status(400).json({ success: false, message: res.locals.t('srv_phidias_no_configurado') });
+    try {
+        const { plan, students } = await phidiasSyncPlan(true);
+        const only = req.body && Array.isArray(req.body.only) ? new Set(req.body.only) : null; // 'create','update','deactivate'
+        if (only) ['create', 'update', 'deactivate'].forEach(k => { if (!only.has(k)) plan[k] = []; });
+        const result = await studentDirectory.applyPlan(supabase, plan, students, { by: res.locals.admin.email });
+        res.json({ success: true, result, plan });
+    } catch (e) {
+        console.error('Sincronización Phidias:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Reto para el JavaScript del inicio: { id, level, subject, fields } (fields = preguntas + competencias)
+function slimActivity(activity) {
+    return {
+        id: activity.id,
+        level: String(activity.level),
+        subject: activity.subject,
+        fields: (activity.evidence ? activity.evidence.length : 0) + (activity.competencies ? activity.competencies.length : 0)
+    };
+}
+// Reto para la tarjeta del inicio: id, materia, ícono y título en los tres idiomas
+function cardActivity(activity) {
+    const title = typeof activity.title === 'object' && activity.title
+        ? activity.title : { es: String(activity.title || ''), de: String(activity.title || ''), en: String(activity.title || '') };
+    return { id: activity.id, subject: activity.subject, icon: activity.icon, title };
 }
 
 // ════════════════════════════════════════
@@ -667,8 +1177,9 @@ app.get('/', requireLogin, async (req, res) => {
             subjectConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
         }
     } catch (e) { /* no config yet */ }
-    const studentClass = res.locals.student.class_name; // e.g. "4A"
-    const enabledSubjects = subjectConfig[studentClass] || {};
+    const studentClass = res.locals.student.class_name; // e.g. "K4A"
+    // Clase sin configuración, o escrita sin K ("5A"): todas las materias habilitadas
+    const enabledSubjects = classLevels.classNameVariants(studentClass).map(c => subjectConfig[c]).find(Boolean) || {};
 
     // Load level config for this student's class
     let levelConfig = {};
@@ -679,14 +1190,8 @@ app.get('/', requireLogin, async (req, res) => {
             levelConfig = allLevelConfig[studentClass] || {};
         }
     } catch (e) { /* no config yet */ }
-    // Enforce Level Lock: if the requested level is not enabled, hide activities
-    let activeActivities = activities;
-    let activeTechActivities = tecnologiaActivities.filter(a => a.level === requestedLevel);
-
-    if (levelConfig[requestedLevel] !== true) {
-        activeActivities = [];
-        activeTechActivities = [];
-    }
+    // Los retos están siempre disponibles: level_config.json ya no bloquea ninguno (solicitud 16)
+    const activeActivities = activities;
 
     const studentId = res.locals.student.id;
     const isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
@@ -772,19 +1277,42 @@ app.get('/', requireLogin, async (req, res) => {
         });
     }
 
+    // Avance real del Reto 0 en cada materia (botón del Reto 0 en el inicio)
+    const reto0Progress = {};
+    subjects.forEach(s => {
+        const p = reto0ProgressBySubject(profileData || {}, s.id, { won: !!reto0Status[s.id] });
+        reto0Progress[s.id] = { done: p.done, pct: p.pct };
+    });
+    // Inicio liviano: de cada reto solo lo que usa la página (antes iban todas las preguntas de
+    // todos los grados, 9 MB).
+    const slimRetos = {};
+    const retoCards = {};
+    for (let lvl = 1; lvl <= 6; lvl++) {
+        retoCards[lvl] = (allResolvedActivities[lvl] || []).map(cardActivity);
+        slimRetos[lvl] = (allResolvedActivities[lvl] || []).map(slimActivity);
+    }
+    let assignedActivities = [];
+    try {
+        assignedActivities = await withTimeout(studentAssignments(res.locals.student), 4000, 'asignaciones del estudiante');
+    } catch (e) {
+        console.error('Asignaciones del estudiante:', e.message);
+    }
+
     res.render('index', {
         activities: activeActivities,
-        tecnologiaActivities: getActivitiesForClass(tecnologiaActivities, res.locals.student.class_name),
-        allResolvedActivities,
+        // Las 4 actividades viejas tech_* ya no salen: los retos de Tecnología son los de /activity
+        tecnologiaActivities: [],
+        slimRetos,
+        retoCards,
+        reto0Progress,
+        assignedActivities,
         student: res.locals.student,
-        sharedProfile,
         klassenConfig,
         currentYear: year,
         currentLevel: requestedLevel,
         studentLevel,
         subjects,
         levels,
-        allActivities,
         enabledSubjects,
         levelConfig,
         progress: rawProgress,
@@ -1093,6 +1621,7 @@ app.post('/api/save/:activityId', requireLogin, async (req, res) => {
     // 2. Confirm local persistence before acknowledging the save.
     const saved = { success: true, message: 'Guardado localmente.', localOnly: true };
     if (retoActivity) Object.assign(saved, { retoResult, institutionalEmail: formData.institutional_email || '', emailError, medienpass });
+    if (activityId === 'profile') saved.reto0Progress = reto0ProgressBySubject(formData, subject, { won: !!(retoResult && retoResult.won) });
     res.json(saved);
 
     // 3. Sincronización con Supabase en segundo plano (con timeout).
@@ -1166,6 +1695,9 @@ app.get('/api/load/:activityId', requireLogin, async (req, res) => {
     const loaded = { success: true, data: stored.data, updated_at: stored.updatedAt };
     if (retoResults.retoNumber(activityId) !== null) {
         loaded.retoResult = computeRetoResult(activityId, res.locals.student.class_name, stored.data, req.query.subject);
+        if (activityId === 'profile') {
+            loaded.reto0Progress = reto0ProgressBySubject(stored.data || {}, validSubject(req.query.subject), { won: !!(loaded.retoResult && loaded.retoResult.won) });
+        }
         // Los 7 retos de la materia: el cuadro del certificado aparece solo si están todos ganados
         const retoActivity = findRetoActivity(activityId, res.locals.student.class_name, req.query.subject);
         if (retoActivity) {
@@ -1261,7 +1793,7 @@ const loginProfile = value => (access.PROFILES.includes(String(value || '')) ? S
 
 app.get('/admin/login', (req, res) => {
     if (adminSession(req)) return res.redirect('/admin');
-    res.render('admin/login', { error: null, profile: loginProfile(req.query.perfil), profiles: access.PROFILES, email: '' });
+    res.render('admin/login', { error: req.query.error ? String(req.query.error).slice(0, 300) : null, profile: loginProfile(req.query.perfil), profiles: access.PROFILES, email: '', ssoEnabled: microsoftSso.configured() });
 });
 
 app.post('/admin/login', async (req, res) => {
@@ -2717,7 +3249,7 @@ app.delete('/api/admin/db-records/:table/:id', devOnly, async (req, res) => {
 // ════════════════════════════════════════
 app.get('/teacher/login', (req, res) => {
     if (req.signedCookies.teacher_auth === 'true') return res.redirect('/teacher/training');
-    res.render('teacher/login', { error: null, subjects });
+    res.render('teacher/login', { error: req.query.error ? String(req.query.error).slice(0, 300) : null, subjects, ssoEnabled: microsoftSso.configured() });
 });
 
 app.post('/api/teacher/register', async (req, res) => {
@@ -2814,7 +3346,8 @@ function requireTeacher(req, res, next) {
     }
     return res.redirect('/teacher/login');
 }
-app.get('/teacher/logout', (req, res) => {
+
+app.get('/teacher/logout', (req, res) => {
     res.clearCookie('teacher_auth');
     res.clearCookie('teacher_data');
     res.redirect('/teacher/login');
