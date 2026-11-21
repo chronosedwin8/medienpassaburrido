@@ -65,6 +65,41 @@ pendientes, caché de respuestas), `subject_config.json`, `level_config.json`,
    - el peso del inicio;
    - que al elegir la materia aparezcan los retos 0 a 6.
 
+## Alternativa: publicar por SSH, sin entrar a CapRover
+
+Así se publicó la versión del 21 de noviembre de 2026. Se construye la imagen en el servidor con el
+mismo nombre que usa CapRover, para que CapRover siga usando el código nuevo si después se cambia la
+configuración de la app.
+
+1. Respaldar el estado y armar el tar, como en los pasos 2 a 4 de arriba.
+2. Subirlo: `pscp -i "$KEY" paquete.tar ubuntu@$HOST:/tmp/`.
+3. En el servidor:
+   ```bash
+   mkdir -p /tmp/mp-build && tar -xf /tmp/paquete.tar -C /tmp/mp-build
+   sudo docker tag img-captain-medienpass:<actual> img-captain-medienpass:<actual>-anterior   # para volver atrás
+   cd /tmp/mp-build && sudo docker build -t img-captain-medienpass:<nueva> .
+   ```
+4. Probarla en un contenedor aparte con las variables reales (`docker run -d -p 127.0.0.1:3999:3000
+   --env-file …`). Después, `curl http://127.0.0.1:3999/login` debe responder 200. Al final, borrar el
+   contenedor y los archivos de variables (`shred -u`).
+5. Cambiar el servicio:
+   ```bash
+   sudo docker tag img-captain-medienpass:<nueva> img-captain-medienpass:<actual>
+   sudo docker service update --force --image img-captain-medienpass:<actual> [--env-add VAR=valor …] srv-captain--medienpass
+   ```
+6. **Volver atrás**:
+   ```bash
+   sudo docker tag img-captain-medienpass:<actual>-anterior img-captain-medienpass:<actual>
+   sudo docker service update --force --image img-captain-medienpass:<actual> srv-captain--medienpass
+   ```
+
+Las variables agregadas con `--env-add` no quedan en la configuración de CapRover. Si alguien guarda
+la configuración de la app en el panel de CapRover sin ellas, se pierden. Hay que agregarlas también
+en CapRover › App Configs.
+
+El 21 de noviembre de 2026 la imagen anterior quedó como `img-captain-medienpass:9-anterior` y la
+nueva como `:9`, `:latest` y `:10-sso`.
+
 ## Al empezar un año escolar
 
 Panel › Matrícula › **Phidias y estudiantes** › «Revisar cambios» y «Aplicar cambios» (solo
